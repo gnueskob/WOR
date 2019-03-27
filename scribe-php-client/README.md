@@ -1,2 +1,0 @@
-Scribe Client for PHP
-=====================

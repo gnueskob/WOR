@@ -2,11 +2,10 @@
     "name": "sblee/lsb_basictraining",
     "autoload": {
         "psr-4": {
-            
+            "sblee\\App\\": "application/"
         }
     },
     "require": {
-        "slim/slim": "^3.12"
     },
     "authors": [
         {

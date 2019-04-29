@@ -1,5 +1,10 @@
 # 메모
 
+## 기획 데이터
+
+- Q&A : https://docs.google.com/spreadsheets/d/1usynExUehjaw7gWuFvIVMUn0KRNqEP-VrDcDtMGIxlM/edit#gid=0
+- dataset : https://docs.google.com/spreadsheets/d/12bSNwPvp6o7ach5bYJQcT1rvx6-xl12krhYxsjc-at4/edit#gid=0
+
 ## 토큰 검증
 
 - 하이브 uid, 유저 영토 id를 이용하여 JWT 생성

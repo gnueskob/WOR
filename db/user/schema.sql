@@ -40,49 +40,100 @@ CREATE TABLE `user` (
   -- `app_version`   VARCHAR(10)   NOT NULL,
   `last_update`   DATE          NULL,
   PRIMARY KEY (`user_id`)
-) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
-
-/** 건물 정보 테이블
-  * building_id:          건물 id (AUTO_INC)
-  * territory_id:         속한 영토 id
-  * type:                 성
-  * upgrade:              건물 업그레이드 수준
-*/
-CREATE TABLE `buliding` (
-  `building_id`   BIGINT        NOT NULL      AUTO_INCREMENT,
-  `territory_id`  BIGINT        NOT NULL,
-  `type`          BIGINT        NOT NULL,
-  `upgrade`       BIGINT        NOT NULL,
-  `last_update`   DATE          NULL,
   -- TODO: 키 설정하기
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
-/** TODO: 건물 별 인구 배치 테이블 구현
+/** 건물 정보 테이블
+  * @desc: 각 유저별로 사용하는 건물 정보
+  * user_id:              유저 id
+  * building_id:          건물 id (AUTO_INC)
+  * territory_id:         속한 영토 id
+  * locdation_x:          영내 건물 위치
+  * locdation_Y:          영내 건물 위치
+  * type:                 건물 타입
+  * upgrade:              건물 업그레이드 수준
+  * manpower:             건물에 투입된 인력
+*/
+CREATE TABLE `buliding` (
+  `building_id`   BIGINT        NOT NULL      AUTO_INCREMENT,
+  `user_id`       BIGINT        NOT NULL,
+  `territory_id`  BIGINT        NOT NULL,
+  `location_x`    TINYINT       NOT NULL,
+  `location_y`    TINYINT       NOT NULL,
+  `type`          BIGINT        NOT NULL,
+  `upgrade`       BIGINT        NOT NULL,
+  `manpower`      BIGINT        NOT NULL,
+  `last_update`   DATE          NULL,
+  PRIMARY KEY (`building_id`),
+  INDEX `idx_user_building` (`user_id`)
+  -- TODO: 키 설정하기
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
+
+/** 유저 게임 정보
   *
 */
+CREATE TABLE `user_game_info` (
+  `user_id`                     BIGINT        NOT NULL      AUTO_INCREMENT,
+  `territory_id`                BIGINT        NOT NULL,
 
-/** 자원 정보 테이블
-  * 타입별 자원 양, 효율성
+  -- resource amount
+  `tactical_resource_amount`    BIGINT        NOT NULL,
+  `food_resource_amount`        BIGINT        NOT NULL,
+  `luxury_resource_amount`      BIGINT        NOT NULL,
+
+  -- value of each user territory
+  `attack_point`                BIGINT        NOT NULL,
+  `defence_point`               BIGINT        NOT NULL,
+  `loyality`                    BIGINT        NOT NULL,
+
+  -- statistical info
+  `war_requset`                 BIGINT        NOT NULL,
+  `war_win`                     BIGINT        NOT NULL,
+  `war_defeated`                BIGINT        NOT NULL,
+  -- TODO: 로그성 지표 수치 추가
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
+
+/** 유저 자원 획득 정보 테이블
+  * @desc: 각 유저가 단위 시간당 획득할 수 있는 자원 정보
 */
 CREATE TABLE `resource` (
   `resource_id`   BIGINT        NOT NULL      AUTO_INCREMENT,
   `user_id`       BIGINT        NOT NULL,
   `type`          BIGINT        NOT NULL,
-  `ppu`           BIGINT        NOT NULL,
-  `amount`        BIGINT        NOT NULL,
+  `condition`     TINYINT       NOT NULL,
   `last_update`   DATE          NULL,
   -- TODO: 키 설정하기
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
-/** TODO: 탐사 정보 테이블 구현
-  *
+/** 유저 영내 탐사 정보 테이블 구현
+  * @desc:  유저가 자신의 영토를 탐사할 때의 정보
 */
+CREATE TABLE `exploration_in_territory` (
+  `explore_id`        BIGINT        NOT NULL    AUTO_INCREMENT,
+  `user_id`           BIGINT        NOT NULL,
+  `territory_id`      BIGINT        NOT NULL,
+  `location_x`        TINYINT       NOT NULL,
+  `location_y`        TINYINT       NOT NULL,
+  PRIMARY KEY (`explore_id`)
+  INDEX `idx_user_explore` (`user_id`)
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
+
+/** 유저 영외 탐사 정보 테이블 구현
+  * @desc:  유저가 다른 유저의 영토를 탐사할 때의 정보
+*/
+CREATE TABLE `exploration_out_of_territory` (
+  `explore_id`        BIGINT        NOT NULL    AUTO_INCREMENT,
+  `user_id`           BIGINT        NOT NULL,
+  `location_x`        TINYINT       NOT NULL,
+  `location_y`        TINYINT       NOT NULL,
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 전쟁(출전) 정보
   * TODO: 테이블 구현
 */
 CREATE TABLE `war` (
   `last_update`   DATE          NULL
+  -- TODO: 키 설정하기
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** TODO: 동맹 정보 테이블 구현

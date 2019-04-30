@@ -18,6 +18,8 @@ DROP TABLE IF EXISTS `user`,
   * hive_uid:       하이브 uid
   * name:           영주 이름
   * territory_id:   영토 id
+  * tlocation_x:    영토 위치 좌표 X
+  * tlocation_y:    영토 위치 좌표 Y
   * last_visit:     마지막 접속 일자
   * register_date:  가입 일자
   * country:        유저 geoip
@@ -30,6 +32,8 @@ CREATE TABLE `user` (
   `user_id`       BIGINT        NOT NULL      AUTO_INCREMENT,
   `hive_uid`      BIGINT        NOT NULL,
   `territory_id`  BIGINT        NOT NULL,
+  `tlocation_x`   TINYINT       NOT NULL,
+  `tlocation_y`   TINYINT       NOT NULL,
   `name`          VARCHAR(30)   NOT NULL,
   `last_visit`    DATE          NOT NULL,
   `register_date` DATE          NOT NULL,
@@ -39,7 +43,8 @@ CREATE TABLE `user` (
   -- `device_name`   VARCHAR(20)   NOT NULL,
   -- `app_version`   VARCHAR(10)   NOT NULL,
   `last_update`   DATE          NULL,
-  PRIMARY KEY (`user_id`)
+  PRIMARY KEY (`user_id`),
+  INDEX `idx_location` (`tlocation_x`, `tlocation_y`)
   -- TODO: 키 설정하기
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
@@ -51,19 +56,21 @@ CREATE TABLE `user` (
   * locdation_x:          영내 건물 위치
   * locdation_Y:          영내 건물 위치
   * type:                 건물 타입
+  * is_constructing       현재 건설중 여부
   * upgrade:              건물 업그레이드 수준
   * manpower:             건물에 투입된 인력
 */
 CREATE TABLE `buliding` (
-  `building_id`   BIGINT        NOT NULL      AUTO_INCREMENT,
-  `user_id`       BIGINT        NOT NULL,
-  `territory_id`  BIGINT        NOT NULL,
-  `location_x`    TINYINT       NOT NULL,
-  `location_y`    TINYINT       NOT NULL,
-  `type`          BIGINT        NOT NULL,
-  `upgrade`       BIGINT        NOT NULL,
-  `manpower`      BIGINT        NOT NULL,
-  `last_update`   DATE          NULL,
+  `building_id`     BIGINT        NOT NULL      AUTO_INCREMENT,
+  `user_id`         BIGINT        NOT NULL,
+  `territory_id`    BIGINT        NOT NULL,
+  `location_x`      TINYINT       NOT NULL,
+  `location_y`      TINYINT       NOT NULL,
+  `type`            BIGINT        NOT NULL,
+  `is_constructing` TINYINT       NOT NULL,
+  `upgrade`         BIGINT        NOT NULL,
+  `manpower`        BIGINT        NOT NULL,
+  `last_update`     DATE          NULL,
   PRIMARY KEY (`building_id`),
   INDEX `idx_user_building` (`user_id`)
   -- TODO: 키 설정하기
@@ -90,6 +97,9 @@ CREATE TABLE `user_game_info` (
   `war_requset`                 BIGINT        NOT NULL,
   `war_win`                     BIGINT        NOT NULL,
   `war_defeated`                BIGINT        NOT NULL,
+  `boss1_kill_count`            BIGINT        NOT NULL,
+  `boss2_kill_count`            BIGINT        NOT NULL,
+  `boss3_kill_count`            BIGINT        NOT NULL,
   -- TODO: 로그성 지표 수치 추가
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
@@ -101,6 +111,28 @@ CREATE TABLE `resource` (
   `user_id`       BIGINT        NOT NULL,
   `type`          BIGINT        NOT NULL,
   `condition`     TINYINT       NOT NULL,
+  `last_update`   DATE          NULL,
+  -- TODO: 키 설정하기
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
+
+/** 유저 버프 정보
+  * @desc: 게임 내 버프 정보
+*/
+CREATE TABLE `buf` (
+  `buf_id`      BIGINT    NOT NULL      AUTO_INCREMENT,
+  `user_id`     BIGINT    NOT NULL,
+  -- TODO: 충성도 버프 어떻게 처리할 것인지 고민
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
+
+/** 유저 무기 정보 테이블
+  * @desc: 각 유저가 생산하고 업그레이드 하는 무기의 정보
+*/
+CREATE TABLE `weapon` (
+  `weapon_id`     BIGINT        NOT NULL      AUTO_INCREMENT,
+  `user_id`       BIGINT        NOT NULL,
+  `type`          BIGINT        NOT NULL,
+  `upgrade`       TINYINT       NOT NULL,
+  `is_upgrading`  TINYINT       NOT NULL,
   `last_update`   DATE          NULL,
   -- TODO: 키 설정하기
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
@@ -119,26 +151,54 @@ CREATE TABLE `exploration_in_territory` (
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 유저 영외 탐사 정보 테이블 구현
-  * @desc:  유저가 다른 유저의 영토를 탐사할 때의 정보
+  * @desc: 유저가 다른 유저의 영토를 탐사할 때의 정보
 */
 CREATE TABLE `exploration_out_of_territory` (
   `explore_id`        BIGINT        NOT NULL    AUTO_INCREMENT,
   `user_id`           BIGINT        NOT NULL,
   `location_x`        TINYINT       NOT NULL,
   `location_y`        TINYINT       NOT NULL,
+  `time_quantum`      BIGINT        NOT NULL,
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 전쟁(출전) 정보
   * TODO: 테이블 구현
 */
 CREATE TABLE `war` (
+  `war_id`        BIGINT        NOT NULL        AUTO_INCREMENT,
+  `user_id`       BIGINT        NOT NULL,
+  `territory_id`  BIGINT        NOT NULL,
+  `time_quantum`  BIGINT        NOT NULL,
   `last_update`   DATE          NULL
   -- TODO: 키 설정하기
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
+
+/** 점령 정보
+  * @desc: 유저
+*/
+CREATE TABLE `occupation` (
+  `occupation_id` BIGINT      NOT NULL      AUTO_INCREMENT,
+  `user_id`       BIGINT      NOT NULL,
+  `territory_id`  BIGINT      NOT NULL,
+  PRIMARY KEY (`occupation_Id`)
+  INDEX `idx_user_id` (`user_id`)
+  -- TODO: 키 고민해보기
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** TODO: 동맹 정보 테이블 구현
   *
 */
+CREATE TABLE `alliance` (
+  `alliance_id`     BIGINT      NOT NULL      AUTO_INCREMENT,
+  `is_accepted`     TINYINT     NOT NULL,
+  `req_user_id`     BIGINT      NOT NULL,
+  `res_user_id`     BIGINT      NOT NULL,
+  `created_date`    DATE        NOT NULL,
+  `last_update`     DATE        NOT NULL,
+  PRIMARY KEY (`alliance_id`),
+  INDEX `idx_req_user` (`req_user_id`, `is_accepted`),
+  INDEX `idx_res_user` (`res_user_id`, `is_accepted`)
+) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
 
 /** TODO: 정산?
   *

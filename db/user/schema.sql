@@ -174,7 +174,7 @@ CREATE TABLE `buf` (
   `finish_time`   DATE      NOT NULL,
   `last_update`   DATE      NULL,
   PRIMARY KEY (`buf_pk_id`),
-  INDEX `idx_user_buf` (`user_id`)
+  INDEX `idx_user_buf` (`user_id`,`is_active`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 유저 무기 정보 테이블
@@ -236,6 +236,8 @@ CREATE TABLE `exploration_out_of_territory` (
   * war_id:       전쟁 id (AUTO_INC) [PK]
   * user_id:      유저 id
   * territory_id: 영토 id (기획)
+  * is_defeated:  해당 전쟁 패배 여부
+  * penalty_time: 전쟁 신청 후 일정 시간동안 재 전쟁 요청 금지
   * manpower:     선전포고 당시 병영 인력
   * resource:     선전포고 당시 사용한 군량
   * finish_time:  출전 완료 시간
@@ -244,12 +246,14 @@ CREATE TABLE `war` (
   `war_id`        BIGINT        NOT NULL        AUTO_INCREMENT,
   `user_id`       BIGINT        NOT NULL,
   `territory_id`  BIGINT        NOT NULL,
+  `is_defeated`   TINYINT       NOT NULL,
+  `penanlty_time` DATE          NOT NULL,
   `manpower`      BIGINT        NOT NULL,
   `resource`      BIGINT        NOT NULL,
   `finish_time`   DATE          NOT NULL,
   `last_update`   DATE          NULL,
   PRIMARY KEY (`war_id`),
-  INDEX `idx_user_war` (`user_id`),
+  INDEX `idx_user_war` (`user_id`, `territory_id`),
   INDEX `idx_territory` (`territory_id`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
@@ -297,17 +301,23 @@ CREATE TABLE `mail` (
   `tactical_resource`   BIGINT      NOT NULL,
   `food_resource`       BIGINT      NOT NULL,
   `luxury_resource`     BIGINT      NOT NULL,
+  `last_update`         DATE        NOT NULL,
   PRIMARY KEY (`mail_id`),
   INDEX `idx_to_user` (`to_user_id`)
 ) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
 
--- TODO: war 테이블로 한꺼번에 처리할 수 없는지 생각해보자
-CREATE TABLE `raid` (
-  `raid_id`           BIGINT      NOT NULL      AUTO_INCREMENT,
-  `req_user_id`       BIGINT      NOT NULL,
+/** 레이드 보스 몬스터 정보
+  * @desc: 레이드 보스 몬스터 현황 정보
+*/
+CREATE TABLE `boss` (
+  `boss_pk_id`        BIGINT      NOT NULL      AUTO_INCREMENT,
+  `boss_id`           BIGINT      NOT NULL,
   `territory_id`      BIGINT      NOT NULL,
-  `finish_time`       DATE        NOT NULL,
-  PRIMARY KEY (`raid_id`),
-  INDEX `idx_req_user` (`req_user_id`),
-  INDEX `idx_territory` (`territory`)
+  `hit_point`         BIGINT      NOT NULL,
+  `is_active`         TINYINT     NOT NULL,
+  `limit_time`        DATE        NOT NULL,
+  `dead_time`         DATE        NOT NULL,
+  `last_update`       DATE        NOT NULL,
+  PRIMARY KEY (`boss_pk_id`),
+  INDEX `idx_territory` (`territory_id`, `is_active`)
 ) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;

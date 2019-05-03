@@ -22,6 +22,7 @@ DROP TABLE IF EXISTS `user`,
 
 /** 유저 정보 테이블
   * user_id:        유저 id
+  * hive_id:        하이브 id
   * hive_uid:       하이브 uid
   * last_visit:     마지막 접속 일자
   * register_date:  가입 일자
@@ -63,8 +64,8 @@ DROP TABLE IF EXISTS `user`,
   * boss{id}_kill_count:  보스 처치 횟수 (기획)
 */
 CREATE TABLE `user` (
-  -- `hive_id`       VARCHAR(30)   NOT NULL,
   `user_id`       BIGINT        NOT NULL      AUTO_INCREMENT,
+  `hive_id`       VARCHAR(30)   NOT NULL,
   `hive_uid`      BIGINT        NOT NULL,
   `last_visit`    DATE          NOT NULL,
   `register_date` DATE          NOT NULL,
@@ -106,7 +107,9 @@ CREATE TABLE `user` (
   `boss3_kill_count`            BIGINT        NOT NULL,
 
   PRIMARY KEY (`user_id`),
-  INDEX `idx_territory` (`territory_id`)
+  UNIQUE INDEX `uk_hive` (`hive_id`, `hive_uid`),
+  UNIQUE INDEX `uk_territory` (`territory_id`),
+  UNIQUE INDEX `uk_name` (`name`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 건물 정보 테이블
@@ -294,6 +297,15 @@ CREATE TABLE `alliance` (
   INDEX `idx_res_user` (`res_user_id`, `is_accepted`, `req_user_id`)
 ) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
 
+/** 동맹 유저간 자원 공유용 우편 테이블
+  * @desc: 서로 동맹인 유저 끼리 우편을 주고 받을 수 있기 위한 정보
+  * mail_id:              우편 id (AUTO_INC) [PK]
+  * from_user_id:         우편 발신 유저 id
+  * to_user_id:           우편 송신 유저 id
+  * tactical_resource:    전략 자원 수량
+  * food_resource:        식량 자원 수량
+  * luxury_resource:      사치 자원 수량
+*/
 CREATE TABLE `mail` (
   `mail_id`             BIGINT      NOT NULL    AUTO_INCREMENT,
   `from_user_id`        BIGINT      NOT NULL,
@@ -308,6 +320,13 @@ CREATE TABLE `mail` (
 
 /** 레이드 보스 몬스터 정보
   * @desc: 레이드 보스 몬스터 현황 정보
+  * boss_pk_id:       보스 id (AUTO_INC) [PK]
+  * boss_id:          보스 타입 (기획)
+  * territory_id:     영토 id (기획)
+  * hit_point:        보스 체력
+  * is_active:        전투 상태 유무
+  * limit_time:       보스 광폭화 시간
+  * dead_time:        보스 처치된 시간
 */
 CREATE TABLE `boss` (
   `boss_pk_id`        BIGINT      NOT NULL      AUTO_INCREMENT,

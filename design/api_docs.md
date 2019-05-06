@@ -231,11 +231,10 @@
 - `POST /exploration`
 - 유저의 영토내에서 탐사되지 않은 영토 탐사
 
-| 요청변수       | 타입   | 필수 여부 | 설명      |
-| :--------- | :--- | :---- | :------ |
-| user_id    | INT  | Y     | 유저 ID   |
-| location_x | INT  | Y     | x 위치 좌표 |
-| location_y | INT  | Y     | y 위치 좌표 |
+| 요청변수    | 타입   | 필수 여부 | 설명    |
+| :------ | :--- | :---- | :---- |
+| user_id | INT  | Y     | 유저 ID |
+| tile_id | INT  | Y     | 타일 ID |
 
 - TODO: 반환 포맷 정리
 
@@ -244,11 +243,10 @@
 - `POST /exploration/territory`
 - 유저 영토 외의 다른 영토 탐사
 
-| 요청변수       | 타입   | 필수 여부 | 설명      |
-| :--------- | :--- | :---- | :------ |
-| user_id    | INT  | Y     | 유저 ID   |
-| location_x | INT  | Y     | x 위치 좌표 |
-| location_y | INT  | Y     | y 위치 좌표 |
+| 요청변수         | 타입   | 필수 여부 | 설명    |
+| :----------- | :--- | :---- | :---- |
+| user_id      | INT  | Y     | 유저 ID |
+| territory_id | INT  | Y     | 영토 ID |
 
 - TODO: 반환 포맷 정리
 
@@ -274,6 +272,8 @@
 | :----------- | :--- | :---- | :---- |
 | user_id      | INT  | Y     | 유저 ID |
 | territory_id | INT  | Y     | 영토 ID |
+| manpower     | INT  | Y     | 출전 병력 |
+| recource     | INT  | Y     | 군량    |
 
 - TODO: 반환 포맷 정리
 

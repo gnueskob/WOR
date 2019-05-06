@@ -53,7 +53,7 @@ DROP TABLE IF EXISTS `user`,
   ##### 통계적 수치 #####
   # 선전포고
   * war_requset:    선전포고 횟수
-  * war_win:        전쟁 승리 횟수
+  * war_victory:    전쟁 승리 횟수
   * war_defeated:   전쟁 패배 횟수
 
   # 전쟁 방어
@@ -96,7 +96,7 @@ CREATE TABLE `user` (
 
   -- statistical info
   `war_requset`                 BIGINT        NOT NULL,
-  `war_win`                     BIGINT        NOT NULL,
+  `war_victory`                 BIGINT        NOT NULL,
   `war_defeated`                BIGINT        NOT NULL,
 
   `despoil_defense_success`     BIGINT        NOT NULL,
@@ -196,6 +196,7 @@ CREATE TABLE `weapon` (
   `weapon_id`     BIGINT        NOT NULL,
   `upgrade`       TINYINT       NOT NULL,
   `is_upgrading`  TINYINT       NOT NULL,
+  `is_creating`   TINYINT       NOT NULL,
   `finish_time`   DATE          NOT NULL,
   `last_update`   DATE          NULL,
   PRIMARY KEY (`weapon_pk_id`),
@@ -240,8 +241,9 @@ CREATE TABLE `exploration_out_of_territory` (
   * war_id:       전쟁 id (AUTO_INC) [PK]
   * user_id:      유저 id
   * territory_id: 영토 id (기획)
-  * is_defeated:  해당 전쟁 패배 여부
+  * is_victory:   해당 전쟁 승리 여부
   * penalty_time: 전쟁 신청 후 일정 시간동안 재 전쟁 요청 금지
+  * attack:       선전포고 당시 공격력
   * manpower:     선전포고 당시 병영 인력
   * resource:     선전포고 당시 사용한 군량
   * finish_time:  출전 완료 시간
@@ -250,8 +252,9 @@ CREATE TABLE `war` (
   `war_id`        BIGINT        NOT NULL        AUTO_INCREMENT,
   `user_id`       BIGINT        NOT NULL,
   `territory_id`  BIGINT        NOT NULL,
-  `is_defeated`   TINYINT       NOT NULL,
-  `penanlty_time` DATE          NOT NULL,
+  `is_victory`    TINYINT       NULL,
+  `penanlty_time` DATE          NULL,
+  `attack`        BIGINT        NOT NULL,
   `manpower`      BIGINT        NOT NULL,
   `resource`      BIGINT        NOT NULL,
   `finish_time`   DATE          NOT NULL,
@@ -273,9 +276,10 @@ CREATE TABLE `occupation` (
   `user_id`       BIGINT      NOT NULL,
   `territory_id`  BIGINT      NOT NULL,
   `finish_time`   DATE        NOT NULL,
+  `last_update`   DATE        NULL,
   PRIMARY KEY (`occupation_Id`),
   INDEX `idx_user_occupation` (`user_id`),
-  INDEX `idx_territory` (`territory_id`)
+  INDEX `idx_finish_territory` (`finish_time`, `territory_id`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 동맹 정보 테이블 구현
@@ -306,6 +310,7 @@ CREATE TABLE `alliance` (
   * tactical_resource:    전략 자원 수량
   * food_resource:        식량 자원 수량
   * luxury_resource:      사치 자원 수량
+  * created_date:         보낸 날짜
 */
 CREATE TABLE `mail` (
   `mail_id`             BIGINT      NOT NULL    AUTO_INCREMENT,
@@ -314,6 +319,8 @@ CREATE TABLE `mail` (
   `tactical_resource`   BIGINT      NOT NULL,
   `food_resource`       BIGINT      NOT NULL,
   `luxury_resource`     BIGINT      NOT NULL,
+  `is_accepted`         TINYINT     NOT NULL,
+  `created_date`        DATE        NOT NULL,
   `last_update`         DATE        NOT NULL,
   PRIMARY KEY (`mail_id`),
   INDEX `idx_to_user` (`to_user_id`)

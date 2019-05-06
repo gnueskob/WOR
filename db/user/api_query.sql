@@ -43,7 +43,7 @@ INSERT INTO `user` (
   `luxury_resource_amount`,
 
   `war_requset`,
-  `war_win`,
+  `war_victory`,
   `war_defeated`,
   `despoil_defense_success`,
   `despoil_defense_fail`,
@@ -239,3 +239,231 @@ WHERE `building_pk_id` = {building_pk_id};
 
 -- API: POST /weapon
 -- 무기 생산
+INSERT INTO `weapon` (
+  `user_id`,
+  `weapon_id`,
+  `upgrade`,
+  `is_upgrading`,
+  `is_creating`,
+  `finish_time`,
+  `last_update`
+) VALUE (
+  {user_id},
+  {weapon_id},
+  0,
+  FALSE,
+  TRUE,
+  {finish_time},
+  NOW()
+);
+
+-- API: PUT /weapon
+-- 무기 업그레이드
+-- action_type : 0
+UPDATE `weapon`
+SET `is_upgrading` = TRUE,
+    `finish_time` = {finish_time},
+    `last_update` = NOW()
+WHERE `weapon_pk_id` = {weapon_pk_id};
+
+-- 무기 삭제
+-- action_type : 1
+DELETE FROM `weapon`
+WHERE `weapon_pk_id` = {weapon_pk_id};
+
+-- no API
+-- 무기 생산 완료
+UPDATE `weapon`
+SET `is_creating` = FALSE,
+    `last_update` = NOW()
+WHERE `weapon_pk_id` = {weapon_pk_id};
+
+-- 무기 업그레이드 완료
+UPDATE `weapon`
+SET `is_upgrading` = FALSE,
+    `upgrade` = `upgrade` + 1,
+    `last_update` = NOW()
+WHERE `weapon_pk_id` = {weapon_pk_id};
+
+##########################################
+-- 탐사 정보 (exploration Infomation)
+##########################################
+
+-- API: POST /exploration
+-- 영내 탐사
+INSERT INTO `exploration_in_territory` (
+  `user_id`,
+  `tile_id`,
+  `finish_time`,
+  `last_update`
+) VALUE (
+  {user_id},
+  {tile_id},
+  {finish_time},
+  NOW()
+);
+
+-- API: POST /exploration/territory
+-- 다른 영토 탐사
+INSERT INTO `exploration_out_of_territory` (
+  `user_id`,
+  `territory_id`,
+  `finish_time`,
+  `last_update`
+) VALUE (
+  {user_id},
+  {territory_id},
+  {finish_time},
+  NOW()
+);
+
+-- API: GET /exploration/territory/{territory_id}
+-- 해당 영토 정보
+-- TODO: 정확히 어떤 정보를 넘겨줄 것인지?
+-- 1. 해당 영토의 타입 확인
+-- 2. 타입별로 정보 반환
+--  2-1. 유저 점령지 영토일 경우 - 해당 영토 유저 스펙?
+--  2-2. 유저 점령지인데, 비어있는 영토일 경우 - ?
+--  2-3. 특수 지역일 경우 - 보스 젠 상태? / 점령 유저?
+SELECT *
+FROM `user`
+WHERE `territory_id` = {territory_id};
+
+SELECT *
+FROM `boss`
+WHERE `territory_id` = {territory_id}
+  AND `is_active` = TRUE;
+
+SELECT *
+FROM `occupation`
+WHERE `territory_id` = {territory_id}
+  AND `finish_time` >= NOW();
+
+##########################################
+-- 전쟁 (war)
+##########################################
+
+-- API: POST /war
+-- 전쟁 출전
+INSERT INTO `war` (
+  `user_id`,
+  `territory_id`,
+  `is_victory`,
+  `penanlty_time`,
+  `manpower`,
+  `resource`,
+  `finish_time`,
+  `last_update`
+) VALUE (
+  {user_id},
+  {territory_id},
+  NULL,
+  NULL,
+  {manpower},
+  {resource},
+  {finish_time},
+  NOW()
+);
+
+-- API: PUT /war
+-- 출전 취소
+SELECT `manpower`, `resource`
+FROM `war`
+WHERE `war_id` = {war_id}
+
+-- no API
+-- 전쟁 시뮬레이션
+-- TODO: 해당 war 레코드를 읽음으로써 패배 진영의 패널티 여부 결정
+UPDATE `war`
+SET `is_victory` = `attack` > {target_defense},
+    `penalty_time` = NOW() + {penalty_time}
+WHERE `war_id` = {war_id}
+
+##########################################
+-- 동맹 (alliance)
+##########################################
+
+-- API: POST /alliance
+-- 다른 유저에게 동맹 요청
+INSERT INTO `alliance` (
+  `is_accepted`,
+  `req_user_id`,
+  `res_user_id`,
+  `created_date`,
+  `last_update`
+) VALUE (
+  FALSE,
+  {req_user_id},
+  {res_user_id},
+  NOW(),
+  NOW()
+);
+
+-- API: PUT /alliance
+-- 다른 유저의 동맹 요청 수락 / 거절
+UPDATE `alliance`
+SET `is_accepted` = {respond}
+WHERE `alliance_id` = {alliance_id};
+
+-- API: GET /mail/{user_id}
+-- 동맹으로부터 우편 확인
+SELECT *
+FROM `mail`
+WHERE `to_user_id` = {user_id};
+
+-- API: POST /mail
+-- 다른 유저에게 자원 우편 보내기
+SELECT `tactical_resource_amount`,
+       `food_resource_amount`,
+       `luxury_resource_amount`
+FROM `user`
+WHERE `user_id` = {user_id};
+
+UPDATE `user`
+SET `tactical_resource_amount` = `tactical_resource_amount` - {tactical_resource},
+    `food_resource_amount` = `food_resource_amount` - {food_resource},
+    `luxury_resource_amount` = `luxury_resource_amount` - {luxury_resource}
+WHERE `user_id` = {user_id};
+
+INSERT INTO `mail` (
+  `from_user_id`,
+  `to_user_id`,
+  `tactical_resource`,
+  `food_resource`,
+  `luxury_resource`,
+  `is_accepted`,
+  `created_date`,
+  `last_update`
+) VALUE (
+  {from_user_id},
+  {to_user_id},
+  {tactical_resource},
+  {food_resource},
+  {luxury_resource},
+  FALSE,
+  NOW(),
+  NOW()
+);
+
+-- API: PUT /mail
+-- 보낸 우편 받기
+SELECT `tactical_resource`,
+       `food_resource`,
+       `luxury_resource`
+FROM `mail`
+WHERE `to_user_id` = {user_id};
+
+UPDATE `user`
+SET `tactical_resource_amount` = `tactical_resource_amount` + {tactical_resource},
+    `food_resource_amount` = `food_resource_amount` + {food_resource},
+    `luxury_resource_amount` = `luxury_resource_amount` + {luxury_resource}
+WHERE `user_id` = {user_id};
+
+UPDATE `mail`
+SET `is_accepted` = TRUE
+WHERE `mail_id` = {mail_id};
+
+##########################################
+-- 레이드 (raid)
+##########################################
+

@@ -10,7 +10,7 @@ SELECT 'CREATEING DATABASE STRUCTURE' as 'INFO';
 
 -- Drop alreay exists table
 DROP TABLE IF EXISTS `user`,
-                     `buliding`,
+                     `building`,
                      `resource`,
                      `buf`,
                      `weapon`,
@@ -126,7 +126,7 @@ CREATE TABLE `user` (
   * upgrade:              건물 업그레이드 수준
   * manpower:             건물에 투입된 인력
 */
-CREATE TABLE `buliding` (
+CREATE TABLE `building` (
   `building_pk_id`  BIGINT        NOT NULL      AUTO_INCREMENT,
   `user_id`         BIGINT        NOT NULL,
   `territory_id`    BIGINT        NOT NULL,
@@ -134,6 +134,7 @@ CREATE TABLE `buliding` (
   `building_id`     BIGINT        NOT NULL,
 
   `is_constructing` TINYINT       NOT NULL,
+  `is_deploying`    TINYINT       NOT NULL,
   `is_upgrading`    TINYINT       NOT NULL,
   `finish_time`     DATE          NOT NULL,
   `upgrade`         BIGINT        NOT NULL,

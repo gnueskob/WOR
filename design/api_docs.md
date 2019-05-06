@@ -157,12 +157,11 @@
 - `POST /building`
 - 새로운 건물 생성
 
-| 요청변수       | 타입      | 필수 여부 | 설명      |
-| :--------- | :------ | :---- | :------ |
-| user_id    | INT     | Y     | 유저 ID   |
-| location_x | INT     | Y     | x 위치 좌표 |
-| location_y | INT     | Y     | y 위치 좌표 |
-| type       | TINYINT | Y     | 건물 종류   |
+| 요청변수    | 타입      | 필수 여부 | 설명    |
+| :------ | :------ | :---- | :---- |
+| user_id | INT     | Y     | 유저 ID |
+| tile_id | INT     | Y     | 타일 ID |
+| type    | TINYINT | Y     | 건물 종류 |
 
 - TODO: 반환 포맷 정리
 

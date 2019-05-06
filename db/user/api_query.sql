@@ -24,7 +24,7 @@ FROM `user`
 WHERE `name` = {input_name};
 
 -- 실제 유저 정보 추가
-INSERT INTO `user`(
+INSERT INTO `user` (
   `hive_id`,
   `hive_uid`,
 
@@ -139,3 +139,103 @@ SELECT
   `last_update`
 FROM `alliance`
 WHERE `res_user_id` = {user_id};
+
+##########################################
+-- 건물 정보 (building Infomation)
+##########################################
+
+-- API: POST /building
+-- 새로운 건물 생성
+INSERT INTO `building` (
+  `user_id`,
+  `territory_id`,
+  `tile_id`,
+  `building_id`,
+
+  `is_constructing`,
+  `is_deploying`,
+  `is_upgrading`,
+  `finish_time`,
+  `upgrade`,
+  `manpower`,
+  `last_update`
+) VALUE (
+  {user_id},
+  {territory_id},
+  {tile_id},
+  {building_id},
+
+  TRUE,
+  FALSE,
+  FALSE,
+  {finish_time},
+  0,
+  0,
+  NOW()
+);
+
+-- API: PUT /building
+-- 건물 업그레이드
+-- action_type : 0
+UPDATE `building`
+SET `is_upgrading` = TRUE,
+    `finish_time` = {finish_time}
+WHERE `building_pk_id` = {building_pk_id};
+
+-- 건물 철거 (인력 회수 및 건물 삭제)
+-- action_type : 1
+SELECT `manpower`
+FROM `building`
+WHERE `building_pk_id` = {building_pk_id};
+
+DELETE FROM `building`
+WHERE `building_pk_id` = {building_pk_id};
+
+-- API: PUT /building/manpower
+-- 건물 인구 배치
+-- action_type : 0
+UPDATE `building`
+SET `is_deploying` = TRUE,
+    `manpower` = {manpower},
+    `finish_time` = {finish_time},
+    `last_update` = NOW()
+WHERE `building_pk_id` = {building_pk_id};
+
+-- 건물 인구 배치 취소
+-- action_type : 1
+SELECT `manpower`
+FROM `building`
+WHERE `building_pk_id` = {building_pk_id};
+
+UPDATE `building`
+SET `manpower` = 0,
+    `last_update` = NOW()
+WHERE `building_pk_id` = {building_pk_id};
+
+-- no API
+-- 건물 건축 완료
+UPDATE `building`
+SET `is_constructing` = FALSE,
+    `last_update` = NOW()
+WHERE `building_pk_id` = {building_pk_id};
+
+-- no API
+-- 건물 업그레이드 완료
+UPDATE `building`
+SET `is_upgrading` = FALSE,
+    `last_update` = NOW()
+WHERE `building_pk_id` = {building_pk_id};
+
+-- no API
+-- 건물 인구 배치 완료
+UPDATE `building`
+SET `is_deploying` = FALSE,
+    `last_update` = NOW()
+WHERE `building_pk_id` = {building_pk_id};
+
+##########################################
+-- 무기 정보 (weapon Infomation)
+##########################################
+
+-- API: POST /weapon
+-- 무기 생산

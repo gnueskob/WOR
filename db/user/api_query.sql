@@ -11,6 +11,9 @@ FROM `user`
 WHERE `hive_uid` = {hive_uid}
   AND `hive_id` = {hive_id}
 
+-- TODO: 유저 로그인시 만료된 데이터 삭제
+-- TODO: 이전 접속때 시간이 걸리는 작업들 있었을 시 통합 처리
+
 -- API: POST /user/register
 
 -- 신규 유저에게 주어지는 영토가 빈 영토인지 확인
@@ -469,6 +472,7 @@ WHERE `mail_id` = {mail_id};
 
 -- API: POST /raid
 -- 특수지역 보스 레이드 신청
+
 
 -- API: PUT /raid
 -- 점령지가 된 특수 지역으로 점령전 신청

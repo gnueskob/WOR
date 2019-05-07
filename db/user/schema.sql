@@ -50,6 +50,10 @@ DROP TABLE IF EXISTS `user`,
   * defence_point:  현재 방어력
   * loyality:       현재 충성도
 
+  # 동맹 공유 병력
+  * alliance_manpower:    동맹 지원 병력
+  * alliance_attack:      동맹 지원 병력 공격력
+
   ##### 통계적 수치 #####
   # 선전포고
   * war_requset:    선전포고 횟수
@@ -80,31 +84,35 @@ CREATE TABLE `user` (
   -- user map info
   `territory_id`  BIGINT        NOT NULL,
   `name`          VARCHAR(30)   NOT NULL,
-  `castle_level`  BIGINT        NOT NULL,
+  `castle_level`  BIGINT        NOT NULL    DEFAULT 1,
 
   -- resource / manpower amount
-  `auto_generate_manpower`      TINYINT     NOT NULL,
-  `manpower_amount`             BIGINT        NOT NULL,
-  `tactical_resource_amount`    BIGINT        NOT NULL,
-  `food_resource_amount`        BIGINT        NOT NULL,
-  `luxury_resource_amount`      BIGINT        NOT NULL,
+  `auto_generate_manpower`      TINYINT       NOT NULL    DEFAULT TRUE,
+  `manpower_amount`             BIGINT        NOT NULL    DEFAULT 0,
+  `tactical_resource_amount`    BIGINT        NOT NULL    DEFAULT 0,
+  `food_resource_amount`        BIGINT        NOT NULL    DEFAULT 0,
+  `luxury_resource_amount`      BIGINT        NOT NULL    DEFAULT 0,
 
   -- value of each user territory
   -- `attack_point`                BIGINT        NOT NULL,
   -- `defence_point`               BIGINT        NOT NULL,
   -- `loyality`                    BIGINT        NOT NULL,
 
+  -- manpower for alliance
+  `alliance_manpower`           BIGINT        NOT NULL    DEFAULT 0,
+  `alliance_attack`             BIGINT        NOT NULL    DEFAULT 0,
+
   -- statistical info
-  `war_requset`                 BIGINT        NOT NULL,
-  `war_victory`                 BIGINT        NOT NULL,
-  `war_defeated`                BIGINT        NOT NULL,
+  `war_requset`                 BIGINT        NOT NULL    DEFAULT 0,
+  `war_victory`                 BIGINT        NOT NULL    DEFAULT 0,
+  `war_defeated`                BIGINT        NOT NULL    DEFAULT 0,
 
-  `despoil_defense_success`     BIGINT        NOT NULL,
-  `despoil_defense_fail`        BIGINT        NOT NULL,
+  `despoil_defense_success`     BIGINT        NOT NULL    DEFAULT 0,
+  `despoil_defense_fail`        BIGINT        NOT NULL    DEFAULT 0,
 
-  `boss1_kill_count`            BIGINT        NOT NULL,
-  `boss2_kill_count`            BIGINT        NOT NULL,
-  `boss3_kill_count`            BIGINT        NOT NULL,
+  `boss1_kill_count`            BIGINT        NOT NULL    DEFAULT 0,
+  `boss2_kill_count`            BIGINT        NOT NULL    DEFAULT 0,
+  `boss3_kill_count`            BIGINT        NOT NULL    DEFAULT 0,
 
   PRIMARY KEY (`user_id`),
   UNIQUE INDEX `uk_hive` (`hive_id`, `hive_uid`),
@@ -120,9 +128,9 @@ CREATE TABLE `user` (
   * tile_id:              위치한 타일 id (기획)
   * building_id:          건물 타입 (기획)
 
-  * is_constructing:      현재 건설중 여부
-  * is_upgrading:         현재 업그레이드 중 여부
-  * finish_time:          건축 / 업그레이드 완료 시간
+  * create_finish_time:       설치 완료 시간
+  * deploy_finish_time:       인구 배치 완료 시간
+  * upgrade_finish_time:      현재 업그레이드 중 여부
   * upgrade:              건물 업그레이드 수준
   * manpower:             건물에 투입된 인력
 */
@@ -133,10 +141,9 @@ CREATE TABLE `building` (
   `tile_id`         BIGINT        NOT NULL,
   `building_id`     BIGINT        NOT NULL,
 
-  `is_constructing` TINYINT       NOT NULL,
-  `is_deploying`    TINYINT       NOT NULL,
-  `is_upgrading`    TINYINT       NOT NULL,
-  `finish_time`     DATE          NOT NULL,
+  `create_finish_time`    DATE       NOT NULL,
+  `deploy_finish_time`    DATE       NOT NULL,
+  `upgrade_finish_time`   DATE       NOT NULL,
   `upgrade`         BIGINT        NOT NULL,
   `manpower`        BIGINT        NOT NULL,
   `last_update`     DATE          NULL,
@@ -167,18 +174,15 @@ CREATE TABLE `resource` (
   * buf_pk_id:        버프 id (AUTO_INC) [PK]
   * user_id:          버프 사용 유저 id
   * buf_id:           버프 타입 (기획)
-  * is_active:        버프 활성화 여부
   * finish_time:      버프 종료 시간
 */
 CREATE TABLE `buf` (
   `buf_pk_id`     BIGINT    NOT NULL      AUTO_INCREMENT,
   `user_id`       BIGINT    NOT NULL,
   `buf_id`        BIGINT    NOT NULL,
-  `is_active`     TINYINT   NOT NULL,
   `finish_time`   DATE      NOT NULL,
-  `last_update`   DATE      NULL,
   PRIMARY KEY (`buf_pk_id`),
-  INDEX `idx_user_buf` (`user_id`,`is_active`)
+  INDEX `idx_user_buf` (`user_id`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 유저 무기 정보 테이블
@@ -187,17 +191,16 @@ CREATE TABLE `buf` (
   * user_id:          유저 id
   * weapon_id:        무기 타입 (기획)
   * upgrade:          무기 업그레이드 단계
-  * is_upgrading:     무기 업그레이드 상태
-  * finish_time:      생산 / 업그레이드 완료 시간
+  * upgrade_finish_time:      무기 업그레이드 완료 시간
+  * create_finish_time:       무기 생산 완료 시간
 */
 CREATE TABLE `weapon` (
   `weapon_pk_id`  BIGINT        NOT NULL      AUTO_INCREMENT,
   `user_id`       BIGINT        NOT NULL,
   `weapon_id`     BIGINT        NOT NULL,
   `upgrade`       TINYINT       NOT NULL,
-  `is_upgrading`  TINYINT       NOT NULL,
-  `is_creating`   TINYINT       NOT NULL,
-  `finish_time`   DATE          NOT NULL,
+  `upgrade_finish_time`  DATE       NOT NULL,
+  `create_finish_time`   DATE       NOT NULL,
   `last_update`   DATE          NULL,
   PRIMARY KEY (`weapon_pk_id`),
   INDEX `idx_user_weapon` (`user_id`)
@@ -217,7 +220,7 @@ CREATE TABLE `exploration_in_territory` (
   `finish_time`       DATE          NOT NULL,
   `last_update`       DATE          NULL,
   PRIMARY KEY (`explore_id`),
-  INDEX `idx_user_explore` (`user_id`)
+  INDEX `idx_user_explore` (`user_id`, `tile_id`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 유저 영외 탐사 정보 테이블 구현
@@ -233,7 +236,7 @@ CREATE TABLE `exploration_out_of_territory` (
   `territory_id`      BIGINT        NOT NULL,
   `finish_time`       DATE          NOT NULL,
   PRIMARY KEY (`explore_id`),
-  INDEX `idx_user_explore` (`user_id`)
+  INDEX `idx_user_explore` (`user_id`,`territory_id`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 전쟁(출전) / 보스 레이드 출전 정보
@@ -242,7 +245,7 @@ CREATE TABLE `exploration_out_of_territory` (
   * user_id:      유저 id
   * territory_id: 영토 id (기획)
   * is_victory:   해당 전쟁 승리 여부
-  * penalty_time: 전쟁 신청 후 일정 시간동안 재 전쟁 요청 금지
+  * penanlty_finish_time:   전쟁 신청 후 일정 시간동안 재 전쟁 요청 금지
   * attack:       선전포고 당시 공격력
   * manpower:     선전포고 당시 병영 인력
   * resource:     선전포고 당시 사용한 군량
@@ -253,12 +256,11 @@ CREATE TABLE `war` (
   `user_id`       BIGINT        NOT NULL,
   `territory_id`  BIGINT        NOT NULL,
   `is_victory`    TINYINT       NULL,
-  `penanlty_time` DATE          NULL,
+  `penanlty_finish_time`    DATE          NULL,
   `attack`        BIGINT        NOT NULL,
   `manpower`      BIGINT        NOT NULL,
   `resource`      BIGINT        NOT NULL,
   `finish_time`   DATE          NOT NULL,
-  `last_update`   DATE          NULL,
   PRIMARY KEY (`war_id`),
   INDEX `idx_user_war` (`user_id`, `territory_id`),
   INDEX `idx_territory` (`territory_id`)
@@ -326,25 +328,26 @@ CREATE TABLE `mail` (
   INDEX `idx_to_user` (`to_user_id`)
 ) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
 
-/** 레이드 보스 몬스터 정보
-  * @desc: 레이드 보스 몬스터 현황 정보
-  * boss_pk_id:       보스 id (AUTO_INC) [PK]
-  * boss_id:          보스 타입 (기획)
-  * territory_id:     영토 id (기획)
-  * hit_point:        보스 체력
-  * is_active:        전투 상태 유무
-  * limit_time:       보스 광폭화 시간
-  * dead_time:        보스 처치된 시간
-*/
-CREATE TABLE `boss` (
-  `boss_pk_id`        BIGINT      NOT NULL      AUTO_INCREMENT,
-  `boss_id`           BIGINT      NOT NULL,
-  `territory_id`      BIGINT      NOT NULL,
-  `hit_point`         BIGINT      NOT NULL,
-  `is_active`         TINYINT     NOT NULL,
-  `limit_time`        DATE        NOT NULL,
-  `dead_time`         DATE        NOT NULL,
-  `last_update`       DATE        NOT NULL,
-  PRIMARY KEY (`boss_pk_id`),
-  INDEX `idx_territory` (`territory_id`, `is_active`)
-) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
+-- 2019. 5. 7. boss table deprecated
+-- /** 레이드 보스 몬스터 정보
+--   * @desc: 레이드 보스 몬스터 현황 정보
+--   * boss_pk_id:       보스 id (AUTO_INC) [PK]
+--   * boss_id:          보스 타입 (기획)
+--   * territory_id:     영토 id (기획)
+--   * hit_point:        보스 체력
+--   * is_active:        전투 상태 유무
+--   * limit_time:       보스 광폭화 시간
+--   * dead_time:        보스 처치된 시간
+-- */
+-- CREATE TABLE `boss` (
+--   `boss_pk_id`        BIGINT      NOT NULL      AUTO_INCREMENT,
+--   `boss_id`           BIGINT      NOT NULL,
+--   `territory_id`      BIGINT      NOT NULL,
+--   `hit_point`         BIGINT      NOT NULL,
+--   `is_active`         TINYINT     NOT NULL,
+--   `limit_time`        DATE        NOT NULL,
+--   `dead_time`         DATE        NOT NULL,
+--   `last_update`       DATE        NOT NULL,
+--   PRIMARY KEY (`boss_pk_id`),
+--   INDEX `idx_territory` (`territory_id`, `is_active`)
+-- ) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;

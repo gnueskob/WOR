@@ -21,7 +21,7 @@ WHERE `hive_uid` = {hive_uid}
 -- 업그레이드의 경우 user_id 동등비교와 finish_time 범위 비교로 인덱스를 태움
 -- 인덱스 효율이 좋지 않겠지만, 유저당 건물 수, 무기 수는 별로 없으므로 감안
 -- [무기 업그레이드]
--- 완성 처리 pending 무기들 업그레이드 수치 및 업그레이드 상태 갱신
+-- [pending] 완성 처리 pending 무기들 업그레이드 수치 및 업그레이드 상태 갱신
 UPDATE `weapon`
 SET `is_upgrading` = FALSE,
     `upgrade` = `upgrade` + 1
@@ -31,7 +31,7 @@ WHERE `user_id` = {user_id}
   AND `upgrade_finish_time` <= NOW();
 
 -- [건물 업그레이드]
--- 업그레이드 pending 건물들 처리
+-- [pending] 업그레이드 pending 건물들 처리
 UPDATE `building`
 SET `is_upgrading` = FALSE,
     `upgrade` = `upgrade` + 1
@@ -68,31 +68,29 @@ WHERE `user_id` = {user_id}
 -- 1. 해당 버프 완료 기준으로 충성도 재 계산
 -- 2. 재 계산 된 충성도와 함께 finish_time ~ NOW() 까지 충성도로 인한 자원 생산 추가/감소 량 계산
 -- + 인구 버프의 경우 버프로 인한 인구 상승치가 현재 남은 가용인력보다 높을 경우 충성도 하락
-SELECT `b`.`buf_pk_id`, `b`.`buf_id`, `b`.`finish_time`, `u`.`appended_manpower`
-FROM `buf` AS `b`, `user` AS `u`
-WHERE `b`.`user_id` = `u`.`user_id`
-  AND `b`.`user_id` = {user_id}
-  AND `b`.`buf_id` IN ({PLAN_LUXURY_BUF}, {PLAN_MANPOWER_BUF}) -- PLAN_LUXURY_BUF : 사치자원 버프, PLAN_MANPOWER_BUF : 인구 증가 버프
-  AND `b`.`finish_time` BETWEEN `u`.`last_visit` AND NOW();
+SELECT `buf_pk_id`, `buf_id`, `finish_time`, `appended_manpower`
+FROM `buf`
+WHERE `user_id` = {user_id}
+  AND `buf_id` IN ({PLAN_LUXURY_BUF}, {PLAN_MANPOWER_BUF}) -- PLAN_LUXURY_BUF : 사치자원 버프, PLAN_MANPOWER_BUF : 인구 증가 버프
+  AND `finish_time` BETWEEN {last_visit} AND NOW();
 
 -- 접속 종류 이후 인구 배치가 완료된 자원 채취 건물에서 생산되는 자원 추가로 계산
+-- 박물관의 경우는 충성도 계산을 위함
 -- 1. 어떤 자원인지 기획데이터 확인
 -- 2. 해당 건물에 최소 인력이 배치되어 있는지 manpower 비교
 -- 3. deploy_finish_time ~ NOW() 까지 해당 자원 채취건물에서 생산되는 자원 계산
-SELECT `building_pk_id`, `resource_id`, `manpower`
-FROM `building` AS `b`, `user` AS `u`
-WHERE `b`.`user_id` = `u`.`user_id`
-  AND `b`.`user_id` = {user_id}
-  AND `b`.`building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장
-  AND `b`.`deploy_finish_time` BETWEEN `u`.`last_visit` AND NOW();
+SELECT `building_pk_id`, `resource_id`, `manpower`, `building_id`, `deploy_finish_time`
+FROM `building`
+WHERE `user_id` = {user_id}
+  AND `building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}, {PLAN_MUSEUM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장, PLAN_MUSEUM_ID : 박물관
+  AND `deploy_finish_time` BETWEEN {last_visit} AND NOW();
 
 -- 마지막 접속 종료 기준 생산 가능한 자원
 SELECT `building_pk_id`, `resource_id`, `manpower`
-FROM `building` AS `b`, `user` AS `u`
-WHERE `b`.`user_id` = `u`.`user_id`
-  AND `b`.`user_id` = {user_id}
-  AND `b`.`building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장
-  AND `b`.`deploy_finish_time` < `u`.`last_visit`;
+FROM `building`
+WHERE `user_id` = {user_id}
+  AND `building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장
+  AND `deploy_finish_time` <= {last_visit};
 
 -- 해당 자원 기준으로 자원 생성 시뮬레이션
 -- last_visit 부터 기획 단위 시간별로 체크
@@ -109,11 +107,10 @@ WHERE `user_id` = {user_id};
 
 -- [선전포고]
 -- 접속 종료 후 완료된 선전포고 확인
-SELECT `w`.`war_id`, `w`.`attack`, `w`.`manpower`
-FROM `war` AS `w`, `user` AS `u`
-WHERE `w`.`user_id` = `u`.`user_id`
-  AND `w`.`user_id` = {user_id}
-  AND `w`.`finish_time` BETWEEN `u`.`last_visit` AND NOW()
+SELECT `war_id`, `attack`, `manpower`
+FROM `war`
+WHERE `user_id` = {user_id}
+  AND `finish_time` BETWEEN {last_visit} AND NOW()
   AND `is_victory` IS NULL;
 
 -- 해당 선전포고 시뮬레이션
@@ -141,18 +138,20 @@ WHERE `war_id` = {war_id};
 
 -- [약탈]
 -- 다른 유저로부터 선전포고를 당한 경우에 완료처리가 안된 경우
-SELECT `w`.`war_id`, `w`.`attack`, `w`.`manpower`
-FROM `war` AS `w`, `user` AS `u`
-WHERE `w`.`territory_id` = `u`.`territory_id`
-  AND `w`.`territory_id` = {territory_id}
-  AND `w`.`finish_time` BETWEEN `u`.`last_visit` AND NOW()
+-- [중복]
+SELECT `war_id`, `attack`, `manpower`
+FROM `war`
+WHERE `territory_id` = {territory_id}
+  AND `finish_time` BETWEEN {last_visit} AND NOW()
   AND `is_victory` IS NULL;
 
 -- 자신의 방어력 측정
+-- [중복]
 SELECT `castle_level`
 FROM `user`
 WHERE `user_id` = {user_id};
 
+-- [중복]
 SELECT `building_pk_id`, `upgrade`
 FROM `building`
 WHERE `user_id` = {user_id}
@@ -160,6 +159,7 @@ WHERE `user_id` = {user_id}
   AND `deploy_finish_time` <= NOW();
 
 -- 성 레벨과 방어탑 레벨 기준으로 방어력 계산 후 전쟁 시뮬레이션
+-- [중복]
 UPDATE `war`
 SET `is_victory` = {is_victory}
     `penanlty_finish_time` = {penanlty_finish_time}
@@ -169,12 +169,15 @@ WHERE `war_id` = {war_id};
 -- 승리 할 경우
 -- 패배 할 경우
 
+-- TODO: 레이드 완료 처리
+
 ##########################################
 -- API: POST /user/register
 ##########################################
 -- 신규 유저에게 주어지는 영토 검증
 -- 1. 영토 타입을 우선 검사 (유저 사용 가능 영토인지) [기획데이터]
 -- 2. 해당 영토를 다른 유저가 이미 사용중인지 확인
+-- [중복]
 SELECT *
 FROM `user`
 WHERE `territory_id` = {selected_territory_id};
@@ -193,6 +196,7 @@ INSERT INTO `user` (
   `last_visit`,
   `register_date`,
   `last_update`,
+  `unit_time`,
 
   `territory_id`,
   `name`,
@@ -201,13 +205,14 @@ INSERT INTO `user` (
   `tactical_resource_amount`,
   `food_resource_amount`,
   `luxury_resource_amount`
-) VALUE (
+) VALUES (
   {hive_id},
   {hive_uid},
 
   NOW(),
   NOW(),
   NOW(),
+  {PLAN_UNIT_TIME},
 
   {selected_territory_id},
   {user_name},
@@ -242,6 +247,7 @@ WHERE `user_id` = {user_id};
 -- API: GET /user/status/{userId}
 ##########################################
 -- 유저 스펙 상태 정보
+-- [중복]
 SELECT *
 FROM `user`
 WHERE `user_id` = {user_id};
@@ -295,6 +301,35 @@ FROM `alliance`
 WHERE `res_user_id` = {user_id};
 
 ##########################################
+-- API: POST /buf
+##########################################
+-- 버프 사용
+-- buf_id : 1 (사치자원 버프)
+-- 현재 총 인구수, 사치자원 양 조회
+SELECT `manpower_amount`, `luxury_resource_amount`
+FROM `user`
+WHERE `user_id` = {user_id};
+
+-- 충분하면 버프 시전
+INSERT INTO `buf` (
+  `user_id`,
+  `buf_id`,
+  `finish_time`,
+  `last_update`
+) VALUES (
+  {user_id},
+  {PLAN_LUXURY_BUF},
+  {finish_time},
+  NOW()
+);
+
+-- 사치자원 감소
+UPDATE `user`
+SET `luxury_resource_amount` = `luxury_resource_amount` - {diff}
+WHERE `user_id` = {user_id};
+
+
+##########################################
 -- 건물 정보 (building Infomation)
 ##########################################
 
@@ -310,7 +345,7 @@ INSERT INTO `building` (
 
   `create_finish_time`,
   `last_update`
-) VALUE (
+) VALUES (
   {user_id},
   {territory_id},
   {tile_id},
@@ -343,6 +378,7 @@ WHERE `building_pk_id` = {building_pk_id};
 -- API: PUT /building/upgrade_finish
 ##########################################
 -- 건물 업그레이드 완료
+-- [중복]
 UPDATE `building`
 SET `is_upgrading` = FALSE,
     `upgrade` = `upgrade` + 1
@@ -353,6 +389,7 @@ WHERE `building_pk_id` = {building_pk_id}
 ##########################################
 -- 건물 인구 배치
 -- action_type: 0
+-- [중복]
 UPDATE `building`
 SET `manpower` = {manpower},
     `deploy_finish_time` = {deploy_finish_time},
@@ -361,10 +398,12 @@ WHERE `building_pk_id` = {building_pk_id};
 
 -- 건물 인구 배치 취소
 -- action_type: 1
+-- [중복]
 SELECT `manpower`
 FROM `building`
 WHERE `building_pk_id` = {building_pk_id};
 
+-- [중복]
 UPDATE `building`
 SET `manpower` = 0,
     `last_update` = NOW(),
@@ -384,7 +423,7 @@ INSERT INTO `weapon` (
   `weapon_id`,
   `create_finish_time`,
   `last_update`
-) VALUE (
+) VALUES (
   {user_id},
   {weapon_id},
   {finish_time},
@@ -396,6 +435,7 @@ INSERT INTO `weapon` (
 ##########################################
 -- 무기 업그레이드
 -- action_type : 0
+-- [중복]
 UPDATE `weapon`
 SET `is_upgrading` = TRUE,
     `upgrade_finish_time` = {finish_time},
@@ -404,6 +444,7 @@ WHERE `weapon_pk_id` = {weapon_pk_id};
 
 -- 무기 삭제
 -- action_type : 1
+-- [중복]
 DELETE FROM `weapon`
 WHERE `weapon_pk_id` = {weapon_pk_id};
 
@@ -411,6 +452,7 @@ WHERE `weapon_pk_id` = {weapon_pk_id};
 -- API: PUT /weapon/upgrade_finish
 ##########################################
 -- 무기 업그레이드 완료
+-- [중복]
 UPDATE `weapon`
 SET `is_upgrading` = FALSE,
     `upgrade` = `upgrade` + 1,
@@ -430,7 +472,7 @@ INSERT INTO `exploration_in_territory` (
   `tile_id`,
   `finish_time`,
   `last_update`
-) VALUE (
+) VALUES (
   {user_id},
   {tile_id},
   {finish_time},
@@ -446,7 +488,7 @@ INSERT INTO `exploration_out_of_territory` (
   `territory_id`,
   `finish_time`,
   `last_update`
-) VALUE (
+) VALUES (
   {user_id},
   {territory_id},
   {finish_time},
@@ -462,10 +504,12 @@ INSERT INTO `exploration_out_of_territory` (
 --  2-1. 유저 점령지 영토일 경우 - 해당 영토 유저 잉여 자원, 인구 수 등
 --  2-2. 유저 점령지인데, 비어있는 영토일 경우 - empty
 --  2-3. 특수 지역일 경우 - 보스 몬스터 정보 / 점령 동맹 유저 목록
+-- [중복]
 SELECT *
 FROM `user`
 WHERE `territory_id` = {territory_id};
 
+-- 해당 영토를 점령중인 유저 조회
 SELECT *
 FROM `occupation` AS `o`, `user` AS `u`
 WHERE `u`.`territory_id` = `o`.`territory_id`
@@ -482,12 +526,14 @@ WHERE `u`.`territory_id` = `o`.`territory_id`
 ##########################################
 -- 전쟁 출전
 -- 공격력 계산
+-- [중복]
 SELECT `manpower`, `upgrade`
 FROM `building`
 WHERE `user_id` = {user_id}
-  AND `building_id` = {PLAN_DEFENSE_POWER}
+  AND `building_id` = {PLAN_ARMY_ID}
   AND `deploy_finish_time` <= NOW();
 
+-- 현재 생산이 완료된 무기 정보 조회
 SELECT `weapon_id`, `upgrade`
 FROM `weapon`
 WHERE `user_id` = {user_id}
@@ -497,6 +543,7 @@ WHERE `user_id` = {user_id}
 SELECT `buf_id`
 FROM `buf`
 WHERE `user_id` = {user_id}
+  AND `buf_id` IN ({PLAN_ATTACK_BUFS})
   AND `finish_time` >= NOW();
 
 -- 실제 war 정보 추가
@@ -508,7 +555,7 @@ INSERT INTO `war` (
   `resource`,
   `finish_time`,
   `last_update`
-) VALUE (
+) VALUES (
   {user_id},
   {territory_id},
   {attack},
@@ -518,9 +565,10 @@ INSERT INTO `war` (
   NOW()
 );
 
+-- 인구수는 그대로 병영에 두고, 식량자원만 잠시 빼둠
+-- [중복]
 UPDATE `user`
-SET `manpower_amount` = `manpower_amount` - {manpower},
-    `food_resource_amount` = `food_resource_amount` - {resource}
+SET `food_resource_amount` = `food_resource_amount` - {resource}
 WHERE `user_id` = {user_id};
 
 ##########################################
@@ -529,39 +577,81 @@ WHERE `user_id` = {user_id};
 -- 전쟁 준비 완료
 -- action_type: 0
 -- 전쟁 시뮬레이션
-SELECT `attack`, `manpower`
+SELECT `attack`, `manpower`, `food_resource`
 FROM `war`
 WHERE `war_id` = {war_id};
 
-SELECT `u`.`castle_level`, `b`.`building_pk_id`, `b`.`upgrade`, `b`.`manpower`
-FROM `building` AS `b`, `user` AS `u`
-WHERE `b`.`territory_id` = `u`.`territory_id`
-  AND `u`.`territory_id` = {territory_id}
-  AND `building_id` = {PLAN_DEFENSE_POWER} -- PLAN_DEFENSE_POWER : 방어탑
+-- [현재 방어력 계산]
+-- 현재 상대방 성 업그레이드 단계
+-- [중복]
+SELECT `castle_level`, `user_id` AS `target_user_id`
+FROM `user`
+WHERE `territory_id` = {territory_id};
+
+-- 현재 상대방 방어탑 업그레이드 수치
+-- [중복]
+SELECT `building_pk_id`, `upgrade`, `manpower`
+FROM `building`
+WHERE `user_id` = {target_user_id}
+  AND `building_id` = {PLAN_DEFENSE_POWER}
   AND `deploy_finish_time` <= NOW();
 
 -- 계산된 방어력, 공격력을 기준으로 전쟁 시뮬레이션
+-- [승리시]
+-- [중복]
 UPDATE `war`
-SET `is_victory` = {is_victory}
+SET `is_victory` = TRUE,
     `penanlty_finish_time` = {penanlty_finish_time}
 WHERE `war_id` = {war_id};
 
--- 전쟁 보상은 어떻게 처리?
--- 승리시
--- 패배시
+-- 각 건물에서 인구수 차감 (업그레이드 낮은 순으로)
+-- [중복]
+SELECT `building_pk_id`
+FROM `building`
+WHERE `user_id` = {user_id}
+  AND `building_id` = {PLAN_ARMY_ID}
+  AND `deploy_finish_time` <= NOW();
+-- GROUP BY `upgrade`, `manpower`;
+
+-- [중복]
+UPDATE `building`
+SET `manpower` = `manpower` - {diff}
+WHERE `building_pk_id` = {building_pk_id};
+
+-- [패배시]
+-- [중복]
+UPDATE `war`
+SET `is_victory` = FALSE
+WHERE `war_id` = {war_id};
+
+-- 각 건물에서 인구수 차감
+-- [중복]
+UPDATE `building`
+SET `manpower` = 0
+WHERE `building_pk_id` = {building_pk_id};
+
 
 -- 출전 취소
 -- action_type: 1
+-- [중복]
 SELECT `manpower`, `resource`
 FROM `war`
 WHERE `war_id` = {war_id}
 
+-- [중복]
 DELETE FROM `war`
 WHERE `war_id` = {war_id};
 
+-- [중복]
 UPDATE `user`
 SET `food_resource_amount` = `food_resource_amount` + {half_resource}
 WHERE `user_id` = {user_id}
+
+-- 각 건물에서 인구수 차감
+-- [중복]
+UPDATE `building`
+SET `manpower` = `manpower`/2
+WHERE `building_pk_id` = {building_pk_id};
 
 ##########################################
 ## 동맹 (alliance)
@@ -577,7 +667,7 @@ INSERT INTO `alliance` (
   `res_user_id`,
   `created_date`,
   `last_update`
-) VALUE (
+) VALUES (
   FALSE,
   {req_user_id},
   {res_user_id},
@@ -593,6 +683,26 @@ INSERT INTO `alliance` (
 UPDATE `alliance`
 SET `is_accepted` = TRUE
 WHERE `alliance_id` = {alliance_id};
+
+-- 유저가 특정 영토 탐사 했는지 조회
+SELECT `user_id`, `territory_id`
+FROM `exploration_out_of_territory`
+WHERE (`user_id` = {user_id_1} AND `territory_id` = {territory_id_1})
+   OR (`user_id` = {user_id_2} AND `territory_id` = {territory_id_2})
+-- 만약 탐사가 진행중이면, finish_time 현재로 갱신 후 탐사 인구 반환
+
+-- 탐사 정보가 아예 없을 시 추가
+INSERT INTO `exploration_out_of_territory` (
+  `user_id`,
+  `territory_id`,
+  `finish_time`,
+  `last_update`
+) VALUES (
+  {user_id},
+  {territory_id},
+  {finish_time},
+  NOW()
+);
 
 -- 다른 유저의 동맹 요청 거절
 -- action_type: 1
@@ -612,12 +722,14 @@ WHERE `to_user_id` = {user_id};
 ##########################################
 -- 다른 유저에게 자원 우편 보내기
 -- 자신에게 충분한 향의 자원이 있는지 부터 검사
+-- [중복]
 SELECT `tactical_resource_amount`,
        `food_resource_amount`,
        `luxury_resource_amount`
 FROM `user`
 WHERE `user_id` = {user_id};
 
+-- [중복]
 UPDATE `user`
 SET `tactical_resource_amount` = `tactical_resource_amount` - {tactical_resource},
     `food_resource_amount` = `food_resource_amount` - {food_resource},
@@ -633,7 +745,7 @@ INSERT INTO `mail` (
   `is_accepted`,
   `created_date`,
   `last_update`
-) VALUE (
+) VALUES (
   {from_user_id},
   {to_user_id},
   {tactical_resource},
@@ -648,12 +760,14 @@ INSERT INTO `mail` (
 -- API: PUT /mail
 ##########################################
 -- 보낸 우편 받기
+-- [중복]
 SELECT `tactical_resource`,
        `food_resource`,
        `luxury_resource`
 FROM `mail`
 WHERE `to_user_id` = {user_id};
 
+-- [중복]
 UPDATE `user`
 SET `tactical_resource_amount` = `tactical_resource_amount` + {tactical_resource},
     `food_resource_amount` = `food_resource_amount` + {food_resource},
@@ -672,14 +786,302 @@ WHERE `mail_id` = {mail_id};
 -- API: POST /raid
 ##########################################
 -- 특수지역 보스 레이드 신청
+## [lock] ##
+-- 이미 해당 지역에 보스 레이드가 진행중인지 확인
+SELECT `war_id`
+FROM `war`
+WHERE `user_id` = {user_id}
+  AND `territory_id` = {territory_id}
+  AND `finish_time` >= NOW();
 
+-- 끌어다 쓸 동맹 병력 조회
+-- 각 동맹 유저별로 공격력 계산하여 List화, 보스 레이드 출전 (전쟁 출전 요청 API 참고)
+-- war 테이블에 동맹 유저 전부 보스 영토로 출전 (같은 raid_id로)
+## [lock 해제] ##
 
+##########################################
 -- API: PUT /raid
+##########################################
+-- [전쟁 완료 요청]
+-- 전쟁 시뮬레이션 (기획 데이터 보스 체력, 공격력 & 이전에 출전했던 동맹 유저 스펙 기준)
+SELECT `territory_id`, `user_id`, `raid_lead_user_id`, `attack`, `manpower`
+FROM `war`
+WHERE `raid_id` = {raid_id};
+
+-- [승리 시]
+-- 승리 상태로 갱신
+-- [중복]
+UPDATE `war`
+SET `is_victory` = TRUE
+WHERE `raid_id` = {raid_id};
+
+-- 보스몹 처치 시 동맹 유저 모두 영토 점령 및 보상 획득
+UPDATE `user`
+SET `tactical_resource_amount` = `tactical_resource_amount` + {boss_reward_tactical_resource_amount},
+    `food_resource_amount` = `food_resource_amount` + {boss_reward_food_resource_amount},
+    `luxury_resource_amount` = `luxury_resource_amount` + {boss_reward_luxury_resource_amount}
+WHERE `user_id` IN ({user_participation});
+
+-- 버프 정보 추가
+INSERT INTO `buf` (
+  `user_id`,
+  `buf_id`,
+  `finish_time`,
+  `last_update`
+) VALUES (
+  {user_id},
+  {buf_id},
+  {finish_time},
+  NOW()
+), ...;
+
+-- 점령지 정보 추가
+INSERT INTO `occupation` (
+  `raid_id`,
+  `territory_id`,
+  `user_id`,
+  `finish_time`,
+  `last_update`
+) VALUES (
+  {raid_id},
+  {territory_id},
+  {user_id},
+  {finish_time},
+  NOW()
+), ...;
+
+-- 레이드 리드 유저 병영 병력 처리
+-- [중복]
+SELECT `building_pk_id`
+FROM `building`
+WHERE `user_id` = {raid_lead_user_id}
+  AND `building_id` = {PLAN_ARMY_ID}
+  AND `deploy_finish_time` <= NOW();
+
+-- 병력 감소
+-- [중복]
+UPDATE `building`
+SET `manpower` = `manpower` - {diff}
+WHERE `building_pk_id` = {building_pk_id};
+
+-- [패배 시]
+-- 패배 상태로 갱신
+-- [중복]
+UPDATE `war`
+SET `is_victory` = FALSE
+WHERE `raid_id` = {raid_id};
+
+-- 각 건물에서 인구수 차감
+-- [중복]
+UPDATE `building`
+SET `manpower` = 0
+WHERE `building_pk_id` = {building_pk_id};
+
+##########################################
+-- API: POST /occupation
+##########################################
 -- 점령지가 된 특수 지역으로 점령전 신청
+-- 해당 영토가 이미 다른 유저에게 점령중인지 확인
+## [lock] ##
+SELECT `user_id`
+FROM `occupation`
+WHERE `territory_id` = {territory_id}
+  AND `finishi_time` >= NOW();
+
+-- 점령전 신청 가능한 영토이면 점령전 출전
+-- 끌어다 쓸 동맹 병력 조회
+-- 각 동맹 유저별로 공격력 계산하여 List화, 보스 레이드 출전 (전쟁 출전 요청 API 참고)
+-- war 테이블에 동맹 유저 전부 보스 영토로 출전 (같은 raid_id로)
+## [lock 해제] ##
+
+##########################################
+-- API: PUT /occupation
+##########################################
+-- [점령전 완료 요청]
+-- 점령전 시뮬레이션 (점령지역 유저 스펙, 공격력 & 이전에 출전했던 동맹 유저 스펙 기준)
+-- 점령중인 동맹 유저들 스펙
+SELECT `territory_id`, `user_id`, `raid_lead_user_id`, `attack`, `manpower`
+FROM `war`
+WHERE `raid_id` IN (
+  SELECT DISTINCT `raid_id`
+  FROM `occupation`
+  WHERE `territory_id` = {territory_id}
+    AND `finish_time` >= NOW()
+);
+
+-- 점령 레이드 신청 동맹 유저들 스펙
+-- [중복]
+SELECT `territory_id`, `user_id`, `raid_lead_user_id`, `attack`, `manpower`, `is_victory`
+FROM `war`
+WHERE `raid_id` = {raid_id};
+
+-- [승리 시]
+-- 승리 상태로 갱신
+-- [중복]
+UPDATE `war`
+SET `is_victory` = TRUE
+WHERE `raid_id` = {raid_id};
+
+-- 기존 유저들 버프 정보 만료시키기
+-- [중복]
+UPDATE `buf`
+SET `finish_time` = NOW();
+WHERE `user_id` IN ({before_user_ids})
+  AND `buf_id` = {buf_type_of_boss}
+  AND `finish_time` >= NOW();
+
+-- 버프 정보 추가
+-- [중복]
+INSERT INTO `buf` (
+  `user_id`,
+  `buf_id`,
+  `finish_time`,
+  `last_update`
+) VALUES (
+  {user_id},
+  {buf_id},
+  {finish_time},
+  NOW()
+), ...;
+
+-- 기존 점령 유저 정보 만료시키기
+UPDATE `occupation`
+SET `finish_time` = NOW()
+WHERE `raid_id` = {before_raid_id};
+
+-- 점령지 정보 추가
+INSERT INTO `occupation` (
+  `territory_id`,
+  `user_id`,
+  `finish_time`,
+  `last_update`
+) VALUES (
+  {territory_id},
+  {user_id},
+  {finish_time},
+  NOW()
+), ...;
+
+-- 점령전 리드 유저 병영 병력 처리
+-- [중복]
+SELECT `building_pk_id`
+FROM `building`
+WHERE `user_id` = {raid_lead_user_id}
+  AND `building_id` = {PLAN_ARMY_ID}
+  AND `deploy_finish_time` <= NOW();
+
+-- 병력 감소
+-- [중복]
+UPDATE `building`
+SET `manpower` = `manpower` - {diff}
+WHERE `building_pk_id` = {building_pk_id};
+
+-- [패배 시]
+-- 패배 상태로 갱신
+-- [중복]
+UPDATE `war`
+SET `is_victory` = FALSE
+WHERE `raid_id` = {raid_id};
+
+-- 각 건물에서 인구수 차감
+-- [중복]
+UPDATE `building`
+SET `manpower` = 0
+WHERE `building_pk_id` = {building_pk_id};
 
 ##########################################
 -- 결산 (calculation)
 ##########################################
 
+##########################################
 -- API: PUT /calculation
+##########################################
 -- 단위 시간 별 정산
+-- 어떤 작업을 단위 시간마다 처리할 것인가?
+-- 1. 자원 채취 건물 조건에 맞는 자원 생산
+-- 2. 인구 자동 생산모드에서의 인구 생산
+-- 3. 총 인구수로 인해 소모되는 식량 자원
+-- 4. 다른 유저로부터의 선전 포고 노티
+-- 5. 다른 유저로부터의 동맹 신청 노티
+-- 6. 만료되었지만 처리되지 않은 요청들?
+
+-- [검증]
+-- 제 시간에 온 결산 요청인가?
+-- 이전 결산 요청의 응답으로 보낸 충성도 기반 단위시간만큼 충분히 시간이 흐른 후 온 요청인지 검사
+-- [중복]
+SELECT `last_update`, `unit_time`
+FROM `user`
+WHERE `user_id` = {user_id};
+
+-- [자원 생성]
+-- 현재 생성 가능한 자원 조회
+-- [중복]
+SELECT `building_pk_id`, `resource_id`, `manpower`
+FROM `building`
+WHERE `user_id` = {user_id}
+  AND `building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장
+  AND `deploy_finish_time` <= NOW();
+-- 기획 데이터 PPU 기반으로 단위 시간당 자원 생산량 계산
+
+-- [인구 생성]
+-- 현재 생성 모드인지 확인
+SELECT `auto_generate_manpower`
+FROM `user`
+WHERE `user_id` = {user_id};
+
+-- 자동 생성 모드 일 경우 증가되는 인구 수 계산
+-- 성 레벨에 맞는 PPU당 인구 생성
+-- [중복]
+SELECT `castle_level`
+FROM `user`
+WHERE `user_id` = {user_id};
+
+-- [인구당 식량 자원 소모]
+-- [중복]
+SELECT `manpower_amount`
+FROM `user`
+WHERE `user_id` = {user_id};
+-- 인구 별 식량자원 소모 량 계산
+
+-- 현재 충성도 계산 (박물관, 사치자원 버프)
+-- 다음 단위 시간 계산을 위함
+-- [중복]
+SELECT `building_pk_id`
+FROM `building`
+WHERE `user_id` = {user_id}
+  AND `building_id` = {PLAN_MUSEUM_ID}
+  AND `deploy_finish_time` <= NOW();
+
+-- [중복]
+SELECT `buf_pk_id`
+FROM `buf`
+WHERE `user_id` = {user_id}
+  AND `buf_id` IN ({PLAN_LUXURY_BUF})
+  AND `finish_time` >= NOW();
+
+-- [유저 데이터 갱신]
+-- [중복]
+UPDATE `user`
+SET `manpower_amount` = {manpower_amount},
+    `tactical_resource_amount` = {tactical_resource_amount},
+    `food_resource_amount` = {food_resource_amount},
+    `luxury_resource_amount` = {luxury_resource_amount},
+    `unit_time` = {unit_time},
+    `last_update` = NOW()
+WHERE `user_id` = {user_id};
+
+-- [다른 유저로부터의 선전 포고 노티]
+SELECT `u`.`user_id`, `u`.`name`, `u`.`territory_id`
+FROM `user` AS `u`, `war` AS `w`
+WHERE `u`.`user_id` = `w`.`user_id`
+  AND `w`.`territory_id` = {my_territory_id}
+  AND `w`.`finish_time` >= NOW();
+
+-- [다른 유저로부터의 동맹 요청 노티]
+SELECT `u`.`user_id`, `u`.`name`, `u`.`territory_id`
+FROM `user` AS `u`, `alliance` AS `a`
+WHERE `u`.`user_id` = `a`.`req_user_id`
+  AND `a`.`res_user_id` = {user_id}
+  AND `a`.`is_accepted` = FALSE;
+
+-- TODO: 만료 처리?

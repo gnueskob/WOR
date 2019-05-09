@@ -31,6 +31,7 @@ DROP TABLE IF EXISTS `user`,
   * lang:           유저가 사용하는 언어 (not OS lang)
   * device_name:    유저 단말기 모델명
   * app_version:    클라 버전
+  * unit_time:      유저에게 적용된 단위 시간
 
   ##### 게임 내 유저 정보 ######
   # 영토
@@ -78,13 +79,14 @@ CREATE TABLE `user` (
   -- `device_name`   VARCHAR(20)   NOT NULL,
   -- `app_version`   VARCHAR(10)   NOT NULL,
   `last_update`   DATE          NULL,
+  `unit_time`     TIMESTAMP     NOT NULL,
 
   -- game infos
   -- user map info
   `territory_id`  BIGINT        NOT NULL,
   `name`          VARCHAR(30)   NOT NULL,
-  `castle_level`  BIGINT        NOT NULL    DEFAULT 1,
-  `is_upgrading`  TINYINT       NOT NULL    DEFAULT FALSE,
+  `castle_level`  BIGINT        NOT NULL      DEFAULT 1,
+  `is_upgrading`  TINYINT       NOT NULL      DEFAULT FALSE,
   `upgrade_finish_time`         DATE          NOT NULL,
 
   -- resource / manpower amount
@@ -192,8 +194,9 @@ CREATE TABLE `buf` (
   `user_id`       BIGINT    NOT NULL,
   `buf_id`        BIGINT    NOT NULL,
   `finish_time`   DATE      NOT NULL,
+  `last_update`   DATE      NULL,
   PRIMARY KEY (`buf_pk_id`),
-  INDEX `idx_user_buf` (`user_id`, `finish_time`)
+  INDEX `idx_user_buf` (`user_id`, `buf_id`, `finish_time`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 유저 무기 정보 테이블
@@ -257,6 +260,7 @@ CREATE TABLE `exploration_out_of_territory` (
   * @desc: 다른 영토(유저)에 선전포고할 때의 정보
   * war_id:       전쟁 id (AUTO_INC) [PK]
   * user_id:      유저 id
+  * raid_id:      레이드 id
   * territory_id: 영토 id (기획)
   * is_victory:   해당 전쟁 승리 여부
   * penanlty_finish_time:   전쟁 신청 후 일정 시간동안 재 전쟁 요청 금지
@@ -268,6 +272,8 @@ CREATE TABLE `exploration_out_of_territory` (
 CREATE TABLE `war` (
   `war_id`        BIGINT        NOT NULL        AUTO_INCREMENT,
   `user_id`       BIGINT        NOT NULL,
+  `raid_id`       BIGINT        NULL,
+  `raid_lead_user_id`       BIGINT        NULL,
   `territory_id`  BIGINT        NOT NULL,
   `is_victory`              TINYINT       NULL,
   `penanlty_finish_time`    DATE          NULL,
@@ -278,18 +284,21 @@ CREATE TABLE `war` (
   `last_update`   DATE          NOT NULL,
   PRIMARY KEY (`war_id`),
   INDEX `idx_user_war` (`user_id`, `territory_id`),
-  INDEX `idx_territory` (`territory_id`)
+  INDEX `idx_territory` (`territory_id`),
+  INDEX `idx_raid` (`raid_id`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 점령 정보
   * @desc: 유저
   * occupation_id:    점령 id (AUTO_INC) [PK]
+  * raid_id:          점령하기 위해 시도했던 레이드 id
   * user_id:          유저 id
   * territory_id:     영토 id (기획)
   * finish_time:      점령 유지 완료 시간
 */
 CREATE TABLE `occupation` (
   `occupation_id` BIGINT      NOT NULL      AUTO_INCREMENT,
+  `raid_id`       BIGINT      NOT NULL,
   `territory_id`  BIGINT      NOT NULL,
   `user_id`       BIGINT      NOT NULL,
   `finish_time`   DATE        NOT NULL,

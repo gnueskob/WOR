@@ -14,8 +14,6 @@ FROM `user`
 WHERE `hive_uid` = {hive_uid}
   AND `hive_id` = {hive_id};
 
--- TODO: 유저 로그인시 만료된 데이터 삭제
-
 -- 이전 접속때 완료 처리 하지 못한 각종 시간 소모 작업들 (Pending 작업) 처리
 
 -- 업그레이드의 경우 user_id 동등비교와 finish_time 범위 비교로 인덱스를 태움
@@ -25,9 +23,9 @@ WHERE `hive_uid` = {hive_uid}
 UPDATE `weapon`
 SET `is_upgrading` = FALSE,
     `upgrade` = `upgrade` + 1
+    `last_upate` = NOW()
 WHERE `user_id` = {user_id}
   AND `is_upgrading` = TRUE
-  -- AND `upgrade_finish_time` >= {last_visit}
   AND `upgrade_finish_time` <= NOW();
 
 -- [건물 업그레이드]
@@ -35,20 +33,18 @@ WHERE `user_id` = {user_id}
 UPDATE `building`
 SET `is_upgrading` = FALSE,
     `upgrade` = `upgrade` + 1
+    `last_upate` = NOW()
 WHERE `user_id` = {user_id}
   AND `is_upgrading` = TRUE
-  -- AND `upgrade_finish_time` >= {last_visit}
   AND `upgrade_finish_time` <= NOW();
 
 -- [성 업그레이드]
 -- 성 업그레이드 pending 처리
--- 단, 이때는 last_visit을 갱신하지 않음
 UPDATE `user`
 SET `is_upgrading` = FALSE,
     `castle_level` = `castle_level` + 1
 WHERE `user_id` = {user_id}
   AND `is_upgrading` = TRUE
-  -- AND `upgrade_finish_time` >= {last_visit}
   AND `upgrade_finish_time` <= NOW();
 
 -- [인구 자동 생산 및 식량 자원 소모]
@@ -71,7 +67,6 @@ WHERE `user_id` = {user_id}
 SELECT `buf_pk_id`, `buf_id`, `finish_time`, `appended_manpower`
 FROM `buf`
 WHERE `user_id` = {user_id}
-  AND `buf_id` IN ({PLAN_LUXURY_BUF}, {PLAN_MANPOWER_BUF}) -- PLAN_LUXURY_BUF : 사치자원 버프, PLAN_MANPOWER_BUF : 인구 증가 버프
   AND `finish_time` BETWEEN {last_visit} AND NOW();
 
 -- 접속 종류 이후 인구 배치가 완료된 자원 채취 건물에서 생산되는 자원 추가로 계산
@@ -82,14 +77,14 @@ WHERE `user_id` = {user_id}
 SELECT `building_pk_id`, `resource_id`, `manpower`, `building_id`, `deploy_finish_time`
 FROM `building`
 WHERE `user_id` = {user_id}
-  AND `building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}, {PLAN_MUSEUM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장, PLAN_MUSEUM_ID : 박물관
+  -- AND `building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}, {PLAN_MUSEUM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장, PLAN_MUSEUM_ID : 박물관
   AND `deploy_finish_time` BETWEEN {last_visit} AND NOW();
 
 -- 마지막 접속 종료 기준 생산 가능한 자원
 SELECT `building_pk_id`, `resource_id`, `manpower`
 FROM `building`
 WHERE `user_id` = {user_id}
-  AND `building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장
+  -- AND `building_id` IN ({PLAN_MINE_ID}, {PLAN_FARM_ID}) -- PLAN_MINE_ID : 광산, PLAN_FARM_ID : 농장
   AND `deploy_finish_time` <= {last_visit};
 
 -- 해당 자원 기준으로 자원 생성 시뮬레이션
@@ -110,8 +105,7 @@ WHERE `user_id` = {user_id};
 SELECT `war_id`, `attack`, `manpower`
 FROM `war`
 WHERE `user_id` = {user_id}
-  AND `finish_time` BETWEEN {last_visit} AND NOW()
-  AND `is_victory` IS NULL;
+  AND `finish_time` BETWEEN {last_visit} AND NOW();
 
 -- 해당 선전포고 시뮬레이션
 -- 상대방 성 레벨 측정
@@ -138,12 +132,10 @@ WHERE `war_id` = {war_id};
 
 -- [약탈]
 -- 다른 유저로부터 선전포고를 당한 경우에 완료처리가 안된 경우
--- [중복]
 SELECT `war_id`, `attack`, `manpower`
 FROM `war`
 WHERE `territory_id` = {territory_id}
-  AND `finish_time` BETWEEN {last_visit} AND NOW()
-  AND `is_victory` IS NULL;
+  AND `finish_time` BETWEEN {last_visit} AND NOW();
 
 -- 자신의 방어력 측정
 -- [중복]
@@ -155,7 +147,6 @@ WHERE `user_id` = {user_id};
 SELECT `building_pk_id`, `upgrade`
 FROM `building`
 WHERE `user_id` = {user_id}
-  AND `building_id` = {PLAN_DEFENSE_POWER} -- PLAN_DEFENSE_POWER : 방어탑
   AND `deploy_finish_time` <= NOW();
 
 -- 성 레벨과 방어탑 레벨 기준으로 방어력 계산 후 전쟁 시뮬레이션
@@ -170,6 +161,47 @@ WHERE `war_id` = {war_id};
 -- 패배 할 경우
 
 -- TODO: 레이드 완료 처리
+
+-- 만료된 데이터 삭제
+-- 버프
+DELETE FROM `buf`
+WHERE `user_id` = {user_id}
+  AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_buf} DAY);
+
+-- 전쟁
+-- 1. 특수 보스지역이 아닌 유저 영토로 출전했던 기록 중 이미 끝난 데이터
+-- 2. 특수 보스 지역으로 출전하여 패배한 기록 중 만료된 데이터
+SELECT `war_id`, `territory_id`, `is_victory`
+FROM `war`
+WHERE `user_id` = {user_id}
+  AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_war} DAY);
+
+DELETE FROM `war`
+WHERE `war_id` IN ({war_ids});
+
+-- 특수 보스지역으로 레이드 출전하여 점령기간까지 만료된 출전 데이터
+SELECT DISTINCT `raid_id`
+FROM `occupation`
+WHERE `user_id` = {user_id}
+  AND `finish_time` < NOW();
+
+DELETE FROM `war`
+WHERE `raid_id` IN ({raid_ids});
+
+-- 레이드 정보 중 만료된 데이터
+DELETE FROM `raid`
+WHERE `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_raid} DAY);
+
+-- 점령
+DELETE FROM `occupation`
+WHERE `user_id` = {user_id}
+  AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_occupation} DAY);
+
+-- 우편
+DELETE FROM `mail`
+WHERE `to_user_id` = {user_id}
+  AND `is_accepted` = TRUE
+  AND `last_update` < SUBDATE(NOW(), INTERVAL {expire_date_mail} DAY);
 
 ##########################################
 -- API: POST /user/register
@@ -282,23 +314,43 @@ WHERE `user_id` = {user_id};
 ##########################################
 -- API: GET /user/alliance/{userId}/{action_type}
 ##########################################
--- 유저의 동맹 정보
--- TODO: 유저 동맹 날짜, 수락 별 필터링 or 정렬 기능 추가?
+-- 유저의 동맹중인 영토 정보
+-- action_type : 0
 SELECT
-  `alliance_id`,
-  `res_user_id` AS `user_id`,
-  `created_date`,
-  `last_update`
-FROM `alliance`
-WHERE `req_user_id` = {user_id}
+  `a`.`alliance_id`, `a`.`created_date`, `a`.`last_update`,
+  `u`.`user_id`, `u`.`name`, `u`.`territory_id`
+FROM `alliance` AS `a`, `user` AS `u`
+WHERE `a`.`res_user_id` = `u`.`user_id`
+  AND `a`.`req_user_id` = {user_id}
+  AND `is_accepted` = TRUE
 UNION
 SELECT
-  `alliance_id`,
-  `req_user_id` AS `user_id`,
-  `created_date`,
-  `last_update`
-FROM `alliance`
-WHERE `res_user_id` = {user_id};
+  `a`.`alliance_id`, `a`.`created_date`, `a`.`last_update`,
+  `u`.`user_id`, `u`.`name`, `u`.`territory_id`
+FROM `alliance` AS `a`, `user` AS `u`
+WHERE `a`.`req_user_id` = `u`.`user_id`
+  AND `a`.`res_user_id` = {user_id}
+  AND `is_accepted` = TRUE
+
+-- 자신에게 동맹을 요청한 영토
+-- action_type : 1
+SELECT
+  `a`.`alliance_id`, `a`.`created_date`, `a`.`last_update`,
+  `u`.`user_id`, `u`.`name`, `u`.`territory_id`
+FROM `user` AS `u`, `alliance` AS `a`
+WHERE `u`.`user_id` = `a`.`req_user_id`
+  AND `a`.`res_user_id` = {user_id}
+  AND `a`.`is_accepted` = FALSE;
+
+-- 동맹 요청을 보낸 영토
+SELECT
+  `a`.`alliance_id`, `a`.`created_date`, `a`.`last_update`,
+  `u`.`user_id`, `u`.`name`, `u`.`territory_id`
+FROM `user` AS `u`, `alliance` AS `a`
+WHERE `u`.`user_id` = `a`.`req_user_id`
+  AND `a`.`res_user_id` = {user_id}
+  AND `a`.`is_accepted` = FALSE;
+
 
 ##########################################
 -- API: POST /buf
@@ -336,12 +388,20 @@ WHERE `user_id` = {user_id};
 ##########################################
 -- API: POST /building/new
 ##########################################
+-- 해당 타일이 탐사된 타일인지 확인
+SELECT *
+FROM `exploration_in_territory`
+WHERE `user_id` = {user_id}
+  AND `tile_id` = {tile_id}
+  AND `finish_time` <= NOW();
+
 -- 새로운 건물 생성
 INSERT INTO `building` (
   `user_id`,
   `territory_id`,
   `tile_id`,
   `building_id`,
+  `resource_id`,
 
   `create_finish_time`,
   `last_update`
@@ -350,6 +410,7 @@ INSERT INTO `building` (
   {territory_id},
   {tile_id},
   {building_id},
+  {resource_id},
 
   {finish_time},
   NOW()
@@ -358,6 +419,12 @@ INSERT INTO `building` (
 ##########################################
 -- API: PUT /building
 ##########################################
+-- 해당 건물 이미 업그레이드 중인지 검사
+-- [중복]
+SELECT `is_upgrading`
+FROM `building`
+WHERE `building_pk_id` = {building_pk_id};
+
 -- 건물 업그레이드
 -- action_type : 0
 UPDATE `building`
@@ -387,6 +454,18 @@ WHERE `building_pk_id` = {building_pk_id}
 ##########################################
 -- API: PUT /building/manpower
 ##########################################
+-- 건물에 이미 최대 인구배치가 돼있는지 검사
+-- 유저의 가용병력이 충분한지 검사
+SELECT `manpower_amount`
+FROM `user`
+WHERE `user_id` = {user_id};
+
+-- 배치되고 있는 인력도 포함해야함 ^^7
+-- [중복]
+SELECT SUM(`manpower`)
+FROM `building`
+WHERE `user_id` = {user_id};
+
 -- 건물 인구 배치
 -- action_type: 0
 -- [중복]
@@ -408,7 +487,7 @@ UPDATE `building`
 SET `manpower` = 0,
     `last_update` = NOW(),
     `deploy_finish_time` = NULL
-WHERE `building_pk_id` = {building_pk_id};
+WHERE `building_pk_id` IN ({building_pk_ids});
 
 ##########################################
 ## 무기 정보 (weapon Infomation)
@@ -417,6 +496,16 @@ WHERE `building_pk_id` = {building_pk_id};
 ##########################################
 -- API: POST /weapon/new
 ##########################################
+-- 공방 인구배치 완료 여부 확인
+SELECT `manpower`
+FROM `building`
+WHERE `building_pk_id` = {building_pk_id}
+  AND `deploy_finish_time` <= NOW();
+-- 이미 해당 무기 생산 중인지 확인
+SELECT `weapon_id`
+FROM `weapon`
+WHERE `user_id` = {user_id}
+  AND `weapon_id` = {weapon_id};
 -- 무기 생산
 INSERT INTO `weapon` (
   `user_id`,
@@ -433,6 +522,17 @@ INSERT INTO `weapon` (
 ##########################################
 -- API: PUT /weapon/upgrade
 ##########################################
+-- 공방 인구배치 완료 여부 확인
+-- [중복]
+SELECT `manpower`
+FROM `building`
+WHERE `building_pk_id` = {building_pk_id}
+  AND `deploy_finish_time` <= NOW();
+-- 이미 해당 무기 업그레이드 중인지 확인
+-- [중복]
+SELECT `is_upgrading`
+FROM `weapon`
+WHERE `weapon_pk_id` = {weapon_pk_id};
 -- 무기 업그레이드
 -- action_type : 0
 -- [중복]
@@ -524,6 +624,24 @@ WHERE `u`.`territory_id` = `o`.`territory_id`
 ##########################################
 -- API: POST /war
 ##########################################
+-- 해당 영토가 이미 탐사되었는지 검사
+SELECT `exploration_id`
+FROM `exploration_out_of_territory`
+WHERE `user_id` = {user_id}
+  AND `territory_id` = {territory_id}
+  AND `finish_time` <= NOW();
+
+-- 해당 영토 유저가 이미 전쟁 중인지 검사
+SELECT `war_id`
+FROM `war`
+WHERE `territory_id` = {territory_id}
+  AND `finish_time` >= NOW();
+
+-- 충분한 식량자원 있는지 검사
+SELECT `food_resource_amount`
+FROM `user`
+WHERE `user_id` = {user_id};
+
 -- 전쟁 출전
 -- 공격력 계산
 -- [중복]
@@ -543,7 +661,7 @@ WHERE `user_id` = {user_id}
 SELECT `buf_id`
 FROM `buf`
 WHERE `user_id` = {user_id}
-  AND `buf_id` IN ({PLAN_ATTACK_BUFS})
+  -- AND `buf_id` IN ({PLAN_ATTACK_BUFS})
   AND `finish_time` >= NOW();
 
 -- 실제 war 정보 추가
@@ -628,7 +746,7 @@ WHERE `war_id` = {war_id};
 -- [중복]
 UPDATE `building`
 SET `manpower` = 0
-WHERE `building_pk_id` = {building_pk_id};
+WHERE `building_pk_id` IN ({building_pk_ids});
 
 
 -- 출전 취소
@@ -651,7 +769,7 @@ WHERE `user_id` = {user_id}
 -- [중복]
 UPDATE `building`
 SET `manpower` = `manpower`/2
-WHERE `building_pk_id` = {building_pk_id};
+WHERE `building_pk_id` IN ({building_pk_ids});
 
 ##########################################
 ## 동맹 (alliance)
@@ -660,14 +778,21 @@ WHERE `building_pk_id` = {building_pk_id};
 ##########################################
 -- API: POST /alliance
 ##########################################
+-- 이미 해당 유저에게 동맹 요청을 보낸 적이 있는지 검사
+SELECT *
+FROM `alliance`
+WHERE `unique_key` = {unique_key}
+
 -- 다른 유저에게 동맹 요청
 INSERT INTO `alliance` (
+  `unique_key`
   `is_accepted`,
   `req_user_id`,
   `res_user_id`,
   `created_date`,
   `last_update`
 ) VALUES (
+  {unique_key}
   FALSE,
   {req_user_id},
   {res_user_id},
@@ -687,8 +812,8 @@ WHERE `alliance_id` = {alliance_id};
 -- 유저가 특정 영토 탐사 했는지 조회
 SELECT `user_id`, `territory_id`
 FROM `exploration_out_of_territory`
-WHERE (`user_id` = {user_id_1} AND `territory_id` = {territory_id_1})
-   OR (`user_id` = {user_id_2} AND `territory_id` = {territory_id_2})
+WHERE (`user_id` = {user_id_1} AND `territory_id` = {territory_id_2})
+   OR (`user_id` = {user_id_2} AND `territory_id` = {territory_id_1})
 -- 만약 탐사가 진행중이면, finish_time 현재로 갱신 후 탐사 인구 반환
 
 -- 탐사 정보가 아예 없을 시 추가
@@ -788,15 +913,22 @@ WHERE `mail_id` = {mail_id};
 -- 특수지역 보스 레이드 신청
 ## [lock] ##
 -- 이미 해당 지역에 보스 레이드가 진행중인지 확인
+-- [중복]
 SELECT `war_id`
 FROM `war`
-WHERE `user_id` = {user_id}
-  AND `territory_id` = {territory_id}
+WHERE `territory_id` = {territory_id}
   AND `finish_time` >= NOW();
 
 -- 끌어다 쓸 동맹 병력 조회
 -- 각 동맹 유저별로 공격력 계산하여 List화, 보스 레이드 출전 (전쟁 출전 요청 API 참고)
 -- war 테이블에 동맹 유저 전부 보스 영토로 출전 (같은 raid_id로)
+INSERT INTO `raid` (
+  `user_id`,
+  `finish_time`
+) VALUES (
+  {raid_lead_user_id},
+  {finish_time}
+);
 ## [lock 해제] ##
 
 ##########################################
@@ -826,6 +958,7 @@ WHERE `user_id` IN ({user_participation});
 INSERT INTO `buf` (
   `user_id`,
   `buf_id`,
+  `raid_id`,
   `finish_time`,
   `last_update`
 ) VALUES (
@@ -834,6 +967,11 @@ INSERT INTO `buf` (
   {finish_time},
   NOW()
 ), ...;
+
+-- 레이드 정보 만료기간 갱신
+UPDATE `raid`
+SET `finish_time` = {finish_time}
+WHERE `raid_id` = {raid_id};
 
 -- 점령지 정보 추가
 INSERT INTO `occupation` (
@@ -875,7 +1013,7 @@ WHERE `raid_id` = {raid_id};
 -- [중복]
 UPDATE `building`
 SET `manpower` = 0
-WHERE `building_pk_id` = {building_pk_id};
+WHERE `building_pk_id` IN ({building_pk_ids});
 
 ##########################################
 -- API: POST /occupation
@@ -886,12 +1024,19 @@ WHERE `building_pk_id` = {building_pk_id};
 SELECT `user_id`
 FROM `occupation`
 WHERE `territory_id` = {territory_id}
-  AND `finishi_time` >= NOW();
+  AND `finish_time` >= NOW();
 
 -- 점령전 신청 가능한 영토이면 점령전 출전
 -- 끌어다 쓸 동맹 병력 조회
 -- 각 동맹 유저별로 공격력 계산하여 List화, 보스 레이드 출전 (전쟁 출전 요청 API 참고)
 -- war 테이블에 동맹 유저 전부 보스 영토로 출전 (같은 raid_id로)
+INSERT INTO `raid` (
+  `user_id`,
+  `finish_time`
+) VALUES (
+  {raid_lead_user_id},
+  {finish_time}
+);
 ## [lock 해제] ##
 
 ##########################################
@@ -900,7 +1045,7 @@ WHERE `territory_id` = {territory_id}
 -- [점령전 완료 요청]
 -- 점령전 시뮬레이션 (점령지역 유저 스펙, 공격력 & 이전에 출전했던 동맹 유저 스펙 기준)
 -- 점령중인 동맹 유저들 스펙
-SELECT `territory_id`, `user_id`, `raid_lead_user_id`, `attack`, `manpower`
+SELECT `territory_id`, `user_id`, `raid_lead_user_id`, `attack`, `manpower`, `raid_id`
 FROM `war`
 WHERE `raid_id` IN (
   SELECT DISTINCT `raid_id`
@@ -923,12 +1068,15 @@ SET `is_victory` = TRUE
 WHERE `raid_id` = {raid_id};
 
 -- 기존 유저들 버프 정보 만료시키기
--- [중복]
+-- TODO: UPDATE?
 UPDATE `buf`
-SET `finish_time` = NOW();
-WHERE `user_id` IN ({before_user_ids})
-  AND `buf_id` = {buf_type_of_boss}
-  AND `finish_time` >= NOW();
+SET `finish_time` = SUBDATE(NOW(), INTERVAL 1 SECOND);
+WHERE `raid_id` = {before_raid_id};
+
+-- 기존 레이드 정보 만료시키기
+UPDATE `raid`
+SET `finish_time` = SUBDATE(NOW(), INTERVAL 1 SECOND);
+WHERE `raid_id` = {before_raid_id};
 
 -- 버프 정보 추가
 -- [중복]
@@ -943,6 +1091,11 @@ INSERT INTO `buf` (
   {finish_time},
   NOW()
 ), ...;
+
+-- 레이드 정보 만료기간 갱신
+UPDATE `raid`
+SET `finish_time` = {finish_time}
+WHERE `raid_id` = {raid_id};
 
 -- 기존 점령 유저 정보 만료시키기
 UPDATE `occupation`
@@ -987,7 +1140,7 @@ WHERE `raid_id` = {raid_id};
 -- [중복]
 UPDATE `building`
 SET `manpower` = 0
-WHERE `building_pk_id` = {building_pk_id};
+WHERE `building_pk_id` IN ({building_pk_ids});
 
 ##########################################
 -- 결산 (calculation)
@@ -1056,7 +1209,6 @@ WHERE `user_id` = {user_id}
 SELECT `buf_pk_id`
 FROM `buf`
 WHERE `user_id` = {user_id}
-  AND `buf_id` IN ({PLAN_LUXURY_BUF})
   AND `finish_time` >= NOW();
 
 -- [유저 데이터 갱신]
@@ -1078,10 +1230,55 @@ WHERE `u`.`user_id` = `w`.`user_id`
   AND `w`.`finish_time` >= NOW();
 
 -- [다른 유저로부터의 동맹 요청 노티]
-SELECT `u`.`user_id`, `u`.`name`, `u`.`territory_id`
+-- [중복]
+SELECT
+  `a`.`alliance_id`, `a`.`created_date`, `a`.`last_update`,
+  `u`.`user_id`, `u`.`name`, `u`.`territory_id`
 FROM `user` AS `u`, `alliance` AS `a`
 WHERE `u`.`user_id` = `a`.`req_user_id`
   AND `a`.`res_user_id` = {user_id}
   AND `a`.`is_accepted` = FALSE;
 
--- TODO: 만료 처리?
+-- 만료된 데이터 삭제
+-- 버프
+-- [중복]
+DELETE FROM `buf`
+WHERE `user_id` = {user_id}
+  AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_buf} DAY);
+
+-- 전쟁
+-- [중복]
+-- 특수 보스지역이 아닌 유저 영토로 출전했던 기록 중 이미 끝난 데이터
+DELETE FROM `war`
+WHERE `user_id` = {user_id}
+  AND `territory_id` NOT IN ({PLAN_BOSS_TERRITORYs})
+  AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_war} DAY);
+
+-- 특수 보스지역으로 레이드 출전하여 점령기간까지 만료된 출전 데이터
+DELETE FROM `war`
+WHERE `raid_id` IN (
+  SELECT DISTINCT `raid_id`
+  FROM `occupation`
+  WHERE `user_id` = {user_id}
+    AND `finish_time` < NOW()
+) AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_war} DAY);
+
+-- 특수 보스 지역으로 출전하여 패배한 기록 중 만료된 데이터
+DELETE FROM `war`
+WHERE `user_id` = {user_id}
+  AND `territory_id` IN ({PLAN_BOSS_TERRITORYs})
+  AND `is_victory` = FALSE
+  AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_war} DAY);
+
+-- 점령
+-- [중복]
+DELETE FROM `occupation`
+WHERE `user_id` = {user_id}
+  AND `finish_time` < SUBDATE(NOW(), INTERVAL {expire_date_occupation} DAY);
+
+-- 우편
+-- [중복]
+DELETE FROM `mail`
+WHERE `to_user_id` = {user_id}
+  AND `is_accepted` = TRUE
+  AND `last_update` < SUBDATE(NOW(), INTERVAL {expire_date_mail} DAY);

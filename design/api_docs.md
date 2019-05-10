@@ -234,6 +234,7 @@
 | 요청변수    | 타입   | 필수 여부 | 설명    |
 | :------ | :--- | :---- | :---- |
 | user_id | INT  | Y     | 유저 ID |
+| building_pk_id | INT | Y | 공방 ID |
 | type    | INT  | Y     | 무기 종류 |
 
 - TODO: 반환 포맷 정리
@@ -246,6 +247,7 @@
 | 요청변수        | 타입   | 필수 여부 | 설명              |
 | :---------- | :--- | :---- | :-------------- |
 | weapon_pk_id   | INT  | Y     | 무기 ID           |
+| building_pk_id | INT | Y | 공방 ID |
 | action_type | INT  | Y     | 0: 업그레이드, 1: 삭제 |
 
 - TODO: 반환 포맷 정리

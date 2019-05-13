@@ -92,11 +92,11 @@ WHERE `user_id` = {user_id}
 -- 인구 생산, 식량자원 소비, 버프(충성도), 종료 후 완료되었던 자원 채취 건물 인구배치 등
 -- 전부 계산해서 최종적으로 변화하는 자원, 인구 수 측정
 UPDATE `user`
-SET `manpower_amount` = {manpower_amount}
-    `appended_manpower` = {appended_manpower}
-    `tactical_resource_amount` = {tactical_resource_amount}
-    `food_resource_amount` = {food_resource_amount}
-    `luxury_resource_amount` = {luxury_resource_amount}
+SET `manpower_amount` = `manpower_amount` + {manpower_amount_diff}
+    `appended_manpower` = `appended_manpower` + {appended_manpower_diff}
+    `tactical_resource_amount` = `tactical_resource_amount` + {tactical_resource_amount_diff}
+    `food_resource_amount` = `food_resource_amount` + {food_resource_amount_diff}
+    `luxury_resource_amount` = `luxury_resource_amount` + {luxury_resource_amount_diff}
     `last_update` = NOW()
 WHERE `user_id` = {user_id};
 
@@ -126,10 +126,6 @@ SET `is_victory` = {is_victory}
     `penanlty_finish_time` = {penanlty_finish_time}
 WHERE `war_id` = {war_id};
 
--- TODO: 전쟁 보상 결정후 쿼리 정리 및 트랜잭션 처리 고민 (UPDATE with JOIN)
--- 승리 할 경우
--- 패배 할 경우
-
 -- [약탈]
 -- 다른 유저로부터 선전포고를 당한 경우에 완료처리가 안된 경우
 SELECT `war_id`, `attack`, `manpower`
@@ -156,11 +152,13 @@ SET `is_victory` = {is_victory}
     `penanlty_finish_time` = {penanlty_finish_time}
 WHERE `war_id` = {war_id};
 
--- TODO: 전쟁 보상 결정후 쿼리 정리 및 트랜잭션 처리 고민 (UPDATE with JOIN)
+-- 전쟁 보상 결정후 쿼리 정리 및 트랜잭션 처리 고민 (PDO 트랜잭션 처리)
 -- 승리 할 경우
 -- 패배 할 경우
+-- (아래 전쟁 부분 참조)
 
--- TODO: 레이드 완료 처리
+-- 레이드 완료 처리
+-- (아래 레이드 부분 참조)
 
 -- 만료된 데이터 삭제
 -- 버프
@@ -1068,7 +1066,7 @@ SET `is_victory` = TRUE
 WHERE `raid_id` = {raid_id};
 
 -- 기존 유저들 버프 정보 만료시키기
--- TODO: UPDATE?
+-- TODO: UPDATE? OR DELETE?
 UPDATE `buf`
 SET `finish_time` = SUBDATE(NOW(), INTERVAL 1 SECOND);
 WHERE `raid_id` = {before_raid_id};

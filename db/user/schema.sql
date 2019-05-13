@@ -133,7 +133,6 @@ CREATE TABLE `user` (
   * territory_id:         속한 영토 id (기획)
   * tile_id:              위치한 타일 id (기획)
   * building_id:          건물 종류 (기획)
-  * bulding_type:         건물 타입 (기획)
   * resource_id:          자원 종류 (기획)
 
   * create_finish_time:       설치 완료 시간
@@ -149,7 +148,6 @@ CREATE TABLE `building` (
   `territory_id`    BIGINT        NOT NULL,
   `tile_id`         BIGINT        NOT NULL,
   `building_id`     BIGINT        NOT NULL,
-  `bulding_type`    BIGINT        NOt NULL,
   `resource_id`     BIGINT        NOT NULL,
 
   `create_finish_time`    TIMESTAMP  NOT NULL,
@@ -293,14 +291,22 @@ CREATE TABLE `war` (
   INDEX `idx_raid` (`raid_id`, `finish_time`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
+/** 레이드 정보
+  * @des: 레이드 신청시 생성되는 레이드 정보
+  * raid_id:      레이드 id (AUTO_INC) [PK]
+  * user_id:      레이드를 신청한 유저 id
+  * finish_time:  해당 레이드 정보가 만료되는 시간 (특수지역 출전 만료시간 / 점령전 영토 만료 시간)
+*/
 CREATE TABLE `raid` (
   `raid_id`     BIGINT      NOT NULL        AUTO_INCREMENT,
   `user_id`     BIGINT      NOT NULL,
-  PRIMARY KEY (`raid_id`)
+  `finish_time` TIMESTAMP   NOT NULL,
+  PRIMARY KEY (`raid_id`),
+  INDEX `idx_finish_time` (`finish_time`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 점령 정보
-  * @desc: 유저
+  * @desc: 유저 점령지역 정보
   * occupation_id:    점령 id (AUTO_INC) [PK]
   * raid_id:          점령하기 위해 시도했던 레이드 id
   * user_id:          유저 id
@@ -315,6 +321,7 @@ CREATE TABLE `occupation` (
   `finish_time`   TIMESTAMP   NOT NULL,
   `last_update`   TIMESTAMP   NULL,
   PRIMARY KEY (`occupation_Id`),
+  INDEX `idx_raid` (`raid_id`),
   INDEX `idx_user_occupation` (`user_id`, `finish_time`),
   INDEX `idx_finish_territory` (`territory_id`, `finish_time`)
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
@@ -363,7 +370,7 @@ CREATE TABLE `mail` (
   `created_date`        TIMESTAMP   NOT NULL,
   `last_update`         TIMESTAMP   NOT NULL,
   PRIMARY KEY (`mail_id`),
-  INDEX `idx_to_user` (`to_user_id`)
+  INDEX `idx_to_user` (`to_user_id`, `is_accepted`, `last_update`)
 ) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
 
 -- 2019. 5. 7. boss table deprecated

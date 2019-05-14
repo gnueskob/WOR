@@ -1,8 +1,10 @@
 {
-    "name": "sblee/lsb_basictraining",
+    "name": "lsb/lsb_basictraining",
     "autoload": {
         "psr-4": {
-            "sblee\\App\\": "application/"
+            "lsb\\App\\": "application/",
+            "lsb\\Libs\\": "libs/",
+            "lsb\\Config\\": ""
         }
     },
     "require": {

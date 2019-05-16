@@ -25,4 +25,9 @@ class Dev
         print($data);
         print("</pre>");
     }
+
+    public static function log($msg)
+    {
+        echo $msg;
+    }
 }

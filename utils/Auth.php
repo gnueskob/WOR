@@ -9,8 +9,9 @@ class Auth
 {
     public static function isValid()
     {
-        return function (Request $req) {
-            if (Config::getMode() === DEV_MODE) {
+        return function (Request $req): bool {
+            $config = Config::getInstance();
+            if ($config->getMode() === DEV) {
                 return true;
             }
 

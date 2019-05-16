@@ -9,6 +9,8 @@
         }
     },
     "require": {
+        "ext-json": "*",
+        "ext-pdo": "*"
     },
     "authors": [
         {

@@ -9,23 +9,11 @@ define('__HTML__', 2);
 
 class Response implements IResponse
 {
-    private $type = __JSON__;
+    private $type = null;
 
-    public static function getInstance()
+    public function __construct()
     {
-        static $instance = null;
-        if ($instance === null) {
-            $instance = new static();
-        }
-        return $instance;
-    }
-
-    private function __clone()
-    {
-    }
-
-    private function __construct()
-    {
+        $this->type = __JSON__;
     }
 
     public function setHeader($serverProtocol, $code, string $msg)

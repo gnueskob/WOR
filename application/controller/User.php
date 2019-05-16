@@ -7,9 +7,9 @@ use lsb\Utils\Auth;
 
 $userRouter = new Router();
 
-$userRouter->get('/:id/:action', Auth::isValid(), function (Response $res) {
-//    $data['url'] = $req->requestUri;
-//    $data['params'] = $req->getParams();
+$userRouter->get('/:id/:action', Auth::isValid(), function (Request $req, Response $res) {
+    $data['url'] = $req->requestUri;
+    $data['params'] = $req->getParams();
     $data['test'] = 'test';
     $res->send($data);
 });

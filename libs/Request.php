@@ -6,24 +6,16 @@ class Request implements IRequest
 {
     private $params;
 
-    public static function getInstance()
-    {
-        static $instance = null;
-        if ($instance === null) {
-            $instance = new static();
-        }
-        return $instance;
-    }
+    // default http headers
+    public $requestMethod;
+    public $requestUri;
+    public $serverProtocol;
 
-    protected function __construct()
+    public function __construct()
     {
         foreach ($_SERVER as $key => $value) {
             $this->{$this->toCamelCase($key)} = $value;
         }
-    }
-
-    private function __clone()
-    {
     }
 
     private function toCamelCase($str)
@@ -39,14 +31,14 @@ class Request implements IRequest
         return $res;
     }
 
-    public function getBody()
+    public function getBody(): array
     {
         if ($this->requestMethod === "GET") {
-            return;
+            return array();
         }
 
-        if ($this->requestMethod === "POST"
-            || $this->requestMethod === "PUT") {
+        $jsonReturnMethods = array("POST", "PUT");
+        if (in_array($this->requestMethod, $jsonReturnMethods)) {
             return json_decode(file_get_contents('php://input'), true);
         }
     }

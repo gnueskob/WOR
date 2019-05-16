@@ -6,9 +6,9 @@ DROP DATABASE IF EXISTS `world_of_renaissance`;
 CREATE DATABASE IF NOT EXISTS `world_of_renaissance`;
 USE `world_of_renaissance`;
 
-SELECT 'CREATEING DATABASE STRUCTURE' as 'INFO';
+SELECT 'CREATING DATABASE STRUCTURE' as 'INFO';
 
--- Drop alreay exists table
+-- Drop already exists table
 DROP TABLE IF EXISTS `user`,
                      `building`,
                      `resource`,
@@ -52,11 +52,11 @@ DROP TABLE IF EXISTS `user`,
   # 유저 스펙
   * attack_point:   현재 공격력
   * defence_point:  현재 방어력
-  * loyality:       현재 충성도
+  * loyalty:        현재 충성도
 
   ##### 통계적 수치 #####
   # 선전포고
-  * war_requset:    선전포고 횟수
+  * war_request:    선전포고 횟수
   * war_victory:    전쟁 승리 횟수
   * war_defeated:   전쟁 패배 횟수
 
@@ -101,7 +101,7 @@ CREATE TABLE `user` (
   -- value of each user territory
   -- `attack_point`                BIGINT        NOT NULL,
   -- `defence_point`               BIGINT        NOT NULL,
-  -- `loyality`                    BIGINT        NOT NULL,
+  -- `loyalty`                     BIGINT        NOT NULL,
 
   -- 2019. 5. 8. deprecated
   -- manpower for alliance
@@ -266,7 +266,7 @@ CREATE TABLE `exploration_out_of_territory` (
   * raid_id:      레이드 id
   * territory_id: 영토 id (기획)
   * is_victory:   해당 전쟁 승리 여부
-  * penanlty_finish_time:   전쟁 신청 후 일정 시간동안 재 전쟁 요청 금지
+  * penalty_finish_time:    전쟁 신청 후 일정 시간동안 재 전쟁 요청 금지
   * attack:         선전포고 당시 공격력
   * manpower:       선전포고 당시 병영 인력
   * food_resource:  선전포고 당시 사용한 군량
@@ -347,7 +347,7 @@ CREATE TABLE `alliance` (
   UNIQUE INDEX `uk_idx` (`unique_key`),
   INDEX `idx_req_user` (`req_user_id`, `is_accepted`),
   INDEX `idx_res_user` (`res_user_id`, `is_accepted`)
-) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 /** 동맹 유저간 자원 공유용 우편 테이블
   * @desc: 서로 동맹인 유저 끼리 우편을 주고 받을 수 있기 위한 정보
@@ -371,7 +371,7 @@ CREATE TABLE `mail` (
   `last_update`         TIMESTAMP   NOT NULL,
   PRIMARY KEY (`mail_id`),
   INDEX `idx_to_user` (`to_user_id`, `is_accepted`, `last_update`)
-) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 -- 2019. 5. 7. boss table deprecated
 -- /** 레이드 보스 몬스터 정보
@@ -395,4 +395,4 @@ CREATE TABLE `mail` (
 --   `last_update`       TIMESTAMP   NOT NULL,
 --   PRIMARY KEY (`boss_pk_id`),
 --   INDEX `idx_territory` (`territory_id`, `is_active`)
--- ) COLLATE='utf8_unicode_ci' ENGIEN=InnoDB;
+-- ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;

@@ -2,31 +2,42 @@
 
 namespace lsb\Config;
 
+use lsb\Libs\Singleton;
+
 //error_reporting(E_ALL);
 //ini_set("display_errors", 1);
 define('URL', 'http://127.0.0.1');
 define('WOR', 'wor');
-define('DEV_MODE', 'dev');
+define('DEV', 'dev');
 
 // TODO: DB connection conf
 
-
-class Config
+class Config extends Singleton
 {
-    private static $mode = null;
+    private $mode = null;
 
-    public static function getConfig($mode = null)
+    // DB connection config.
+    private $dbConf = array();
+
+    protected function __construct($mode = null)
     {
-        static $instance = null;
-        if ($instance === null) {
-            self::$mode = $mode;
-            $instance = new static();
+        parent::__construct();
+        $this->mode = $mode ?: DEV;
+
+        // set db connection config
+        $conf = json_decode(file_get_contents('db.json'), true);
+        foreach ($conf as $key => $value) {
+            $this->dbConf[$key] = $value;
         }
-        return $instance;
     }
 
-    public static function getMode()
+    public function getMode()
     {
-        return self::$mode;
+        return $this->mode;
+    }
+
+    public function getDBConfig()
+    {
+        return $this->dbConf;
     }
 }

@@ -4,11 +4,26 @@ namespace lsb\Libs;
 
 class Request implements IRequest
 {
-    public function __construct()
+    private $params;
+
+    public static function getInstance()
+    {
+        static $instance = null;
+        if ($instance === null) {
+            $instance = new static();
+        }
+        return $instance;
+    }
+
+    protected function __construct()
     {
         foreach ($_SERVER as $key => $value) {
             $this->{$this->toCamelCase($key)} = $value;
         }
+    }
+
+    private function __clone()
+    {
     }
 
     private function toCamelCase($str)
@@ -31,8 +46,18 @@ class Request implements IRequest
         }
 
         if ($this->requestMethod === "POST"
-        ||  $this->requestMethod === "PUT") {
+            || $this->requestMethod === "PUT") {
             return json_decode(file_get_contents('php://input'), true);
         }
+    }
+
+    public function setParams(array $params)
+    {
+        $this->params = $params;
+    }
+
+    public function getParams()
+    {
+        return $this->params;
     }
 }

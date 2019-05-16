@@ -4,6 +4,7 @@
         "psr-4": {
             "lsb\\App\\": "application/",
             "lsb\\Libs\\": "libs/",
+            "lsb\\Utils\\": "utils/",
             "lsb\\Config\\": ""
         }
     },

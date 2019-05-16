@@ -7,6 +7,7 @@
 ## API 상세 정보
 
 - URL prefix : `http://localhost/wor`
+- 로그인 이후에 요청들은 `x-access-token`헤더를 통한 JWT 검증
 
 ***
 

@@ -2,29 +2,47 @@
 
 namespace lsb\Libs;
 
+use \ReflectionFunction;
+
 class Router
 {
-    private $request;
-    private $httpMethods = array(
+    protected $request;
+    protected $response;
+    protected $httpMethods = array(
         "GET",
         "POST",
         "PUT"
     );
-    private $group = "";
 
-    public function __construct(IRequest $request)
+    public function __construct()
     {
-        $this->request = $request;
+        $this->request = Request::getInstance();
+        $this->response = Response::getInstance();
     }
 
     public function __call($name, $args)
     {
-        list($route, $method) = $args;
+        $route = null;
+        $method = null;
+        $authMethod = null;
+
+        if (count($args) > 2) {
+            list($route, $authMethod, $method) = $args;
+        } else {
+            list($route, $method) = $args;
+        }
         if (!in_array(strtoupper($name), $this->httpMethods)) {
             $this->invalidMethodHandler();
             return;
         }
-        $this->{strtolower($name)}[$this->formatRoute($route)] = $method;
+
+        $formatedRoute = $this->formatRoute($route);
+
+        $this->{strtolower($name)}[$formatedRoute]['method'] = $method;
+
+        if (isset($authMethod)) {
+            $this->{strtolower($name)}[$formatedRoute]['auth'] = $authMethod;
+        }
     }
 
     /**
@@ -35,23 +53,43 @@ class Router
     private function formatRoute($route)
     {
         $result = rtrim($route, '/');
-        if ($result === '' && $this->group === "") {
+        if ($result === '') {
             return '/';
-        }
-        if ($this->group !== "") {
-            $result = $this->group.$result;
         }
         return $result;
     }
 
-    private function invalidMethodHandler()
+    /**
+     * Find regex pattern about route string
+     * @param route (string)
+     * @return regexPattern (string)
+    */
+    private function getRouteRegexPattern($route)
     {
-        header("{$this->request->serverProtocol} 405 Method Not Allowed");
+        $paramPattern = '[a-zA-Z0-9-_]+';
+        $routePattern = preg_replace('/\//', '\\/', $route);
+        $routePattern = preg_replace('/:[a-zA-Z0-9-_]+/', $paramPattern, $routePattern);
+        $routePattern = '/^' . $routePattern . '$/';
+        return $routePattern;
     }
 
-    private function defaultRequestHandler()
+    /**
+     * Find parameters about request route URL
+     * @param string $route     route already registered in Router
+     * @param string $reqRoute  route where user send request
+     * @return array $params    $params[:key] = $value
+    */
+    private function findRouteParams($route, $reqRoute)
     {
-        header("{$this->request->serverProtocol} 404 Not Found");
+        $paramKey = explode('/', ltrim($route, '/'));
+        $paramValue = explode('/', ltrim($reqRoute, '/'));
+        $params = array();
+        foreach ($paramKey as $idx => $key) {
+            if (preg_match('/^:.*/', $key)) {
+                $params[ltrim($key, ':')] = $paramValue[$idx];
+            }
+        }
+        return $params;
     }
 
     /**
@@ -59,14 +97,60 @@ class Router
      */
     private function resolve()
     {
-        $methodDictionary = $this->{strtolower($this->request->requestMethod)};
-        $formatedRoute = $this->formatRoute($this->request->requestUri);
-        $method = $methodDictionary[$formatedRoute];
+        $req = $this->request;
+        $res = $this->response;
+
+        $methodDictionary = $this->{strtolower($req->requestMethod)};
+        $reqRoute = $this->formatRoute($req->requestUri);
+        $method = null;
+        $matchedRoute = null;
+
+        if (isset($methodDictionary[$reqRoute])) {
+            $method = $methodDictionary[$reqRoute]['method'];
+            $matchedRoute = $reqRoute;
+        } else {
+            // If there is no route exactly matched with key of methodDictionary
+            // Find route with regex of each route which matches with req uri
+            foreach ($methodDictionary as $route => $_) {
+                if (preg_match($this->getRouteRegexPattern($route), $reqRoute)) {
+                    // If find route matching current URL
+                    // then, register the function what we applied in Controller
+                    $method = $methodDictionary[$route]['method'];
+                    $matchedRoute = $route;
+
+                    // And also register the parameters in URL to request object
+                    $req->setParams($this->findRouteParams($route, $reqRoute));
+                    break;
+                }
+            }
+        }
+
         if (is_null($method)) {
             $this->defaultRequestHandler();
             return;
         }
-        call_user_func_array($method, array($this->request, new Response()));
+
+        if (isset($methodDictionary[$matchedRoute]['auth'])) {
+            $authMethod = $methodDictionary[$matchedRoute]['auth'];
+            if (!call_user_func_array($authMethod, array($req))) {
+                $this->unauthenticatedHandler();
+                return;
+            }
+        }
+
+        $argsNum = (new ReflectionFunction($method))->getNumberOfParameters();
+        switch ($argsNum) {
+            case 1:
+                $methodParams = array($res);
+                break;
+            case 2:
+                $methodParams = array($req, $res);
+                break;
+            default:
+                $methodParams = array();
+                break;
+        }
+        call_user_func_array($method, $methodParams);
     }
 
     public function run()
@@ -74,8 +158,25 @@ class Router
         $this->resolve();
     }
 
-    public function group($group)
+    private function _setHeader(int $code, string $msg) {
+        $res = $this->response;
+        $protocol = $this->request->serverProtocol;
+        $res->setHeader($protocol, $code, $msg);
+    }
+
+    // return status for invalid options
+    private function invalidMethodHandler()
     {
-        $this->group = $group;
+        $this->_setHeader(405, "Method Not Allowed");
+    }
+
+    private function defaultRequestHandler()
+    {
+        $this->_setHeader(404, "Not Found");
+    }
+
+    private function unauthenticatedHandler()
+    {
+        $this->_setHeader(401, "Unauthenticated");
     }
 }

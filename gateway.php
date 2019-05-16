@@ -1,20 +1,12 @@
 <?php
 
-define('ROOT', __DIR__ . DIRECTORY_SEPARATOR);
-define('VENDOR', ROOT . 'vendor' . DIRECTORY_SEPARATOR);
+require(__DIR__ . '/vendor/autoload.php');
 
-require VENDOR . 'autoload.php';
+use lsb\Config\Config;
+use lsb\App\App;
 
-lsb\Config\Config::getConfig('dev');
+$config = Config::getConfig(DEV_MODE);
 
-$app = new lsb\App\App();
-require('./application/Route.php');
+$app = new App();
+require(__DIR__ . '/application/Route.php');
 $app->run();
-
-//print("<pre>");
-//print("Host: ".$_SERVER['HTTP_HOST']."\n");
-//print("Request_URI: ".$_SERVER['REQUEST_URI']."\n");
-//print_r($GLOBALS);
-//$post_data = json_decode(file_get_contents('php://input'), true);
-//print_r($post_data);
-//print("</pre>");

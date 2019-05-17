@@ -1,27 +1,39 @@
 <?php
 
+namespace lsb\App\controller;
+
 use lsb\Libs\Router;
-use lsb\Libs\Request;
-use lsb\Libs\Response;
+use lsb\Libs\Context;
 use lsb\Utils\Auth;
 
-$userRouter = new Router();
+class User extends Router
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $router = $this;
 
-$userRouter->get('/:id/:action', Auth::isValid(), function (Request $req, Response $res) {
-    $data['url'] = $req->requestUri;
-    $data['params'] = $req->getParams();
-    $data['test'] = 'test';
-    $res->send($data);
-});
+        $router->get(
+            '/:id/:action',
+            Auth::isValid(),
+            function (Context $ctx) {
+                $data['url'] = $ctx->req->requestUri;
+                $data['params'] = $ctx->req->getParams();
+                $data['test'] = 'test';
+                $ctx->res->send($data);
+            }
+        );
 
-$userRouter->put('/:param', function (Request $req, Response $res) {
-    $data['url'] = $req->requestUri;
-    $data['body'] = $req->getBody();
-    $data['params'] = $req->getParams();
-    $res->send($data);
-});
+        $router->put('/:param', function (Context $ctx) {
+            $data['url'] = $ctx->req->requestUri;
+            $data['body'] = $ctx->req->getBody();
+            $data['params'] = $ctx->req->getParams();
+            $ctx->res->send($data);
+        });
 
-$userRouter->post('/info', function (Request $req, Response $res) {
-    $data = $req->getBody();
-    $res->send($data);
-});
+        $router->post('/info', function (Context $ctx) {
+            $data = $ctx->req->getBody();
+            $ctx->res->send($data);
+        });
+    }
+}

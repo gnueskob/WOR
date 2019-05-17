@@ -10,23 +10,26 @@ define('__HTML__', 2);
 class Response implements IResponse
 {
     private $type = null;
+    private $status = 200;
+    private $msg = 'OK';
 
     public function __construct()
     {
         $this->type = __JSON__;
     }
 
-    public function setHeader($serverProtocol, $code, string $msg)
+    public function setHeader(string $protocol, int $code, string $msg): void
     {
-        header("{$serverProtocol} {$code} {$msg}");
+        header("{$protocol} {$code} {$msg}");
+        header("Content-Type: text/html; charset=UTF-8");
     }
 
-    public function setType($type)
+    public function setType(int $type): void
     {
         $this->type = $type;
     }
 
-    public function send($res)
+    public function send($res): void
     {
         header("Access-Control-Allow-Origin: *");
 

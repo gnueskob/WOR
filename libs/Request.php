@@ -13,12 +13,13 @@ class Request implements IRequest
 
     public function __construct()
     {
+        $this->params = array();
         foreach ($_SERVER as $key => $value) {
             $this->{$this->toCamelCase($key)} = $value;
         }
     }
 
-    private function toCamelCase($str)
+    private function toCamelCase(string $str): string
     {
         $res = strtolower($str);
         preg_match_all('/_[a-z]/', $res, $matches);
@@ -43,12 +44,12 @@ class Request implements IRequest
         }
     }
 
-    public function setParams(array $params)
+    public function setParams(array $params): void
     {
-        $this->params = $params;
+        $this->params = array_merge($this->params, ...$params);
     }
 
-    public function getParams()
+    public function getParams(): array
     {
         return $this->params;
     }

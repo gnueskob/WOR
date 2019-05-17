@@ -2,11 +2,13 @@
 
 namespace lsb\Utils;
 
+use lsb\Config\Config;
+
 class Dev
 {
     public static function uprintArr($array, $str = null)
     {
-        if (self::$mode === null) {
+        if (Config::getInstance()->getMode() === null) {
             return;
         }
         print("<pre>");
@@ -17,7 +19,7 @@ class Dev
 
     public static function uprint($data, $str = null)
     {
-        if (self::$mode === null) {
+        if (Config::getInstance()->getMode() === null) {
             return;
         }
         print("<pre>");

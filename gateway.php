@@ -4,9 +4,11 @@ require(__DIR__ . '/vendor/autoload.php');
 
 use lsb\Config\Config;
 use lsb\App\App;
+use lsb\App\controller\User;
 
-Config::getConfig(DEV);
+$config = Config::getInstance();
+$config->setMode(DEV);
 
 $app = new App();
-require(__DIR__ . '/application/Route.php');
+$app->use('/wor/user', new User());
 $app->run();

@@ -4,7 +4,8 @@ namespace lsb\Libs;
 
 class Router
 {
-    protected $ctx;
+    private $ctx;
+
     protected $httpMethods = array(
         "GET",
         "POST",
@@ -18,13 +19,17 @@ class Router
 
     private function request(string $methodName, string $route, array $middlewares): void
     {
-        if (!in_array(strtoupper($methodName), $this->httpMethods)) {
-            $this->invalidMethodHandler();
+        if ($methodName !== 'all' && !in_array(strtoupper($methodName), $this->httpMethods)) {
+            EH::invalidMethodHandler();
             return;
         }
 
         $formatedRoute = $this->formatRoute($route);
-        $this->{strtolower($methodName)}[$formatedRoute] = $middlewares;
+        $appliedMWs = &$this->{strtolower($methodName)}[$formatedRoute];
+        if (is_null($appliedMWs)) {
+            $appliedMWs = array();
+        }
+        array_push($appliedMWs, ...$middlewares);
     }
 
     public function get(string $path, ...$middlewares): void
@@ -43,6 +48,26 @@ class Router
     }
 
     /**
+     * Add middleware or router
+     * @param string    $path           path to add router or middleware
+     * @param object[]  $middlewares    middleware to be added (can contain router)
+     * @return void
+     */
+    public function use(string $path = '/', object ...$middlewares): void
+    {
+        $path = rtrim('/', $path);
+        $path = $path === '' ? '/' : $path;
+
+        foreach ($middlewares as $middleware) {
+            if ($middleware instanceof Router) {
+                $middleware->currentDomain = $path;
+            }
+        }
+        $this->request('all', $path, $middlewares);
+        return;
+    }
+
+    /**
      * Removes trailing forward slashes from the right of the route.
      * @param string route
      * @return string result
@@ -58,24 +83,27 @@ class Router
 
     /**
      * Find regex pattern about route string
-     * @param string route
-     * @return string regexPattern
-    */
-    private function getRouteRegexPattern(string $route): string
+     * @param string  route   route string
+     * @param bool    end     flag notifying end with this route string
+     * @return  string  regexPattern
+     */
+    private function getRouteRegexPattern(string $route, bool $end = false): string
     {
+        $prefix = '/^';
+        $postfix = $end ? '$/' : '/';
         $paramPattern = '[a-zA-Z0-9-_]+';
         $routePattern = preg_replace('/\//', '\\/', $route);
         $routePattern = preg_replace('/:[a-zA-Z0-9-_]+/', $paramPattern, $routePattern);
-        $routePattern = '/^' . $routePattern . '$/';
+        $routePattern = $prefix . $routePattern . $postfix;
         return $routePattern;
     }
 
     /**
      * Find parameters about request route URL
-     * @param string $route     route already registered in Router
-     * @param string $reqRoute  route where user send request
+     * @param string $route route already registered in Router
+     * @param string $reqRoute route where user send request
      * @return array $params    $params[:key] = $value
-    */
+     */
     private function findRouteParams(string $route, string $reqRoute): array
     {
         $paramKey = explode('/', ltrim($route, '/'));
@@ -94,62 +122,46 @@ class Router
      */
     private function resolve(): void
     {
-        $req = $this->ctx->req;
+        $reqRoute = $this->formatRoute($this->ctx->req->requestUri);
 
-        $methodDictionary = $this->{strtolower($req->requestMethod)};
-        $reqRoute = $this->formatRoute($req->requestUri);
-        $middlewares = null;
-
-        if (isset($methodDictionary[$reqRoute])) {
-            $middlewares = $methodDictionary[$reqRoute];
-        } else {
-            // If there is no route exactly matched with key of methodDictionary
-            // Find route with regex of each route which matches with req uri
+        $allMethod = 'all';
+        if (property_exists($this, $allMethod)) {
+            $methodDictionary = $this->{$allMethod} ?: array();
             foreach ($methodDictionary as $route => $_) {
-                if (preg_match($this->getRouteRegexPattern($route), $reqRoute)) {
-                    // If find route matching current URL
-                    // then, register the function what we applied in Controller
-                    $middlewares = $methodDictionary[$route]['method'];
+                $prefixRegexPattern = $this->getRouteRegexPattern($route);
+                if (preg_match($prefixRegexPattern, $reqRoute)) {
+                    $middlewares = $methodDictionary[$route];
+                    $this->ctx->addMiddleware($middlewares);
 
-                    // And also register the parameters in URL to request object
-                    $req->setParams($this->findRouteParams($route, $reqRoute));
-                    break;
+                    $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
                 }
             }
         }
 
-        if (is_null($middlewares)) {
-            $this->defaultRequestHandler();
-            return;
+        $method = strtolower($this->ctx->req->requestMethod);
+        if (property_exists($this, $method)) {
+            $methodDictionary = $this->{$method} ?: array();
+            if (isset($methodDictionary[$reqRoute])) {
+                $middlewares = $methodDictionary[$reqRoute];
+                $this->ctx->addMiddleware($middlewares);
+            } else {
+                foreach ($methodDictionary as $route => $_) {
+                    if (preg_match($this->getRouteRegexPattern($route, true), $reqRoute)) {
+                        $middlewares = $methodDictionary[$route];
+                        $this->ctx->addMiddleware($middlewares);
+
+                        $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
+                        break;
+                    }
+                }
+            }
         }
 
-        $this->ctx->middlewares = $middlewares;
+        $this->ctx->runMiddlewares();
     }
 
-    public function run()
+    public function run(): void
     {
         $this->resolve();
-    }
-
-    private function setHeader(int $code, string $msg)
-    {
-        $res = $this->ctx->res;
-        $protocol = $this->ctx->req->serverProtocol;
-        $res->setHeader($protocol, $code, $msg);
-    }
-
-    public function invalidMethodHandler()
-    {
-        $this->setHeader(405, "Method Not Allowed");
-    }
-
-    public function defaultRequestHandler()
-    {
-        $this->setHeader(404, "Not Found");
-    }
-
-    public function unauthenticatedHandler()
-    {
-        $this->setHeader(401, "Unauthenticated");
     }
 }

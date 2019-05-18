@@ -5,6 +5,7 @@ namespace lsb\Libs;
 class Router
 {
     private $ctx;
+    private $group = '';
 
     protected $httpMethods = array(
         "GET",
@@ -49,9 +50,9 @@ class Router
 
     /**
      * Add middleware or router
-     * @param string    $path           path to add router or middleware
-     * @param object[]  $middlewares    middleware to be added (can contain router)
-     * @return void
+     * @param string $path path to add router or middleware
+     * @param object[] $middlewares middleware to be added (can contain router)
+     * @return  void
      */
     public function use(string $path = '/', object ...$middlewares): void
     {
@@ -60,7 +61,8 @@ class Router
 
         foreach ($middlewares as $middleware) {
             if ($middleware instanceof Router) {
-                $middleware->currentDomain = $path;
+                $group = $this->group . $path;
+                $middleware->group = $group === '/' ? '' : $group;
             }
         }
         $this->request('all', $path, $middlewares);
@@ -69,8 +71,8 @@ class Router
 
     /**
      * Removes trailing forward slashes from the right of the route.
-     * @param string route
-     * @return string result
+     * @param string  route
+     * @return  string  result
      */
     private function formatRoute(string $route): string
     {
@@ -83,9 +85,9 @@ class Router
 
     /**
      * Find regex pattern about route string
-     * @param string  route   route string
-     * @param bool    end     flag notifying end with this route string
-     * @return  string  regexPattern
+     * @param string $route route string
+     * @param bool $end flag notifying end with this route string
+     * @return  string  $regexPattern
      */
     private function getRouteRegexPattern(string $route, bool $end = false): string
     {
@@ -102,7 +104,7 @@ class Router
      * Find parameters about request route URL
      * @param string $route route already registered in Router
      * @param string $reqRoute route where user send request
-     * @return array $params    $params[:key] = $value
+     * @return  array   $params     $params[:key] = $value
      */
     private function findRouteParams(string $route, string $reqRoute): array
     {
@@ -127,12 +129,12 @@ class Router
         $allMethod = 'all';
         if (property_exists($this, $allMethod)) {
             $methodDictionary = $this->{$allMethod} ?: array();
-            foreach ($methodDictionary as $route => $_) {
+            foreach ($methodDictionary as $path => $_) {
+                $route = $this->group . $path;
                 $prefixRegexPattern = $this->getRouteRegexPattern($route);
                 if (preg_match($prefixRegexPattern, $reqRoute)) {
                     $middlewares = $methodDictionary[$route];
                     $this->ctx->addMiddleware($middlewares);
-
                     $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
                 }
             }
@@ -145,13 +147,12 @@ class Router
                 $middlewares = $methodDictionary[$reqRoute];
                 $this->ctx->addMiddleware($middlewares);
             } else {
-                foreach ($methodDictionary as $route => $_) {
+                foreach ($methodDictionary as $path => $_) {
+                    $route = $this->group . $path;
                     if (preg_match($this->getRouteRegexPattern($route, true), $reqRoute)) {
                         $middlewares = $methodDictionary[$route];
                         $this->ctx->addMiddleware($middlewares);
-
                         $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
-                        break;
                     }
                 }
             }

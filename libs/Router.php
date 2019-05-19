@@ -134,6 +134,7 @@ class Router
                 $prefixRegexPattern = $this->getRouteRegexPattern($route);
                 if (preg_match($prefixRegexPattern, $reqRoute)) {
                     $middlewares = $methodDictionary[$route];
+                    // TODO: middleware 순회하며 Router 찾아서 먼저 등록된 middleware 등록
                     $this->ctx->addMiddleware($middlewares);
                     $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
                 }

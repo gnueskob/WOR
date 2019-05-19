@@ -56,17 +56,7 @@ class Router
      */
     public function use(string $path = '/', object ...$middlewares): void
     {
-        $path = rtrim('/', $path);
-        $path = $path === '' ? '/' : $path;
-
-        foreach ($middlewares as $middleware) {
-            if ($middleware instanceof Router) {
-                $group = $this->group . $path;
-                $middleware->group = $group === '/' ? '' : $group;
-            }
-        }
-        $this->request('all', $path, $middlewares);
-        return;
+        $this->request('all', $this->formatRoute($path), $middlewares);
     }
 
     /**
@@ -119,45 +109,55 @@ class Router
         return $params;
     }
 
+    private function appendMiddleware(array $middlewares): void
+    {
+        foreach ($middlewares as $path => $middleware) {
+            if ($middleware instanceof Router) {
+                $group = $this->formatRoute($this->group . $path);
+                $middleware->group = $group;
+                // TODO: run 돌릴 시 미들웨어 리버스 처리 how
+                $middleware->run();
+            } else {
+                $this->ctx->addMiddleware($middleware);
+            }
+        }
+    }
+
+    private function searchMiddleware(string $method, string $reqRoute): void
+    {
+        if (property_exists($this, $method)) {
+            $methodDictionary = $this->{$method} ?: array();
+            $isReqMethod = $method !== 'all';
+            if ($isReqMethod && isset($methodDictionary[$reqRoute])) {
+                $this->appendMiddleware($methodDictionary[$reqRoute]);
+                return;
+            }
+
+            foreach ($methodDictionary as $path => $_) {
+                $route = $this->group . $path;
+                $prefixRegexPattern = $this->getRouteRegexPattern($route, $isReqMethod);
+                if (preg_match($prefixRegexPattern, $reqRoute)) {
+                    $this->appendMiddleware($methodDictionary[$route]);
+                    $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
+                }
+            }
+        }
+    }
+
     /**
      * Resolves a route
      */
     private function resolve(): void
     {
-        $reqRoute = $this->formatRoute($this->ctx->req->requestUri);
+        $req = $this->ctx->req;
+        $reqRoute = $this->formatRoute($req->requestUri);
 
-        $allMethod = 'all';
-        if (property_exists($this, $allMethod)) {
-            $methodDictionary = $this->{$allMethod} ?: array();
-            foreach ($methodDictionary as $path => $_) {
-                $route = $this->group . $path;
-                $prefixRegexPattern = $this->getRouteRegexPattern($route);
-                if (preg_match($prefixRegexPattern, $reqRoute)) {
-                    $middlewares = $methodDictionary[$route];
-                    // TODO: middleware 순회하며 Router 찾아서 먼저 등록된 middleware 등록
-                    $this->ctx->addMiddleware($middlewares);
-                    $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
-                }
-            }
-        }
+        // search middlewares applied by use command and append to ctx
+        $this->searchMiddleware('all', $reqRoute);
 
-        $method = strtolower($this->ctx->req->requestMethod);
-        if (property_exists($this, $method)) {
-            $methodDictionary = $this->{$method} ?: array();
-            if (isset($methodDictionary[$reqRoute])) {
-                $middlewares = $methodDictionary[$reqRoute];
-                $this->ctx->addMiddleware($middlewares);
-            } else {
-                foreach ($methodDictionary as $path => $_) {
-                    $route = $this->group . $path;
-                    if (preg_match($this->getRouteRegexPattern($route, true), $reqRoute)) {
-                        $middlewares = $methodDictionary[$route];
-                        $this->ctx->addMiddleware($middlewares);
-                        $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
-                    }
-                }
-            }
-        }
+        // search middlewares applied by request method and append to ctx
+        $method = strtolower($req->requestMethod);
+        $this->searchMiddleware($method, $reqRoute);
 
         $this->ctx->runMiddlewares();
     }

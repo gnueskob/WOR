@@ -27,6 +27,7 @@ class Context extends Singleton
         if (!$this->start) {
             $this->start = true;
             if (count($this->middlewares) === 0) {
+                // TODO: default req 핸들러 처리 how
                 EH::defaultRequestHandler();
                 return;
             }
@@ -41,16 +42,12 @@ class Context extends Singleton
         }
         $middleware = $this->middlewares[0];
         $this->middlewares = array_slice($this->middlewares, 1);
-        if ($middleware instanceof Router) {
-            $middleware->run();
-        } else {
-            try {
-                call_user_func_array($middleware, array($this));
-            } catch (Exception $e) {
-                DEV::log($e);
-            }
+
+        try {
+            call_user_func_array($middleware, array($this));
+        } catch (Exception $e) {
+            DEV::log($e);
         }
-        return;
     }
 
     public function setHeader(int $code, string $msg): void

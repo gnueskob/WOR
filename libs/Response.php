@@ -36,6 +36,7 @@ class Response implements IResponse
         switch ($this->type) {
             case __JSON__:
                 header("Content-Type: application/json; charset=UTF-8");
+                $res = json_encode($res);
                 break;
             case __TEXT__:
                 header("Content-Type: text/text; charset=UTF-8");
@@ -47,9 +48,6 @@ class Response implements IResponse
                 break;
         }
 
-        if ($this->type === __JSON__) {
-            $res = json_encode($res);
-        }
         echo $res;
     }
 }

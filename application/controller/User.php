@@ -21,6 +21,7 @@ class User extends Router
                 $data['params'] = $ctx->req->getParams();
                 $data['test'] = 'test';
                 $ctx->res->send($data);
+                $ctx->next();
             }
         );
 

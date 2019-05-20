@@ -13,7 +13,7 @@ class Request implements IRequest
 
     public function __construct()
     {
-        $this->params = array();
+        $this->params = [];
         foreach ($_SERVER as $key => $value) {
             $this->{$this->toCamelCase($key)} = $value;
         }
@@ -35,10 +35,10 @@ class Request implements IRequest
     public function getBody(): array
     {
         if ($this->requestMethod === "GET") {
-            return array();
+            return [];
         }
 
-        $jsonReturnMethods = array("POST", "PUT");
+        $jsonReturnMethods = ["POST", "PUT"];
         if (in_array($this->requestMethod, $jsonReturnMethods)) {
             return json_decode(file_get_contents('php://input'), true);
         }
@@ -46,7 +46,7 @@ class Request implements IRequest
 
     public function setParams(array $params): void
     {
-        $this->params = array_merge($this->params, ...$params);
+        $this->params = array_merge($this->params, $params);
     }
 
     public function getParams(): array

@@ -9,19 +9,21 @@ class Auth
 {
     public static function isValid()
     {
-        return function (Context $ctx): bool {
+        return function (Context $ctx): void {
             $config = Config::getInstance();
             if ($config->getMode() === DEV) {
-                return true;
+                $ctx->next();
+                return;
             }
 
-            if (empty($ctx->req->httpXAccessToken)) {
-                return false;
+            if (property_exists($ctx->req, 'httpXAccessToken')) {
+                // TODO: do not pass request
+                return;
             }
 
             // TODO: validation JWT
 
-            return true;
+            return;
         };
     }
 }

@@ -4,7 +4,7 @@ namespace lsb\Libs;
 
 class Singleton
 {
-    public static function getInstance(): object
+    public static function getInstance()
     {
         static $instance = null;
         if ($instance === null) {

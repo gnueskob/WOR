@@ -7,11 +7,11 @@ class Router
     private $ctx;
     private $group = '';
 
-    protected $httpMethods = array(
+    protected $httpMethods = [
         "GET",
         "POST",
         "PUT"
-    );
+    ];
 
     public function __construct()
     {
@@ -26,10 +26,10 @@ class Router
         }
 
         $formatedRoute = $this->formatRoute($route);
-        $appliedMWs = &$this->{strtolower($methodName)}[$formatedRoute];
-        if (is_null($appliedMWs)) {
-            $appliedMWs = array();
+        if (empty($this->{strtolower($methodName)}[$formatedRoute])) {
+            $this->{strtolower($methodName)}[$formatedRoute] = [];
         }
+        $appliedMWs = &$this->{strtolower($methodName)}[$formatedRoute];
         array_push($appliedMWs, ...$middlewares);
     }
 
@@ -100,7 +100,7 @@ class Router
     {
         $paramKey = explode('/', ltrim($route, '/'));
         $paramValue = explode('/', ltrim($reqRoute, '/'));
-        $params = array();
+        $params = [];
         foreach ($paramKey as $idx => $key) {
             if (preg_match('/^:.*/', $key)) {
                 $params[ltrim($key, ':')] = $paramValue[$idx];
@@ -109,27 +109,38 @@ class Router
         return $params;
     }
 
-    private function appendMiddleware(array $middlewares): void
+    /**
+     * Append middleware to current context $ctx
+     * @param   string  $path
+     * @param   array   $middlewares
+     * @return  void
+    */
+    private function appendMiddleware(string $path, array $middlewares): void
     {
-        foreach ($middlewares as $path => $middleware) {
+        foreach ($middlewares as $middleware) {
             if ($middleware instanceof Router) {
                 $group = $this->formatRoute($this->group . $path);
                 $middleware->group = $group;
-                // TODO: run 돌릴 시 미들웨어 리버스 처리 how
-                $middleware->run();
+                $middleware->resolve();
             } else {
-                $this->ctx->addMiddleware($middleware);
+                $this->ctx->addMiddleware([$middleware]);
             }
         }
     }
 
+    /**
+     * Search middleware that related to current request route and append it to ctx
+     * @param   string      $method     all | other method
+     * @param   string      $reqRoute
+     * @return  void
+    */
     private function searchMiddleware(string $method, string $reqRoute): void
     {
         if (property_exists($this, $method)) {
-            $methodDictionary = $this->{$method} ?: array();
+            $methodDictionary = $this->{$method} ?: [];
             $isReqMethod = $method !== 'all';
             if ($isReqMethod && isset($methodDictionary[$reqRoute])) {
-                $this->appendMiddleware($methodDictionary[$reqRoute]);
+                $this->appendMiddleware($reqRoute, $methodDictionary[$reqRoute]);
                 return;
             }
 
@@ -137,7 +148,7 @@ class Router
                 $route = $this->group . $path;
                 $prefixRegexPattern = $this->getRouteRegexPattern($route, $isReqMethod);
                 if (preg_match($prefixRegexPattern, $reqRoute)) {
-                    $this->appendMiddleware($methodDictionary[$route]);
+                    $this->appendMiddleware($path, $methodDictionary[$path]);
                     $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
                 }
             }
@@ -146,24 +157,32 @@ class Router
 
     /**
      * Resolves a route
+     * @return  void
      */
     private function resolve(): void
     {
         $req = $this->ctx->req;
         $reqRoute = $this->formatRoute($req->requestUri);
 
-        // search middlewares applied by use command and append to ctx
+        // search middleware applied by use command and append to ctx
         $this->searchMiddleware('all', $reqRoute);
 
-        // search middlewares applied by request method and append to ctx
+        // search middleware applied by request method and append to ctx
         $method = strtolower($req->requestMethod);
         $this->searchMiddleware($method, $reqRoute);
-
-        $this->ctx->runMiddlewares();
     }
 
+    /**
+     * Find all of middleware that appended to request route and run them until no next()
+     * @return  void
+    */
     public function run(): void
     {
         $this->resolve();
+        $this->ctx->runMiddlewares();
+        if ($this->ctx->doesRequestHandlerExist() === false) {
+            EH::defaultRequestHandler();
+            return;
+        }
     }
 }

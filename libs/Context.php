@@ -2,7 +2,7 @@
 
 namespace lsb\Libs;
 
-use lsb\Utils\DEV;
+use lsb\Utils\Dev;
 use Exception;
 
 class Context extends Singleton
@@ -12,26 +12,20 @@ class Context extends Singleton
     public $res;
     public $middlewares;
 
-    private $start = false;
+    private $middlewareCnt = 0;
 
     protected function __construct()
     {
         parent::__construct();
         $this->req = new Request();
         $this->res = new Response();
-        $this->middlewares = array();
+        $this->middlewares = [];
     }
 
     public function runMiddlewares()
     {
-        if (!$this->start) {
-            $this->start = true;
-            if (count($this->middlewares) === 0) {
-                // TODO: default req 핸들러 처리 how
-                EH::defaultRequestHandler();
-                return;
-            }
-        }
+        // Use to reduce next() function using array_pop()
+        $this->middlewares = array_reverse($this->middlewares);
         $this->next();
     }
 
@@ -40,14 +34,16 @@ class Context extends Singleton
         if (count($this->middlewares) === 0) {
             return;
         }
-        $middleware = $this->middlewares[0];
-        $this->middlewares = array_slice($this->middlewares, 1);
 
+        // array_pop takes O(1)
+        $middleware = array_pop($this->middlewares);
+        $this->middlewareCnt++;
         try {
-            call_user_func_array($middleware, array($this));
+            call_user_func_array($middleware, [$this]);
         } catch (Exception $e) {
-            DEV::log($e);
+            Dev::log($e);
         }
+        return;
     }
 
     public function setHeader(int $code, string $msg): void
@@ -59,5 +55,10 @@ class Context extends Singleton
     public function addMiddleware(array $middleware): void
     {
         array_push($this->middlewares, ...$middleware);
+    }
+
+    public function doesRequestHandlerExist(): bool
+    {
+        return $this->middlewareCnt >= 0;
     }
 }

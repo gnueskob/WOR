@@ -9,45 +9,37 @@ define('__HTML__', 2);
 
 class Response implements IResponse
 {
-    private $type = null;
-    private $status = 200;
-    private $msg = 'OK';
+    public $status = 200;
+    public $msg = 'OK';
+
+    public $body;
 
     public function __construct()
     {
-        $this->type = __JSON__;
     }
 
-    public function setHeader(string $protocol, int $code, string $msg): void
+    public function error(string $protocol, string $errorMsg): void
     {
-        header("{$protocol} {$code} {$msg}");
-        header("Content-Type: text/html; charset=UTF-8");
+        header("{$protocol} {$errorMsg}");
     }
 
-    public function setType(int $type): void
+    public function setResponse(int $status, string $msg = ''): void
     {
-        $this->type = $type;
+        $this->status = $status;
+        $this->msg = $msg;
     }
 
-    public function send($res): void
+    public function setHeader(string $header, string ...$value): void
     {
-        header("Access-Control-Allow-Origin: *");
+        $headerValue = implode('; ', $value);
+        header("{$header}: {$headerValue}");
+    }
 
-        switch ($this->type) {
-            case __JSON__:
-                header("Content-Type: application/json; charset=UTF-8");
-                $res = json_encode($res);
-                break;
-            case __TEXT__:
-                header("Content-Type: text/text; charset=UTF-8");
-                break;
-            case __HTML__:
-                header("Content-Type: text/html; charset=UTF-8");
-                break;
-            default:
-                break;
+    public function send($data = null): void
+    {
+        if (!is_null($data)) {
+            $this->body = $data;
         }
-
-        echo $res;
+        echo $this->body;
     }
 }

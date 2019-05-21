@@ -4,26 +4,37 @@ namespace lsb\Utils;
 
 use lsb\Config\Config;
 use lsb\Libs\Context;
+use lsb\Libs\CtxException;
 
 class Auth
 {
     public static function isValid()
     {
-        return function (Context $ctx): void {
-            $config = Config::getInstance();
-            if ($config->getMode() === DEV) {
-                $ctx->next();
-                return;
+        return function (Context $ctx): bool {
+            if (Config::getInstance()->getMode() === DEV) {
+                $ctx->err->unauthenticatedHandler();
+                return $ctx->next();
             }
 
             if (property_exists($ctx->req, 'httpXAccessToken')) {
-                // TODO: do not pass request
-                return;
+                // TODO: do not pass the request
+                return false;
             }
 
             // TODO: validation JWT
 
-            return;
+            return true;
+        };
+    }
+
+    public static function errorHandler()
+    {
+        return function (Context $ctx): bool {
+            try {
+                return $ctx->next();
+            } catch (CtxException $e) {
+                throw $e;
+            }
         };
     }
 }

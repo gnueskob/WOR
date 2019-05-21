@@ -2,54 +2,61 @@
 
 namespace lsb\Libs;
 
-use lsb\Utils\Dev;
-use Exception;
-
 class Context extends Singleton
 {
     public $err;
     public $req;
     public $res;
-    public $middlewares;
 
-    private $middlewareCnt = 0;
+    private $middlewares;
 
     protected function __construct()
     {
         parent::__construct();
+        $this->err = new CtxException();
         $this->req = new Request();
         $this->res = new Response();
         $this->middlewares = [];
     }
 
-    public function runMiddlewares()
+    /**
+     * Check current request method is allowed
+     * @param   array   $httpMethods    allowed methods
+     * @throws  CtxException
+     */
+    public function checkAllowedMethod(array $httpMethods): void
     {
+        $method = $this->req->requestMethod;
+        if (!in_array(strtoupper($method), $httpMethods)) {
+            $this->err->internalServerErrorHandler();
+        }
+    }
+
+    /**
+     * Run all of middleware appended to this context
+     * @throws  CtxException
+    */
+    public function runMiddlewares(): void
+    {
+        if (count($this->middlewares) === 0) {
+            $this->err->defaultRequestHandler();
+        }
+
         // Use to reduce next() function using array_pop()
         $this->middlewares = array_reverse($this->middlewares);
         $this->next();
     }
 
-    public function next(): void
+    public function next(): bool
     {
         if (count($this->middlewares) === 0) {
-            return;
+            return false;
         }
 
         // array_pop takes O(1)
         $middleware = array_pop($this->middlewares);
-        $this->middlewareCnt++;
-        try {
-            call_user_func_array($middleware, [$this]);
-        } catch (Exception $e) {
-            Dev::log($e);
-        }
-        return;
-    }
 
-    public function setHeader(int $code, string $msg): void
-    {
-        $protocol = $this->req->serverProtocol;
-        $this->res->setHeader($protocol, $code, $msg);
+        return call_user_func_array($middleware, [$this]);
     }
 
     public function addMiddleware(array $middleware): void
@@ -57,8 +64,22 @@ class Context extends Singleton
         array_push($this->middlewares, ...$middleware);
     }
 
-    public function doesRequestHandlerExist(): bool
+    /**
+     * @param   int     $status
+     * @param   string  $msg
+     * @param   bool    $expose
+     * @throws  CtxException
+    */
+    public function throw(int $status, string $msg = '', bool $expose = true)
     {
-        return $this->middlewareCnt >= 0;
+        $this->err->msg = $msg === '' ? 'Error occurred' : $msg;
+        $this->err->status = $status;
+        $this->err->expose = $expose;
+        throw $this->err;
     }
+
+//    public function redirect(string $method, string $path)
+//    {
+//
+//    }
 }

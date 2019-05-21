@@ -20,11 +20,6 @@ class Router
 
     private function request(string $methodName, string $route, array $middlewares): void
     {
-        if ($methodName !== 'all' && !in_array(strtoupper($methodName), $this->httpMethods)) {
-            EH::invalidMethodHandler();
-            return;
-        }
-
         $formatedRoute = $this->formatRoute($route);
         if (empty($this->{strtolower($methodName)}[$formatedRoute])) {
             $this->{strtolower($methodName)}[$formatedRoute] = [];
@@ -33,30 +28,34 @@ class Router
         array_push($appliedMWs, ...$middlewares);
     }
 
-    public function get(string $path, ...$middlewares): void
+    public function get(string $path, ...$middlewares): Router
     {
         $this->request('get', $path, $middlewares);
+        return $this;
     }
 
-    public function post(string $path, ...$middlewares): void
+    public function post(string $path, ...$middlewares): Router
     {
         $this->request('post', $path, $middlewares);
+        return $this;
     }
 
-    public function put(string $path, ...$middlewares): void
+    public function put(string $path, ...$middlewares): Router
     {
         $this->request('put', $path, $middlewares);
+        return $this;
     }
 
     /**
      * Add middleware or router
-     * @param string $path path to add router or middleware
-     * @param object[] $middlewares middleware to be added (can contain router)
-     * @return  void
+     * @param   string      $path           path to add router or middleware
+     * @param   object[]    $middlewares    middleware to be added (can contain router)
+     * @return  Router
      */
-    public function use(string $path = '/', object ...$middlewares): void
+    public function use(string $path = '/', object ...$middlewares): Router
     {
         $this->request('all', $this->formatRoute($path), $middlewares);
+        return $this;
     }
 
     /**
@@ -178,11 +177,14 @@ class Router
     */
     public function run(): void
     {
-        $this->resolve();
-        $this->ctx->runMiddlewares();
-        if ($this->ctx->doesRequestHandlerExist() === false) {
-            EH::defaultRequestHandler();
-            return;
+        try {
+            $this->ctx->checkAllowedMethod($this->httpMethods);
+            $this->resolve();
+            $this->ctx->runMiddlewares();
+        } catch (CtxException $e) {
+            $res = $this->ctx->res;
+            $req = $this->ctx->req;
+            $res->error($req->serverProtocol, $e->getErrorMsg());
         }
     }
 }

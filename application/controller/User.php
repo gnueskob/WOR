@@ -15,12 +15,13 @@ class User extends Router
 
         $router->get(
             '/:id/:action',
+            Auth::errorHandler(),
             Auth::isValid(),
             function (Context $ctx) {
                 $data['url'] = $ctx->req->requestUri;
                 $data['params'] = $ctx->req->getParams();
                 $data['test'] = 'test';
-                $ctx->res->send($data);
+                $ctx->res->body = $data;
                 $ctx->next();
             }
         );

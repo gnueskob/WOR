@@ -12,10 +12,16 @@ class WOR extends Router
     {
         parent::__construct();
         $router = $this;
-        $router->use('/user', new User());
+
+        $router
+            ->use(function (Context $ctx) {
+                $ctx->res->setHeader('Access-Control-Allow-Origin', '*');
+                $ctx->res->setHeader('Content-Type', 'application/json', 'charset=UTF-8');
+            })
+            ->use('/user', new User());
 
         $router->get('/user/:id/:pw', function (Context $ctx) {
-            $ctx->res->send(['a']);
+            $ctx->res->send();
         });
     }
 }

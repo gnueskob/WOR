@@ -49,18 +49,18 @@ class Router
     /**
      * Add middleware or router
      * @param   string      $path           path to add router or middleware
-     * @param   object[]    $middlewares    middleware to be added (can contain router)
+     * @param   object[]    $middlewares    middleware Or Router to be added this path
      * @return  Router
      */
-    public function use(string $path = '/', object ...$middlewares): Router
+    public function use(string $path, object ...$middlewares): Router
     {
-        $this->request('all', $this->formatRoute($path), $middlewares);
+        $this->request('all', $path, $middlewares);
         return $this;
     }
 
     /**
      * Removes trailing forward slashes from the right of the route.
-     * @param string  route
+     * @param   string  route
      * @return  string  result
      */
     private function formatRoute(string $route): string
@@ -74,9 +74,9 @@ class Router
 
     /**
      * Find regex pattern about route string
-     * @param string $route route string
-     * @param bool $end flag notifying end with this route string
-     * @return  string  $regexPattern
+     * @param   string      $route      route string
+     * @param   bool        $end        flag notifying end with this route string
+     * @return  string      $regexPattern
      */
     private function getRouteRegexPattern(string $route, bool $end = false): string
     {
@@ -91,9 +91,9 @@ class Router
 
     /**
      * Find parameters about request route URL
-     * @param string $route route already registered in Router
-     * @param string $reqRoute route where user send request
-     * @return  array   $params     $params[:key] = $value
+     * @param   string      $route      route already registered in Router
+     * @param   string      $reqRoute   route where user send request
+     * @return  array       $params     $params[:key] = $value
      */
     private function findRouteParams(string $route, string $reqRoute): array
     {
@@ -110,8 +110,8 @@ class Router
 
     /**
      * Append middleware to current context $ctx
-     * @param   string  $path
-     * @param   array   $middlewares
+     * @param   string      $path
+     * @param   array       $middlewares
      * @return  void
     */
     private function appendMiddleware(string $path, array $middlewares): void
@@ -122,7 +122,7 @@ class Router
                 $middleware->group = $group;
                 $middleware->resolve();
             } else {
-                $this->ctx->addMiddleware([$middleware]);
+                $this->ctx->addMiddleware($middleware);
             }
         }
     }
@@ -173,7 +173,8 @@ class Router
 
     /**
      * Find all of middleware that appended to request route and run them until no next()
-     * @return  void
+     * If there exists some CtxException about middleware,
+     * Error handling will be processed in this try/catch
     */
     public function run(): void
     {

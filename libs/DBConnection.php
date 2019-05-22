@@ -21,7 +21,7 @@ class DB extends Singleton
             $dbname,
             $charset,
             $user,
-            $password) = $config->getDBConfig();
+            $password) = $config->getConfig('db');
 
         $dsn = $dbms . ':' .
             'host=' . $host . ';' .

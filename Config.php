@@ -15,8 +15,7 @@ class Config extends Singleton
     private $mode = null;
 
     // DB connection config.
-    private $dbConf = [];
-    private $redisConf = [];
+    private $conf;
 
     protected function __construct()
     {
@@ -24,10 +23,11 @@ class Config extends Singleton
 
         // set db connection config
         $conf = json_decode(file_get_contents('config.json'), true);
+
+        // TODO: DEV 모드 아닐 시 설정 불러오기
         $conf = $this->mode === DEV ? $conf[DEV] : $conf[DEV];
 
-        $this->dbConf = $conf['db'];
-        $this->redisConf = $conf['redis'];
+        $this->conf = $conf;
     }
 
     public function getMode(): string
@@ -40,13 +40,8 @@ class Config extends Singleton
         $this->mode = $mode;
     }
 
-    public function getDBConfig()
+    public function getConfig(string $key): array
     {
-        return $this->dbConf;
-    }
-
-    public function getRedisConfig()
-    {
-        return $this->redisConf;
+        return $this->conf[$key];
     }
 }

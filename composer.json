@@ -5,13 +5,15 @@
             "lsb\\App\\": "application/",
             "lsb\\Libs\\": "libs/",
             "lsb\\Utils\\": "utils/",
+            "lsb\\Scribe\\": "libs/scribe/",
             "lsb\\Config\\": ""
         }
     },
     "require": {
         "ext-json": "*",
         "ext-pdo": "*",
-        "ext-redis": "*"
+        "ext-redis": "*",
+        "ext-memcached": "*"
     },
     "authors": [
         {

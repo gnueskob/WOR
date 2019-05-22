@@ -10,28 +10,29 @@ class Auth
 {
     public static function isValid()
     {
-        return function (Context $ctx): bool {
+        return function (Context $ctx): void {
             if (Config::getInstance()->getMode() === DEV) {
-                $ctx->err->unauthenticatedHandler();
-                return $ctx->next();
+                $ctx->next();
+                return;
             }
 
-            if (property_exists($ctx->req, 'httpXAccessToken')) {
-                // TODO: do not pass the request
-                return false;
+            if (!property_exists($ctx->req, 'httpXAccessToken')) {
+                $ctx->err->throwUnauthenticatedError();
+                return;
             }
 
             // TODO: validation JWT
 
-            return true;
+            return;
         };
     }
 
     public static function errorHandler()
     {
-        return function (Context $ctx): bool {
+        return function (Context $ctx) {
             try {
-                return $ctx->next();
+                $ctx->next();
+                return;
             } catch (CtxException $e) {
                 throw $e;
             }

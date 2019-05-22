@@ -1,9 +1,8 @@
 <?php
 
-namespace lsb\libs;
+namespace lsb\Libs;
 
 interface IContext
 {
     public function next(): void;
-    public function setHeader(int $code, string $msg): void;
 }

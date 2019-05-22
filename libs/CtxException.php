@@ -38,34 +38,26 @@ class CtxException extends Exception
         throw $this;
     }
 
-    /**
-     * @throws  CtxException
-    */
-    public function unauthenticatedHandler(): void
+    /* @throws  CtxException */
+    public function throwUnauthenticatedError(): void
     {
         $this->setError(401, "Unauthenticated");
     }
 
-    /**
-     * @throws  CtxException
-     */
-    public function defaultRequestHandler(): void
+    /* @throws  CtxException */
+    public function throwDefaultRequestError(): void
     {
         $this->setError(404, "Not Found");
     }
 
-    /**
-     * @throws  CtxException
-     */
-    public function invalidMethodHandler(): void
+    /* @throws  CtxException */
+    public function throwInvalidMethodError(): void
     {
         $this->setError(405, "Method Not Allowed");
     }
 
-    /**
-     * @throws  CtxException
-     */
-    public function internalServerErrorHandler(): void
+    /* @throws  CtxException */
+    public function throwInternalServerError(): void
     {
         $this->setError(500, "Internal Server Error");
     }

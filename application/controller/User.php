@@ -21,7 +21,7 @@ class User extends Router
                 $data['url'] = $ctx->req->requestUri;
                 $data['params'] = $ctx->req->getParams();
                 $data['test'] = 'test';
-                $ctx->res->body = $data;
+                $ctx->res->body = json_encode($data);
                 $ctx->next();
             }
         );

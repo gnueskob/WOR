@@ -1,35 +1,33 @@
 <?php
 
-namespace lsb\Scribe;
+namespace lsb\Log;
 
 use TSocketPool;
 use TFramedTransport;
 use TBinaryProtocol;
 use scribeClient;
+use LogEntry;
 use Exception;
-use lsb\Libs\Singleton;
-use lsb\Config\Config;
+use lsb\Libs\ILog;
 
-class Scribe extends Singleton
+class Scribe implements ILog
 {
     private $client;
+    private $msg = [];
 
-    protected function __construct()
+    public function __construct(array $conf)
     {
-        parent::__construct();
-        $this->client = $this->createScribeClient();
+        $this->client = $this->createScribeClient($conf);
     }
 
-    private function createScribeClient(): scribeClient
+    private function createScribeClient(array $conf): scribeClient
     {
         try {
-            $conf = Config::getInstance()->getConfig('scribe');
-
             // Set up the socket connections
             $scribeServers = $conf['host'];
             $scribePorts = $conf['port'];
 
-            print "creating socket pool\n";
+            // Creating socket pool
             $sock = new TSocketPool($scribeServers, $scribePorts);
             $sock->setDebug(0);
             $sock->setSendTimeout(1000);
@@ -41,22 +39,40 @@ class Scribe extends Singleton
             $prot = new TBinaryProtocol($trans);
 
             // Create the client
-            print "creating scribe client\n";
             $scribeClient = new scribeClient($prot);
 
             // Open the transport (we rely on PHP to close it at script termination)
-            print "opening transport\n";
             $trans->open();
         } catch (Exception $e) {
-            print "Unable to create global scribe client, received exception: $e \n";
+            // print "Unable to create global scribe client, received exception: $e \n";
             return null;
         }
 
         return $scribeClient;
     }
 
-    public function log(array $msg)
+    private function getLogEntry(string $category, string $msg): LogEntry
     {
-        $this->client->Log($msg);
+        return new LogEntry([
+            'category' => $category,
+            'msg' => $msg
+        ]);
+    }
+
+    public function addLog(string $category, string $msg): void
+    {
+        $this->msg[] = $this->getLogEntry($category, $msg);
+    }
+
+    public function flushLog(): void
+    {
+        $this->client->Log($this->msg);
+        $this->msg = [];
+    }
+
+    public function writeLog(string $category, string $msg): void
+    {
+        $logEntry[] = $this->getLogEntry($category, $msg);
+        $this->client->Log($logEntry);
     }
 }

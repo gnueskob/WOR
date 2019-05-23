@@ -7,12 +7,15 @@ use lsb\Libs\Singleton;
 define('URL', 'http://127.0.0.1');
 define('WOR', 'wor');
 define('DEV', 'dev');
+define('SCRIBE', 'scribe');
+define('LOCAL', 'localLog');
 
 // TODO: DB connection conf
 
 class Config extends Singleton
 {
     private $mode = null;
+    private $logMode = null;
 
     // DB connection config.
     private $conf;
@@ -40,7 +43,12 @@ class Config extends Singleton
         $this->mode = $mode;
     }
 
-    public function getConfig(string $key): array
+    public function setLogMode($logMode): void
+    {
+        $this->logMode = $logMode;
+    }
+
+    public function getConfig(string $key)
     {
         return $this->conf[$key];
     }

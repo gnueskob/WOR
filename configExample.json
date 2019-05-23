@@ -4,10 +4,10 @@
       "driver": "mysql",
       "host": "localhost",
       "port": "3306",
-      "dbname": "world_of_renaissance",
+      "dbname": "database_name",
       "charset": "utf8",
       "user": "root",
-      "password": "1234"
+      "password": "********"
     },
     "redis": {
       "host": "localhost",
@@ -18,20 +18,9 @@
       "host": "localhost",
       "port": "11211"
     },
-    "log": {
-      "driver": "scribe",
-      "localLog": {
-        "dir": "/game/log/localLog",
-        "limit": 50
-      },
-      "scribe": {
-        "host": [
-          "localhost"
-        ],
-        "port": [
-          "1463"
-        ]
-      }
+    "scribe": {
+      "host": ["localhost"],
+      "port": ["1463"]
     }
   }
 }

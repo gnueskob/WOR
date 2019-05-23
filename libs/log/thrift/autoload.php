@@ -1,6 +1,9 @@
 <?php
 $GLOBALS['THRIFT_ROOT'] = __DIR__;
 
+require_once($GLOBALS['THRIFT_ROOT'] . '/Thrift.php');
+require_once($GLOBALS['THRIFT_ROOT'] . '/packages/scribe/scribe.php');
+
 function scribe_autoload($class_name)
 {
     $namespace = explode('\\', $class_name);
@@ -13,8 +16,6 @@ function scribe_autoload($class_name)
             require_once($file);
         }
     }
-    require_once($GLOBALS['THRIFT_ROOT'] . '/Thrift.php');
-    require_once($GLOBALS['THRIFT_ROOT'] . '/packages/scribe/scribe.php');
 }
 
 spl_autoload_register('scribe_autoload');

@@ -6,6 +6,7 @@ use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\Libs\Context;
 use lsb\Utils\Auth;
+use lsb\Utils\Logger;
 
 class User extends Router implements ISubRouter
 {
@@ -15,6 +16,7 @@ class User extends Router implements ISubRouter
 
         $router->get(
             '/:id/:action',
+            Logger::APILogger('User'),
             Auth::errorHandler(),
             Auth::isValid(),
             function (Context $ctx) {

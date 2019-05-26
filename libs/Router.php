@@ -205,6 +205,8 @@ class Router
             $res = $this->ctx->res;
             $req = $this->ctx->req;
             $res->error($req->serverProtocol, $e->getErrorMsg());
+        } finally {
+            Log::getInstance()->flushLog();
         }
     }
 }

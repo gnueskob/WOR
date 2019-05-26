@@ -20,23 +20,29 @@ class Router
 
     private function request(string $methodName, string $route, array $middlewares): void
     {
-        if (!strtolower($this->ctx->req->requestMethod) === $methodName) {
+        $isAllMethod = $methodName === 'all';
+        $isReqMethod = $methodName === strtolower($this->ctx->req->requestMethod);
+        if (!$isAllMethod && !$isReqMethod) {
             return;
         }
 
-        $formatedRoute = $this->formatRoute($route);
-
-        $pullPath = $this->group . $formatedRoute;
-        $prefixRegexPattern = $this->getRouteRegexPattern($pullPath);
-        if (!preg_match($prefixRegexPattern, $this->ctx->req->requestUri)) {
+        $reqUri = $this->ctx->req->requestUri;
+        $fullPath = $this->formatRoute($this->group . $route);
+        $regexPattern = $this->getRouteRegexPattern($fullPath, !$isAllMethod);
+        if (!preg_match($regexPattern, $reqUri)) {
             return;
         }
 
+        /* resolve() deprecated
         if (empty($this->{strtolower($methodName)}[$formatedRoute])) {
             $this->{strtolower($methodName)}[$formatedRoute] = [];
         }
         $appliedMWs = &$this->{strtolower($methodName)}[$formatedRoute];
         array_push($appliedMWs, ...$middlewares);
+        */
+
+        $this->appendMiddleware($fullPath, $middlewares);
+        $this->ctx->req->setParams($this->findRouteParams($fullPath, $reqUri));
     }
 
     public function get(string $path, ...$middlewares): Router
@@ -129,10 +135,10 @@ class Router
     {
         foreach ($middlewares as $middleware) {
             if ($middleware instanceof ISubRouter) {
-                $group = $this->formatRoute($this->group . $path);
-                $middleware->group = $group;
+                // $group = $this->formatRoute($this->group . $path);
+                $middleware->group = $path;
                 $middleware->make();
-                $middleware->resolve();
+                // $middleware->resolve();
             } else {
                 $this->ctx->addMiddleware($middleware);
             }
@@ -193,7 +199,7 @@ class Router
     {
         try {
             $this->ctx->checkAllowedMethod($this->httpMethods);
-            $this->resolve();
+            // $this->resolve();
             $this->ctx->runMiddlewares();
         } catch (CtxException $e) {
             $res = $this->ctx->res;

@@ -185,7 +185,7 @@ class Router
         } catch (CtxException $e) {
             $res = $this->ctx->res;
             $req = $this->ctx->req;
-            $res->error($req->serverProtocol, $e->getErrorMsg());
+            $res->error($req->serverProtocol, $e->getCode(), $e->getMessage());
         }
     }
 }

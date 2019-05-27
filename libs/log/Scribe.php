@@ -55,7 +55,7 @@ class Scribe implements ILog
     {
         return new LogEntry([
             'category' => $category,
-            'msg' => $msg
+            'message' => $msg
         ]);
     }
 

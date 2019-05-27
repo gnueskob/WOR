@@ -2,9 +2,10 @@
 
 namespace lsb\Libs;
 
+use Exception;
+
 class Context extends Singleton implements IContext
 {
-    public $err;
     public $req;
     public $res;
 
@@ -13,7 +14,6 @@ class Context extends Singleton implements IContext
     protected function __construct()
     {
         parent::__construct();
-        $this->err = new CtxException();
         $this->req = new Request();
         $this->res = new Response();
         $this->middlewares = [];
@@ -28,7 +28,7 @@ class Context extends Singleton implements IContext
     {
         $method = $this->req->requestMethod;
         if (!in_array(strtoupper($method), $httpMethods)) {
-            $this->err->throwInternalServerError();
+            (new CtxException())->throwInternalServerException();
         }
     }
 
@@ -39,7 +39,7 @@ class Context extends Singleton implements IContext
     public function runMiddlewares(): void
     {
         if (count($this->middlewares) === 0) {
-            $this->err->throwDefaultRequestError();
+            (new CtxException())->throwMethodNotAllowedException();
         }
 
         // Use to reduce next() function using array_pop()
@@ -75,16 +75,19 @@ class Context extends Singleton implements IContext
 
     /**
      * Throw CtxException for some reason
-     * @param   int     $status
-     * @param   string  $msg
-     * @param   bool    $expose
+     * @param   int         $serverErrCode
+     * @param   string      $serverMsg
+     * @param   string      $message
+     * @param   int         $code
      * @throws  CtxException
-    */
-    public function throw(int $status, string $msg = '', bool $expose = true)
-    {
-        $this->err->msg = $msg === '' ? 'Error occurred' : $msg;
-        $this->err->status = $status;
-        $this->err->expose = $expose;
-        throw $this->err;
+     */
+    public function throw(
+        int $serverErrCode = 1,
+        string $serverMsg = '',
+        string $message = '',
+        $code = 404
+    ) {
+        $message = $message === '' ? 'Error occurred' : $message;
+        throw new CtxException($serverErrCode, $serverMsg, $message, $code, null);
     }
 }

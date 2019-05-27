@@ -4,61 +4,68 @@ namespace lsb\Libs;
 
 use Exception;
 
-/**
- * ErrorHandler class
-*/
 class CtxException extends Exception
 {
-    public $status;
-    public $expose;
-    public $msg;
+    private $serverErrCode;
+    private $serverMsg;
 
-    public function __construct()
-    {
-        parent::__construct();
-        $this->status = 404;
-        $this->expose = true;
+    public function __construct(
+        int $serverErrCode = 1,
+        string $serverMsg = '',
+        string $message = '',
+        $code = 404,
+        Exception $previous = null
+    ) {
+        parent::__construct($message, $code, $previous);
+        $this->serverErrCode = $serverErrCode;
+        $this->serverMsg = $serverMsg;
     }
 
-    public function getErrorMsg(): string
+    public function getServerErrCode(): int
     {
-        $msg = $this->expose ? $this->msg : '';
-        return "{$this->status} {$msg}";
+        return $this->serverErrCode;
+    }
+
+    public function getServerMsg(): string
+    {
+        return $this->serverMsg;
     }
 
     /**
-     * @param   int     $status
+     * @param   int     $code
      * @param   string  $msg
      * @throws  CtxException
     */
-    private function setError(int $status, string $msg): void
+    private function throwException(int $code, string $msg): void
     {
-        $this->status = $status;
-        $this->msg = $msg;
+        $this->serverErrCode = $code;
+        $this->serverMsg = $msg;
+        $this->code = $code;
+        $this->message = $msg;
         throw $this;
     }
 
     /* @throws  CtxException */
-    public function throwUnauthenticatedError(): void
+    public function throwUnauthenticatedException(): void
     {
-        $this->setError(401, "Unauthenticated");
+        $this->throwException(401, "Unauthenticated");
     }
 
     /* @throws  CtxException */
-    public function throwDefaultRequestError(): void
+    public function throwMethodNotAllowedException(): void
     {
-        $this->setError(404, "Not Found");
+        $this->throwException(404, "Not Found");
     }
 
     /* @throws  CtxException */
-    public function throwInvalidMethodError(): void
+    public function throwInvalidMethodException(): void
     {
-        $this->setError(405, "Method Not Allowed");
+        $this->throwException(405, "Method Not Allowed");
     }
 
     /* @throws  CtxException */
-    public function throwInternalServerError(): void
+    public function throwInternalServerException(): void
     {
-        $this->setError(500, "Internal Server Error");
+        $this->throwException(500, "Internal Server Error");
     }
 }

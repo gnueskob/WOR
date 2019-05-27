@@ -3,7 +3,7 @@
 namespace lsb\Libs;
 
 use Exception;
-use Redis;
+use \Redis;
 use lsb\Config\Config;
 
 class RedisInstance extends Singleton

@@ -4,5 +4,5 @@ namespace lsb\Libs;
 
 interface IResponse
 {
-    public function send($res);
+    public function send(bool $isJsonData);
 }

@@ -22,16 +22,20 @@
       "driver": "scribe",
       "localLog": {
         "dir": "/game/log/localLog",
-        "limit": 50
+        "limit": 50,
+        "newLine": true
       },
       "scribe": {
         "host": [
-          "localhost"
+          "10.10.14.201"
         ],
         "port": [
           "1463"
         ]
       }
+    },
+    "plan": {
+      "driver"
     }
   }
 }

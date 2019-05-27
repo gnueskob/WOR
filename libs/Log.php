@@ -6,6 +6,9 @@ use lsb\Config\Config;
 use lsb\Log\Scribe;
 use lsb\Log\LocalLog;
 
+define('SCRIBE', 'scribe');
+define('LOCAL', 'localLog');
+
 class Log extends Singleton implements ILog
 {
     private $driver;

@@ -18,15 +18,9 @@ class Response implements IResponse
     {
     }
 
-    public function error(string $protocol, string $errorMsg): void
+    public function error(string $protocol, int $code, string $msg): void
     {
-        header("{$protocol} {$errorMsg}");
-    }
-
-    public function setResponse(int $status, string $msg = ''): void
-    {
-        $this->status = $status;
-        $this->msg = $msg;
+        header("{$protocol} {$code} {$msg}");
     }
 
     public function setHeader(string $header, string ...$value): void
@@ -35,11 +29,8 @@ class Response implements IResponse
         header("{$header}: {$headerValue}");
     }
 
-    public function send($data = null): void
+    public function send(bool $isJsonData = false): void
     {
-        if (!is_null($data)) {
-            $this->body = $data;
-        }
-        echo $this->body;
+        echo $isJsonData ? json_encode($this->body) : $this->body;
     }
 }

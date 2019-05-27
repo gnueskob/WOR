@@ -1,11 +1,11 @@
 <?php
 
 use lsb\Libs\Router;
-use lsb\Libs\Request;
-use lsb\Libs\Response;
+use lsb\Libs\Context;
 
 $planRouter = new Router();
 
-$planRouter->get('/', function (Request $req, Response $res) {
-
+$planRouter->get('/', function (Context $ctx) {
+    $ctx->res->body = "Plan";
+    $ctx->res->send();
 });

@@ -10,19 +10,35 @@ class LocalLog implements ILog
 {
     private $dir;
     private $limit;
+    private $newLine;
     private $msg = [];
 
     public function __construct(array $conf)
     {
         $this->dir = $conf['dir'];
         $this->limit = $conf['limit'];
+        $this->newLine = $conf['newLine'];
+
+        if (!file_exists($this->dir)) {
+            mkdir($this->dir, 0777, true);
+        }
     }
 
+    /**
+     * Get symbolic link path of log file category
+     * @param   string      $category
+     * @return  string
+     */
     private function getSymbolicLinkPath(string $category)
     {
         return "{$this->dir}/{$category}/current";
     }
 
+    /**
+     * Get handle of log file
+     * @param   string      $category
+     * @return  bool|resource
+     */
     private function getLogFileHandle(string $category)
     {
         $categoryDir = $this->dir . '/' . $category;
@@ -41,6 +57,10 @@ class LocalLog implements ILog
         }
     }
 
+    /**
+     * Write massage to log file
+     * @param string $category
+     */
     private function writeToFile(string $category): void
     {
         $logFileHandle = $this->getLogFileHandle($category);
@@ -51,6 +71,13 @@ class LocalLog implements ILog
         fclose($logFileHandle);
     }
 
+    /**
+     * Append log massages to log file
+     * @param $logFileHandle
+     * @param $category
+     * @param $msg
+     * @return bool|resource
+     */
     private function appendLogMsgToFile($logFileHandle, $category, $msg)
     {
         $symbolicFile = $this->getSymbolicLinkPath($category);
@@ -79,7 +106,8 @@ class LocalLog implements ILog
 
     public function addLog(string $category, string $msg): void
     {
-        $this->msg[$category][] = $msg . PHP_EOL;
+        $msg = $this->newLine ? $msg . PHP_EOL : $msg;
+        $this->msg[$category][] = $msg;
     }
 
     public function flushLog(): void

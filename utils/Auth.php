@@ -3,12 +3,13 @@
 namespace lsb\Utils;
 
 use lsb\Config\Config;
+use lsb\Libs\Log;
 use lsb\Libs\Context;
 use lsb\Libs\CtxException;
 
 class Auth
 {
-    public static function isValid()
+    public static function isValid(): callable
     {
         return function (Context $ctx): void {
             if (Config::getInstance()->getMode() === DEV) {
@@ -17,7 +18,7 @@ class Auth
             }
 
             if (!property_exists($ctx->req, 'httpXAccessToken')) {
-                $ctx->err->throwUnauthenticatedError();
+                (new CtxException())->throwUnauthenticatedException();
                 return;
             }
 
@@ -27,14 +28,28 @@ class Auth
         };
     }
 
-    public static function errorHandler()
+    public static function errorHandler(): callable
     {
         return function (Context $ctx) {
             try {
                 $ctx->next();
                 return;
             } catch (CtxException $e) {
-                throw $e;
+                $log = Log::getInstance();
+                $category = $e->getServerErrCode();
+                $msg = $e->getServerMsg();
+                $log->addLog($category, $msg);
+
+                $errRes = [
+                    'result' => 1,
+                    'error' => $msg
+                ];
+
+                $ctx->res->body = $errRes;
+                $ctx->res->send(true);
+
+                // Don't throw Exception more
+                // throw $e;
             }
         };
     }

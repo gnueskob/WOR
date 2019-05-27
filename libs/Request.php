@@ -44,6 +44,11 @@ class Request implements IRequest
         }
     }
 
+    public function getFiles(): array
+    {
+        return $_FILES;
+    }
+
     public function setParams(array $params): void
     {
         $this->params = array_merge($this->params, $params);

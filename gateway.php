@@ -7,7 +7,6 @@ require(__DIR__ . '/libs/log/thrift/autoload.php');
 use lsb\Config\Config;
 use lsb\App\App;
 use lsb\App\WOR;
-use lsb\Libs\Plan;
 
 $config = Config::getInstance();
 $config->setMode(DEV);

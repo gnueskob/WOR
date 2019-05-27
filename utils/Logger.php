@@ -28,8 +28,10 @@ class Logger
             try {
                 $ctx->next();
             } catch (CtxException $e) {
-                $logMsg['result'] = $e->getCode();
-                $logMsg['error'] = $e->getMessage();
+                $logMsg['status'] = $e->getCode();
+                $logMsg['msg'] = $e->getMessage();
+                $logMsg['error_code'] = $e->getServerErrCode();
+                $logMsg['error_msg'] = $e->getServerMsg();
                 $log->addLog($logCategory, json_encode($logMsg));
                 throw $e;
             }
@@ -37,7 +39,7 @@ class Logger
             $end = microtime(true);
             $logMsg['end_time'] = $end;
             $logMsg['elapsed_time'] = $end - $start;
-            $logMsg['result'] = 200;
+            $logMsg['status'] = 200;
             $log->addLog($logCategory, json_encode($logMsg));
         };
     }

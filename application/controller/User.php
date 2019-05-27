@@ -16,7 +16,7 @@ class User extends Router implements ISubRouter
 
         $router->get(
             '/:id/:action',
-            Logger::APILogger('User'),
+            Logger::APILogger('user'),
             Auth::errorHandler(),
             Auth::isValid(),
             function (Context $ctx) {
@@ -37,7 +37,8 @@ class User extends Router implements ISubRouter
 
         $router->post('/info', function (Context $ctx) {
             $data = $ctx->req->getBody();
-            $ctx->res->send($data);
+            $ctx->res->body = $data;
+            $ctx->res->send(true);
         });
     }
 }

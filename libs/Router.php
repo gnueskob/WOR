@@ -33,14 +33,6 @@ class Router
             return;
         }
 
-        /* resolve() deprecated
-        if (empty($this->{strtolower($methodName)}[$formatedRoute])) {
-            $this->{strtolower($methodName)}[$formatedRoute] = [];
-        }
-        $appliedMWs = &$this->{strtolower($methodName)}[$formatedRoute];
-        array_push($appliedMWs, ...$middlewares);
-        */
-
         $this->appendMiddleware($fullPath, $middlewares);
         $this->ctx->req->setParams($this->findRouteParams($fullPath, $reqUri));
     }
@@ -77,15 +69,16 @@ class Router
 
     /**
      * Removes trailing forward slashes from the right of the route.
-     * @param string  route
-     * @return  string  result
+     * @param   string  $route
+     * @param   bool    $setRoot
+     * @return  string  $result
      */
-    private function formatRoute(string $route): string
+    private function formatRoute(string $route, bool $setRoot = false): string
     {
         $result = rtrim($route, '/');
-        // if ($result === '') {
-        //    return '/';
-        // }
+        if ($result === '' && $setRoot) {
+            return '/';
+        }
         return $result;
     }
 
@@ -146,50 +139,6 @@ class Router
     }
 
     /**
-     * Search middleware that related to current request route and append it to ctx
-     * @param string $method all | other method
-     * @param string $reqRoute
-     * @return  void
-     */
-    private function searchMiddleware(string $method, string $reqRoute): void
-    {
-        if (property_exists($this, $method)) {
-            $methodDictionary = $this->{$method} ?: [];
-            $isReqMethod = $method !== 'all';
-            if ($isReqMethod && isset($methodDictionary[$reqRoute])) {
-                $this->appendMiddleware($reqRoute, $methodDictionary[$reqRoute]);
-                return;
-            }
-
-            foreach ($methodDictionary as $path => $_) {
-                $route = $this->group . $path;
-                $prefixRegexPattern = $this->getRouteRegexPattern($route, $isReqMethod);
-                if (preg_match($prefixRegexPattern, $reqRoute)) {
-                    $this->appendMiddleware($path, $methodDictionary[$path]);
-                    $this->ctx->req->setParams($this->findRouteParams($route, $reqRoute));
-                }
-            }
-        }
-    }
-
-    /**
-     * Resolves a route
-     * @return  void
-     */
-    private function resolve(): void
-    {
-        $req = $this->ctx->req;
-        $reqRoute = $this->formatRoute($req->requestUri);
-
-        // search middleware applied by use command and append to ctx
-        $this->searchMiddleware('all', $reqRoute);
-
-        // search middleware applied by request method and append to ctx
-        $method = strtolower($req->requestMethod);
-        $this->searchMiddleware($method, $reqRoute);
-    }
-
-    /**
      * Find all of middleware that appended to request route
      * and run them until there is no next()
      * If there exists some CtxException about middleware,
@@ -199,18 +148,13 @@ class Router
     {
         try {
             $this->ctx->checkAllowedMethod($this->httpMethods);
-            // $this->resolve();
             $this->ctx->runMiddlewares();
         } catch (CtxException $e) {
             $res = $this->ctx->res;
             $req = $this->ctx->req;
-<<<<<<< HEAD
             $res->error($req->serverProtocol, $e->getCode(), $e->getMessage());
-=======
-            $res->error($req->serverProtocol, $e->getErrorMsg());
         } finally {
             Log::getInstance()->flushLog();
->>>>>>> 5d380a9ff911b17819fa436bfb6dbe793b80b44c
         }
     }
 }

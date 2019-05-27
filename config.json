@@ -27,7 +27,7 @@
       },
       "scribe": {
         "host": [
-          "10.10.14.201"
+          "localhost"
         ],
         "port": [
           "1463"
@@ -35,7 +35,8 @@
       }
     },
     "plan": {
-      "driver"
+      "driver" : "redis",
+      "csvKeyIndex": 0
     }
   }
 }

@@ -10,6 +10,8 @@
         }
     },
     "require": {
+        "ext-apcu": "*",
+        "ext-gd": "*",
         "ext-json": "*",
         "ext-pdo": "*",
         "ext-redis": "*",

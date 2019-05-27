@@ -3,14 +3,14 @@
 namespace lsb\App;
 
 use lsb\Libs\Context;
+use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\App\controller\User;
 
-class WOR extends Router
+class WOR extends Router implements ISubRouter
 {
-    public function __construct()
+    public function make()
     {
-        parent::__construct();
         $router = $this;
 
         $router

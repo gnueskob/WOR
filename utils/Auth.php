@@ -23,7 +23,7 @@ class Auth
             }
 
             // TODO: validation JWT
-
+            // body에 들어오는 데이터를 key를 통해 암호화
             return;
         };
     }

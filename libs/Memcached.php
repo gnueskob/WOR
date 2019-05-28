@@ -2,15 +2,16 @@
 
 namespace lsb\Libs;
 
-use Memcached;
+use Memcached as Mcd;
 use Exception;
 use lsb\Config\Config;
 
-class MemcachedInstance extends Singleton
+// 이름 변경
+class Memcached extends Singleton
 {
     private $mcd;
 
-    public function getMemcached(): Memcached
+    public function getMemcached(): Mcd
     {
         return $this->mcd;
     }
@@ -19,13 +20,13 @@ class MemcachedInstance extends Singleton
     {
         parent::__construct();
 
-        $conf = Config::getInstance()->getMcdConfig();
+        $conf = Config::getInstance()->getConfig('memcached');
         $host = $conf['host'];
         $port = $conf['port'];
 
         // TODO: 연결 실패시 재 시도 로직 추가
         try {
-            $mcd = new Memcached();
+            $mcd = new Mcd();
             $mcd->addServer($host, $port);
             $this->mcd = $mcd;
         } catch (Exception $e) {

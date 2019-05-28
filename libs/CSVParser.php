@@ -2,7 +2,7 @@
 
 namespace lsb\Libs;
 
-use Redis;
+use Redis as Rds;
 use Exception;
 use lsb\Config\Config;
 
@@ -14,7 +14,7 @@ class CSVParser
     private $driver;
 
     /**
-     * @var Redis $pipe : for redis pipeline commands
+     * @var Rds $pipe : for redis pipeline commands
      */
     private $pipe;
 
@@ -39,6 +39,8 @@ class CSVParser
             // there is no data
             return false;
         } else {
+            // remove BOM of CSV file
+            $data[0] = preg_replace("/^\x{feff}/u", '', $data[0]);
             foreach ($data as $idx => $value) {
                 $keyStr[$idx] = $value;
             }
@@ -76,8 +78,8 @@ class CSVParser
         switch ($this->driver) {
             default:
             case REDIS:
-                $redis = RedisInstance::getInstance()->getRedis();
-                $this->pipe = $redis->multi(Redis::PIPELINE);
+                $redis = Redis::getInstance()->getRedis();
+                $this->pipe = $redis->multi(Rds::PIPELINE);
                 break;
             case APCU:
                 $this->csvData = [];

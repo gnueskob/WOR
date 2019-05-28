@@ -3,14 +3,14 @@
 namespace lsb\Libs;
 
 use Exception;
-use \Redis;
+use Redis as Rds;
 use lsb\Config\Config;
 
-class RedisInstance extends Singleton
+class Redis extends Singleton
 {
     private $redis;
 
-    public function getRedis(): Redis
+    public function getRedis(): Rds
     {
         return $this->redis;
     }
@@ -25,7 +25,7 @@ class RedisInstance extends Singleton
 
         // TODO: 연결 실패시 재 시도 로직 추가
         try {
-            $redis = new Redis();
+            $redis = new Rds();
             $redis->connect($host, $port, 1000);
             $this->redis = $redis;
         } catch (Exception $e) {

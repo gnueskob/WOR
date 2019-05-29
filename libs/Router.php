@@ -2,6 +2,8 @@
 
 namespace lsb\Libs;
 
+use Exception;
+
 class Router
 {
     private $ctx;
@@ -153,6 +155,22 @@ class Router
             $res = $this->ctx->res;
             $req = $this->ctx->req;
             $res->error($req->serverProtocol, $e->getCode(), $e->getMessage());
+        } catch (Exception $e) {
+            $log = Log::getInstance();
+            $category = 'Exception';
+
+            try {
+                $time = Timezone::getNowUTC();
+            } catch (Exception $e) {
+                $time = $e->getMessage();
+            }
+
+            $logMsg = [
+                'time' => $time,
+                'code' => $e->getCode(),
+                'error' => $e->getMessage()
+            ];
+            $log->addLog($category, json_encode($logMsg));
         } finally {
             Log::getInstance()->flushLog();
         }

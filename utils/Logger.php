@@ -5,6 +5,7 @@ namespace lsb\Utils;
 use lsb\Libs\Context;
 use lsb\Libs\CtxException;
 use lsb\Libs\Log;
+use lsb\Libs\Timezone;
 
 class Logger
 {
@@ -23,6 +24,7 @@ class Logger
             $logMsg['uri'] = $ctx->req->requestUri;
 
             $start = microtime(true);
+            $logMsg['time'] = Timezone::getNowUTC();
             $logMsg['start_time'] = $start;
 
             try {

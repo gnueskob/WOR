@@ -2,7 +2,7 @@
 
 namespace lsb\Libs;
 
-class Request implements IRequest
+class Request
 {
     private $params;
 
@@ -10,6 +10,8 @@ class Request implements IRequest
     public $requestMethod;
     public $requestUri;
     public $serverProtocol;
+    public $httpContentType;
+    public $body;
 
     public function __construct()
     {
@@ -17,6 +19,7 @@ class Request implements IRequest
         foreach ($_SERVER as $key => $value) {
             $this->{$this->toCamelCase($key)} = $value;
         }
+        $this->body = $this->getBody();
     }
 
     private function toCamelCase(string $str): string
@@ -32,16 +35,18 @@ class Request implements IRequest
         return $res;
     }
 
-    public function getBody(): array
+    private function getBody(): array
     {
-        if ($this->requestMethod === "GET") {
-            return [];
+        $body = file_get_contents('php://input');
+        if ($this->httpContentType === 'application/json') {
+            $body = json_decode($body, true);
         }
 
-        $jsonReturnMethods = ["POST", "PUT"];
+        $jsonReturnMethods = ["GET", "POST", "PUT"];
         if (in_array($this->requestMethod, $jsonReturnMethods)) {
-            return json_decode(file_get_contents('php://input'), true);
+            return $body;
         }
+        return [];
     }
 
     public function getFiles(): array

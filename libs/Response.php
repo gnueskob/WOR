@@ -7,7 +7,7 @@ define('__JSON__', 0);
 define('__TEXT__', 1);
 define('__HTML__', 2);
 
-class Response implements IResponse
+class Response
 {
     public $status = 200;
     public $msg = 'OK';

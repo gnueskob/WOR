@@ -14,29 +14,21 @@ class User extends Router implements ISubRouter
     {
         $router = $this;
 
-        $router->get(
-            '/:id/:action',
-            Logger::APILogger('user'),
-            Auth::errorHandler(),
-            Auth::isValid(),
-            function (Context $ctx) {
-                $data['url'] = $ctx->req->requestUri;
-                $data['params'] = $ctx->req->getParams();
-                $data['test'] = 'test';
-                $ctx->res->body = json_encode($data);
-                $ctx->next();
-            }
-        );
+        $router->get('/login', function (Context $ctx) {
+            $body = $ctx->req->body;
+            $hiveId = $body['hive_id'];
+            $hiveUid = $body['hive_uid'];
+        });
 
         $router->put('/:param', function (Context $ctx) {
             $data['url'] = $ctx->req->requestUri;
-            $data['body'] = $ctx->req->getBody();
+            $data['body'] = $ctx->req->body;
             $data['params'] = $ctx->req->getParams();
             $ctx->res->send($data);
         });
 
         $router->post('/info', function (Context $ctx) {
-            $data = $ctx->req->getBody();
+            $data = $ctx->req->body;
             $ctx->res->body = $data;
             $ctx->res->send(true);
         });

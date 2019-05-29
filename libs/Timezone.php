@@ -4,6 +4,7 @@ namespace lsb\Libs;
 
 use DateTime;
 use DateTimeZone;
+use DateInterval;
 use Exception;
 
 class Timezone extends DateTime
@@ -17,9 +18,23 @@ class Timezone extends DateTime
         $this->setTimezone(new DateTimeZone($timezone));
     }
 
-    public function modify($modify): string
+    public function modifyDate(string $modify): string
     {
-        parent::modify($modify);
+        $this->modify($modify);
+        return $this->getTime();
+    }
+
+    public function addDate(string $dateInterval): string
+    {
+        $interval = DateInterval::createFromDateString($dateInterval);
+        $this->add($interval);
+        return $this->getTime();
+    }
+
+    public function subDate(string $dateInterval): string
+    {
+        $interval = DateInterval::createFromDateString($dateInterval);
+        $this->sub($interval);
         return $this->getTime();
     }
 

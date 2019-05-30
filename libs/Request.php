@@ -38,6 +38,10 @@ class Request
     private function getBody(): array
     {
         $body = file_get_contents('php://input');
+        if ($body === "") {
+            return [];
+        }
+
         if ($this->httpContentType === 'application/json') {
             $body = json_decode($body, true);
         }

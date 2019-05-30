@@ -5,9 +5,15 @@ namespace lsb\Libs;
 use lsb\Config\Config;
 use lsb\Log\Scribe;
 use lsb\Log\LocalLog;
+use Exception;
 
 define('SCRIBE', 'scribe');
 define('LOCAL', 'localLog');
+define('CTX_EX', 'CtxException');
+define('EX', 'Exception');
+define('PDO_EX', 'PDOException');
+define('QRY_PERF', 'QueryPerformance');
+define('API_PERF', 'APIPerformance');
 
 class Log extends Singleton implements ILog
 {
@@ -37,6 +43,21 @@ class Log extends Singleton implements ILog
     public function addLog(string $category, string $msg)
     {
         $this->driver->addLog($category, $msg);
+    }
+
+    public function addExceptionLog(string $category, Exception $e)
+    {
+        try {
+            $time = Timezone::getNowUTC();
+        } catch (Exception $e) {
+            $time = $e->getMessage();
+        }
+        $logMsg = [
+            'time' => $time,
+            'code' => $e->getCode(),
+            'error' => $e->getMessage()
+        ];
+        $this->addLog($category, json_encode($logMsg));
     }
 
     /**

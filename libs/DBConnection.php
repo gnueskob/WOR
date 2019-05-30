@@ -2,6 +2,7 @@
 
 namespace lsb\Libs;
 
+use Exception;
 use PDO;
 use PDOException;
 use lsb\Config\Config;
@@ -40,5 +41,51 @@ class DBConnection extends Singleton
     public function getDBConnection()
     {
         return $this->db;
+    }
+
+    private function queryTrim(string $query): string
+    {
+        $qry = preg_replace('/\r\n/', ' ', $query);
+        $qry = preg_replace('/  /', '', $qry);
+        $qry = preg_replace('/^ /', '', $qry);
+        $qry = preg_replace('/ $/', '', $qry);
+        return $qry;
+    }
+
+    public function query(string $query, array $param)
+    {
+        $log = Log::getInstance();
+        $category = 'QueryPerformance';
+
+        try {
+            $time = Timezone::getNowUTC();
+        } catch (Exception $e) {
+            $time = $e->getMessage();
+        }
+
+        $start = microtime(true);
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($param);
+        } catch (PDOException $e) {
+            $logMsg = [
+                'query' => $this->queryTrim($query),
+                'param' => json_encode($param)
+            ];
+            $log->addLog(PDO_EX, json_encode($logMsg));
+        }
+
+        $end = microtime(true);
+        $elapsed = $end - $start;
+
+        $logMsg = [
+            'query' => $this->queryTrim($query),
+            'param' => json_encode($param),
+            'time' => $time,
+            'start' => $start,
+            'end' => $end,
+            'elapsed' => $elapsed
+        ];
+        $log->addLog(PDO_EX, json_encode($logMsg));
     }
 }

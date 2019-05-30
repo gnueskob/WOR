@@ -14,9 +14,9 @@ class Logger
         return function (Context $ctx) use ($category) {
             // TODO: redis 실시간 API 성능 지표 갱신
             $log = Log::getInstance();
-            $logCategory = 'performance';
+            $logCategory = API_PERF;
             if (isset($category) && $category !== '') {
-                $logCategory = "{$logCategory}_{$category}";
+                $logCategory = API_PERF . "_{$category}";
             }
 
             $logMsg = [];

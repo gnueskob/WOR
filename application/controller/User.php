@@ -2,11 +2,16 @@
 
 namespace lsb\App\controller;
 
+use lsb\App\services\UserServices;
+use lsb\Libs\CtxException;
+use lsb\Libs\DBConnection;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\Libs\Context;
+use lsb\Libs\SpinLock;
 use lsb\Utils\Auth;
 use lsb\Utils\Logger;
+use Exception;
 
 class User extends Router implements ISubRouter
 {
@@ -14,10 +19,45 @@ class User extends Router implements ISubRouter
     {
         $router = $this;
 
-        $router->get('/login', function (Context $ctx) {
+        $router->put('/login', function (Context $ctx) {
             $body = $ctx->req->body;
-            $hiveId = $body['hive_id'];
-            $hiveUid = $body['hive_uid'];
+
+            $row = UserServices::findHiveUser($body);
+            if ($row === false) {
+                (new CtxException())->throwInvaildUserException();
+            }
+            $ctx->res->body = [
+                'success' => true,
+                'user_id' => $row['user_id'],
+                'token' => 'tokentokentoken'
+            ];
+            $ctx->res->send(true);
+        });
+
+        $router->post('/register', function (Context $ctx) {
+            $body = $ctx->req->body;
+
+            $isRegistered = !!UserServices::findHiveUser($body);
+            if ($isRegistered) {
+                (new CtxException())->throwAlreadyRegisteredException();
+            }
+
+            $row = UserServices::registerNewAccount($body);
+            if ($row === false) {
+                (new CtxException())->throwRegisterException();
+            }
+
+            $ctx->res->body = [
+                'success' => true,
+                'user_id' => $row['user_id'],
+                'token' => 'tokentokentoken'
+            ];
+            $ctx->res->send(true);
+        });
+
+        $router->post('/name', function (Context $ctx) {
+            $body = $ctx->req->body;
+
         });
 
         $router->put('/:param', function (Context $ctx) {

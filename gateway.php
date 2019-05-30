@@ -7,6 +7,7 @@ require(__DIR__ . '/libs/log/thrift/autoload.php');
 use lsb\Config\Config;
 use lsb\App\App;
 use lsb\App\WOR;
+use lsb\Libs\DBConnection;
 
 $config = Config::getInstance();
 $config->setMode(DEV);
@@ -25,5 +26,32 @@ $app->post('/plan', function () {
 });
 $app->get('/phpinfo', function () {
     phpinfo();
+});
+$app->get('/test', function () {
+    $db = DBConnection::getInstance()->getDBConnection();
+    $qry = "
+            UPDATE `building`
+            SET `upgrade` = 112
+            WHERE `building_id` = :id;
+        ";
+    $qry = preg_replace('/\r\n/', ' ', $qry);
+    $qry = preg_replace('/  /', '', $qry);
+    $qry = preg_replace('/^ /', '', $qry);
+    $qry = preg_replace('/ $/', '', $qry);
+
+    $stmt = $db->prepare($qry);
+    $id = 2;
+    $stmt->bindParam(':id', $id);
+
+    try {
+        $stmt->execute();
+        $res = $stmt->fetch();
+        var_dump($res);
+    } catch (PDOException $e) {
+        if ($e->getCode() === "23000") {
+        } else {
+            throw $e;
+        }
+    }
 });
 $app->run();

@@ -10,7 +10,7 @@ class CtxException extends Exception
     private $serverMsg;
 
     public function __construct(
-        int $serverErrCode = 1,
+        int $serverErrCode = 0,
         string $serverMsg = '',
         string $message = '',
         $code = 404,
@@ -43,6 +43,36 @@ class CtxException extends Exception
         $this->code = $code;
         $this->message = $msg;
         throw $this;
+    }
+
+    /* @throws  CtxException */
+    public function throwInvaildUserException(): void
+    {
+        $this->serverErrCode = 1000;
+        $this->serverMsg = 'invalid user';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function throwRegisterException(): void
+    {
+        $this->serverErrCode = 1001;
+        $this->serverMsg = 'register failed';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function throwAlreadyRegisteredException(): void
+    {
+        $this->serverErrCode = 1002;
+        $this->serverMsg = 'user is already registered';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function throwLogicException(): void
+    {
+        $this->throwException(200, "Logic error");
     }
 
     /* @throws  CtxException */

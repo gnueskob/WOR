@@ -45,8 +45,11 @@ class CtxException extends Exception
         throw $this;
     }
 
+    /**************************************
+     ** Only Logic Exceptions            **
+     **************************************/
     /* @throws  CtxException */
-    public function throwInvaildUserException(): void
+    public function invaildUser(): void
     {
         $this->serverErrCode = 1000;
         $this->serverMsg = 'invalid user';
@@ -54,7 +57,7 @@ class CtxException extends Exception
     }
 
     /* @throws  CtxException */
-    public function throwRegisterException(): void
+    public function registerFail(): void
     {
         $this->serverErrCode = 1001;
         $this->serverMsg = 'register failed';
@@ -62,13 +65,41 @@ class CtxException extends Exception
     }
 
     /* @throws  CtxException */
-    public function throwAlreadyRegisteredException(): void
+    public function alreadyRegistered(): void
     {
         $this->serverErrCode = 1002;
         $this->serverMsg = 'user is already registered';
         $this->throwLogicException();
     }
 
+    /* @throws  CtxException */
+    public function alreadyUsedName(): void
+    {
+        $this->serverErrCode = 1003;
+        $this->serverMsg = 'input name is already in use';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function invalidId(): void
+    {
+        $this->serverErrCode = 1004;
+        $this->serverMsg = 'input id is not valid';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function invalidHiveId(): void
+    {
+        $this->serverErrCode = 1005;
+        $this->serverMsg = 'input hive id is not valid';
+        $this->throwLogicException();
+    }
+
+
+    /**************************************
+     ** Fatal Exceptions                 **
+     **************************************/
     /* @throws  CtxException */
     public function throwLogicException(): void
     {
@@ -82,7 +113,7 @@ class CtxException extends Exception
     }
 
     /* @throws  CtxException */
-    public function throwMethodNotAllowedException(): void
+    public function throwNotFoundException(): void
     {
         $this->throwException(404, "Not Found");
     }

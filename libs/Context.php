@@ -28,7 +28,7 @@ class Context extends Singleton implements IContext
     {
         $method = $this->req->requestMethod;
         if (!in_array(strtoupper($method), $httpMethods)) {
-            (new CtxException())->throwInternalServerException();
+            (new CtxException())->throwInvalidMethodException();
         }
     }
 
@@ -39,7 +39,7 @@ class Context extends Singleton implements IContext
     public function runMiddlewares(): void
     {
         if (count($this->middlewares) === 0) {
-            (new CtxException())->throwMethodNotAllowedException();
+            (new CtxException())->throwNotFoundException();
         }
 
         // Use to reduce next() function using array_pop()
@@ -71,6 +71,14 @@ class Context extends Singleton implements IContext
     public function addMiddleware(callable $middleware): void
     {
         array_push($this->middlewares, $middleware);
+    }
+
+    public function send(): void
+    {
+        if ($this->res->httpContentType === 'application/json') {
+            $this->res->body = json_encode($this->res->body);
+        }
+        $this->res->send();
     }
 
     /**

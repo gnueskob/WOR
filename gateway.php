@@ -28,27 +28,30 @@ $app->get('/phpinfo', function () {
     phpinfo();
 });
 $app->get('/test', function () {
-    $db = DBConnection::getInstance()->getDBConnection();
+    $dbMngr = DBConnection::getInstance();
     $qry = "
             UPDATE `building`
-            SET `upgrade` = 112
+            SET `upgrade` = 222
             WHERE `building_id` = :id;
         ";
+    $qry = "SELECT *
+FROM building b,
+      building_upgrade bu
+WHERE b.building_id = bu.building_id;";
     $qry = preg_replace('/\r\n/', ' ', $qry);
     $qry = preg_replace('/  /', '', $qry);
     $qry = preg_replace('/^ /', '', $qry);
     $qry = preg_replace('/ $/', '', $qry);
 
-    $stmt = $db->prepare($qry);
-    $id = 2;
-    $stmt->bindParam(':id', $id);
+    $id = 111;
 
     try {
-        $stmt->execute();
-        $res = $stmt->fetch();
+        $stmt = $dbMngr->query($qry, []);
+        $res = $stmt->fetchAll();
         var_dump($res);
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         if ($e->getCode() === "23000") {
+            echo 'hi';
         } else {
             throw $e;
         }

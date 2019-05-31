@@ -92,7 +92,7 @@
 
 ## 유저 상태 정보
 
-- `GET /user/status/{userId}`
+- `GET /user/info/{userId}`
 - 자신이 보유한 각각의 자원, 인구 정보 반환
 
 | 요청변수   | 타입   | 필수 여부 | 설명    |

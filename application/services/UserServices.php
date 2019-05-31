@@ -5,56 +5,96 @@ namespace lsb\App\services;
 use lsb\Libs\Timezone;
 use lsb\Libs\DBConnection;
 use Exception;
+use PDOException;
 
 class UserServices
 {
-    private static function getDB()
+    private static function getDBMngr()
+    {
+        return DBConnection::getInstance();
+    }
+
+    private static function getDBConnection()
     {
         return DBConnection::getInstance()->getDBConnection();
     }
 
-    public static function findHiveUser(array $param)
+    private static function trimColumn(array $data)
     {
-        $db = self::getDB();
-        $qry = "
-            SELECT * FROM `user_platform`
-            WHERE `hive_id` = :hive_id
-              AND `hive_uid` = :hive_Uid;
-        ";
-        $stmt = $db->prepare($qry);
-        $stmt->execute([
-            ':hive_id' => $param['hive_id'],
-            ':hive_uid', $param['hive_uid']
-        ]);
-        return $stmt->fetch();
+        $res = [];
+        foreach ($data as $key => $value) {
+            if (is_int($key)) {
+                continue;
+            }
+            $res[$key] = $value;
+        }
+        return $res;
     }
 
-    public static function isTerritoryInUse($data): bool
+    private static function selectReturn(string $query, array $param)
     {
-        $db = self::getDB();
+        $dbMngr = self::getDBMngr();
+        $res = $dbMngr->query($query, $param)->fetch();
+        return $res === false ? false : self::trimColumn($res);
+    }
+
+    private static function updateReturn(string $query, array $param)
+    {
+        $dbMngr = self::getDBMngr();
+        $stmt = $dbMngr->query($query, $param);
+        return $stmt->rowCount();
+    }
+
+    private static function deleteReturn(string $query, array $param)
+    {
+        return false;
+    }
+
+    public static function updateUserLastVisit(array $data)
+    {
         $qry = "
-            SELECT * FROM `user_info`
-            WHERE `territory_id` = :territory_id;
+            UPDATE user_info
+            SET last_visit = :last_visit
+            WHERE user_id = :user_id;
         ";
-        $stmt = $db->prepare($qry);
-        $stmt->bindParam(':territory_id', $data['territory_id']);
-        $stmt->execute();
-        return !!$stmt->fetch();
+        $param = [
+            ':last_visit' => $data['last_visit'],
+            ':hive_id' => $data['hive_id'],
+        ];
+        return self::updateReturn($qry, $param);
     }
 
     /**
      * @param array $data
-     * @return bool
+     * @return mixed    false: there are no record, array: any selected record
+     */
+    public static function selectHiveUser(array $data)
+    {
+        $qry = "
+            SELECT * FROM user_platform
+            WHERE hive_id = :hive_id
+              AND hive_uid = :hive_uid;
+        ";
+        $param = [
+            ':hive_id' => $data['hive_id'],
+            ':hive_uid', $data['hive_uid']
+        ];
+        return self::selectReturn($qry, $param);
+    }
+
+    /**
+     * @param array $data
+     * @return int      -1 : register failed, {number} : registered user_id
      * @throws Exception
      */
-    public static function registerNewAccount(array $data): bool
+    public static function registerNewAccount(array $data): int
     {
-        $db = self::getDB();
+        $dbMngr = self::getDBMngr();
+        $db = self::getDBConnection();
         try {
             $db->beginTransaction();
-
             $qry = "
-                INSERT INTO `user_platform`
+                INSERT INTO user_platform
                 VALUE (
                       :user_id,
                       :hive_id,
@@ -67,8 +107,7 @@ class UserServices
                       :app_version
                 );
             ";
-            $stmt = $db->prepare($qry);
-            $stmt->execute([
+            $param = [
                 ':user_id' => null,
                 ':hive_id' => $data['hive_id'],
                 ':hive_uid' => $data['hive_uid'],
@@ -78,11 +117,12 @@ class UserServices
                 ':os_version' => $data['os_version'],
                 ':device_name' => $data['device_name'],
                 ':app_version' => $data['app_version']
-            ]);
+            ];
+            $dbMngr->query($qry, $param);
             $userId = $db->lastInsertId();
 
             $qry = "
-                INSERT INTO `user_info`
+                INSERT INTO user_info
                 VALUE (
                       :user_id,
                       :last_update,
@@ -98,11 +138,10 @@ class UserServices
                       :luxury_resource
                 );
             ";
-            $stmt = $db->prepare($qry);
-            $stmt->execute([
+            $param = [
                 ':user_id' => $userId,
                 ':last_update' => Timezone::getNowUTC(),
-                ':territory_id' => $data['territory_id'],
+                ':territory_id' => 0,
                 ':name' => null,
                 ':castle_level' => 1,
                 ':upgrade_finish_time' => null,
@@ -112,11 +151,12 @@ class UserServices
                 ':tactical_resource' => 0,
                 ':food_resource' => 0,
                 ':luxury_resource' => 0
-            ]);
+            ];
             // TODO: 초기값 기획 데이터 변환
+            $dbMngr->query($qry, $param);
 
             $qry = "
-                INSERT INTO `user_statistic`
+                INSERT INTO user_statistic
                 VALUE (
                       :user_id,
                       :war_request,
@@ -129,8 +169,7 @@ class UserServices
                       :boss3_kill_count
                 );
             ";
-            $stmt = $db->prepare($qry);
-            $stmt->execute([
+            $param = [
                 ':user_id' => $userId,
                 ':war_request' => 0,
                 ':war_victory' => 0,
@@ -140,11 +179,120 @@ class UserServices
                 ':boss1_kill_count' => 0,
                 ':boss2_kill_count' => 0,
                 ':boss3_kill_count' => 0
-            ]);
-            $db->commit();
+            ];
+            $dbMngr->query($qry, $param);
+            if ($db->commit() === false) {
+                return -1;
+            }
+        } catch (PDOException $e) {
+            $db->rollBack();
+            throw $e;
         } catch (Exception $e) {
             $db->rollBack();
             throw $e;
         }
+        return $userId;
+    }
+
+    /**
+     * @param array $data
+     * @return bool|int     false: duplicated name, {number}: # of updated records
+     */
+    public static function updateUserName(array $data)
+    {
+        $dbMngr = self::getDBMngr();
+        $qry = "
+            UPDATE user_info
+            SET name = :name
+            WHERE user_id = :user_id;
+        ";
+        $param = [
+            ':name' => $data['name'],
+            ':user_id' => $data['id']
+        ];
+        try {
+            return self::updateReturn($qry, $param);
+        } catch (PDOException $e) {
+            if ($e->getCode() === DUPLICATE_ERRORCODE) {
+                return false;
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * @param array $data
+     * @return bool|int     false: duplicated name, {number}: # of updated records
+     */
+    public static function updateUserTerritory(array $data): bool
+    {
+        $qry = "
+            UPDATE user_info
+            SET territory_id = :territory_id
+            WHERE user_id = :user_id;
+        ";
+        $param = [
+            ':territory_id' => $data['territory_id'],
+            ':user_id' => $data['user_id']
+        ];
+        try {
+            return self::updateReturn($qry, $param);
+        } catch (PDOException $e) {
+            if ($e->getCode() === DUPLICATE_ERRORCODE) {
+                return false;
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    public static function selectUserInfo(array $data)
+    {
+        $qry = "
+            SELECT *
+            FROM user_platform up, user_info ui, user_statistics us
+            WHERE up.user_id = ui.user_id
+              AND up.user_id = us.user_id
+              AND up.user_id = :user_id;
+        ";
+        $param = [':user_id' => $data['user_id']];
+        return self::selectReturn($qry, $param);
+    }
+
+    public static function selectUserTile(array $data)
+    {
+        $qry = "
+            SELECT *
+            FROM explore_tile
+            WHERE user_id = :user_id;
+        ";
+        $param = [':user_id' => $data['user_id']];
+        return self::selectReturn($qry, $param);
+    }
+
+    public static function selectUserExploration(array $data)
+    {
+        $qry = "
+            SELECT *
+            FROM explore_territory
+            WHERE user_id = :user_id;
+        ";
+        $param = [':user_id' => $data['user_id']];
+        return self::selectReturn($qry, $param);
+    }
+
+    public static function selectUserBuilding(array $data)
+    {
+        $qry = "
+            SELECT *
+            FROM building b, building_upgrade bu, building_deploy bd, building_crate bc
+            WHERE b.user_id = :user_id
+              AND b.building_id = bu.building_id
+              AND b.building_id = bd.building_id
+              AND b.building_id = bc.building_id;
+        ";
+        $param = [':user_id' => $data['user_id']];
+        return self::selectReturn($qry, $param);
     }
 }

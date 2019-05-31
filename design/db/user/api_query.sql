@@ -209,8 +209,9 @@ WHERE `to_user_id` = {user_id}
 -- 2. 해당 영토를 다른 유저가 이미 사용중인지 확인
 -- [중복]
 SELECT *
-FROM `user`
-WHERE `territory_id` = {selected_territory_id};
+FROM `user_info` `u`, `dup_territory` `d`
+WHERE `u`.`territory_id` = {selected_territory_id}
+  AND `u`.`territory_id` = `d`.`territory_id`;
 
 -- 중복된 이름인지 확인
 SELECT *

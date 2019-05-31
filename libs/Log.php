@@ -9,11 +9,11 @@ use Exception;
 
 define('SCRIBE', 'scribe');
 define('LOCAL', 'localLog');
-define('CTX_EX', 'CtxException');
-define('EX', 'Exception');
-define('PDO_EX', 'PDOException');
-define('QRY_PERF', 'QueryPerformance');
-define('API_PERF', 'APIPerformance');
+define('CATEGORY_EX', 'Exception');
+define('CATEGORY_CTX_EX', 'CtxException');
+define('CATEGORY_PDO_EX', 'PDOException');
+define('CATEGORY_QRY_PERF', 'QueryPerformance');
+define('CATEGORY_API_PERF', 'APIPerformance');
 
 class Log extends Singleton implements ILog
 {

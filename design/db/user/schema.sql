@@ -78,18 +78,19 @@ CREATE TABLE `user_platform` (
   `device_name`   VARCHAR(20)   NOT NULL,
   `app_version`   VARCHAR(10)   NOT NULL,
   PRIMARY KEY (`user_id`),
-  UNIQUE INDEX `uk_hive` (`hive_id`, `hive_uid`)
+  UNIQUE INDEX `uk_hive` (`hive_id`, `hive_uid`),
+  UNIQUE INDEX `uk_hive_uid` (`hive_uid`)
 );
 
 CREATE TABLE `user_info` (
   `user_id`       BIGINT        NOT NULL,
 
   -- game infos
-  `last_update`   DATETIME      NOT NULL,
+  `last_visit`    DATETIME      NOT NULL,
 
   -- user map info
-  `territory_id`  BIGINT        NOT NULL,
-  `name`          VARCHAR(30)   NOT NULL,
+  `territory_id`  BIGINT        NULL,
+  `name`          VARCHAR(30)   NULL,
   `castle_level`  BIGINT        NOT NULL      DEFAULT 1,
   `upgrade_finish_time`         DATETIME      NOT NULL,
 
@@ -107,7 +108,7 @@ CREATE TABLE `user_info` (
   INDEX `idx_last_update` (`last_update`)
 );
 
-CREATE TABLE `user_statistic` (
+CREATE TABLE `user_statistics` (
   `user_id`       BIGINT        NOT NULL
 
   -- statistical info
@@ -171,7 +172,7 @@ CREATE TABLE `building` (
 );
 
 CREATE TABLE `building_upgrade` (
-  `id`            BIGINT      NOT NULL      AUTO_INCREMENT,
+  `upgrade_id`    BIGINT      NOT NULL      AUTO_INCREMENT,
   `building_id`   BIGINT      NOT NULL,
   `user_id`       BIGINT      NOT NULL,
   `from_level`    BIGINT      NOT NULL,
@@ -183,7 +184,7 @@ CREATE TABLE `building_upgrade` (
 );
 
 CREATE TABLE `building_deploy` (
-  `id`            BIGINT      NOT NULL      AUTO_INCREMENT,
+  `deploy_id`     BIGINT      NOT NULL      AUTO_INCREMENT,
   `building_id`   BIGINT      NOT NULL,
   `user_id`       BIGINT      NOT NULL,
   `building_type` BIGINT      NOT NULL,
@@ -194,7 +195,7 @@ CREATE TABLE `building_deploy` (
 );
 
 CREATE TABLE `building_create` (
-  `id`            BIGINT      NOT NULL      AUTO_INCREMENT,
+  `crate_id`      BIGINT      NOT NULL      AUTO_INCREMENT,
   `building_id`   BIGINT      NOT NULL,
   `user_id`       BIGINT      NOT NULL,
   `finish_time`   DATETIME    NOT NULL,

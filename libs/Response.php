@@ -13,6 +13,7 @@ class Response
     public $msg = 'OK';
 
     public $body;
+    public $httpContentType;
 
     public function __construct()
     {
@@ -25,12 +26,19 @@ class Response
 
     public function setHeader(string $header, string ...$value): void
     {
+        if ($header === 'Content-Type' && in_array('application/json', $value)) {
+            $this->httpContentType = 'json';
+        }
         $headerValue = implode('; ', $value);
         header("{$header}: {$headerValue}");
     }
 
-    public function send(bool $isJsonData = false): void
+    public function send(): void
     {
-        echo $isJsonData ? json_encode($this->body) : $this->body;
+        $body = $this->body;
+        if ($this->httpContentType === 'json') {
+            $body = json_encode($body);
+        }
+        echo $body;
     }
 }

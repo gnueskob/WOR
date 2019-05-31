@@ -4,14 +4,10 @@ namespace lsb\App\controller;
 
 use lsb\App\services\UserServices;
 use lsb\Libs\CtxException;
-use lsb\Libs\DBConnection;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\Libs\Context;
-use lsb\Libs\SpinLock;
-use lsb\Utils\Auth;
-use lsb\Utils\Logger;
-use Exception;
+use lsb\Libs\Timezone;
 
 class User extends Router implements ISubRouter
 {
@@ -19,58 +15,151 @@ class User extends Router implements ISubRouter
     {
         $router = $this;
 
+        /**
+         * User login
+         * {
+         *      "success":    true
+         *      "user_id":    :user_id
+         *      "token":      :token
+         * }
+         */
         $router->put('/login', function (Context $ctx) {
-            $body = $ctx->req->body;
+            $data = $ctx->req->body;
 
-            $row = UserServices::findHiveUser($body);
-            if ($row === false) {
-                (new CtxException())->throwInvaildUserException();
+            $res = UserServices::selectHiveUser($data);
+            if ($res === false) {
+                (new CtxException())->invaildUser();
+            }
+            $userId = $res['user_id'];
+
+            $now = Timezone::getNowUTC();
+            $data = array_merge($data, ['last_visit' => $now]);
+            $res = UserServices::updateUserLastVisit($data);
+            if ($res === 0) {
+                (new CtxException())->invalidHiveId();
             }
             $ctx->res->body = [
                 'success' => true,
-                'user_id' => $row['user_id'],
+                'user_id' => $userId,
                 'token' => 'tokentokentoken'
             ];
-            $ctx->res->send(true);
+            $ctx->res->send();
         });
 
+        /**
+         * User register
+         * {
+         *      "success":    true
+         *      "user_id":    :user_id
+         *      "token":      :token
+         * }
+         */
         $router->post('/register', function (Context $ctx) {
             $body = $ctx->req->body;
 
-            $isRegistered = !!UserServices::findHiveUser($body);
-            if ($isRegistered) {
-                (new CtxException())->throwAlreadyRegisteredException();
+            $res = UserServices::selectHiveUser($body);
+            if ($res !== false) {
+                (new CtxException())->alreadyRegistered();
             }
 
-            $row = UserServices::registerNewAccount($body);
-            if ($row === false) {
-                (new CtxException())->throwRegisterException();
+            $userId = UserServices::registerNewAccount($body);
+            if ($userId === -1) {
+                (new CtxException())->registerFail();
             }
 
             $ctx->res->body = [
                 'success' => true,
-                'user_id' => $row['user_id'],
+                'user_id' => $userId,
                 'token' => 'tokentokentoken'
             ];
-            $ctx->res->send(true);
+            $ctx->res->send();
         });
 
-        $router->post('/name', function (Context $ctx) {
-            $body = $ctx->req->body;
+        /**
+         * Update user name
+         * {
+         *      "success":    true
+         * }
+         */
+        $router->put('/name/:user_id', function (Context $ctx) {
+            $data = array_merge($ctx->req->getParams(), $ctx->req->body);
+            $res = UserServices::updateUserName($data);
+            if ($res === false) {
+                (new CtxException())->alreadyUsedName();
+            } elseif ($res === 0) {
+                (new CtxException())->invalidId();
+            }
 
+            $ctx->res->body = ['success' => true];
+            $ctx->res->send();
         });
 
-        $router->put('/:param', function (Context $ctx) {
-            $data['url'] = $ctx->req->requestUri;
-            $data['body'] = $ctx->req->body;
-            $data['params'] = $ctx->req->getParams();
-            $ctx->res->send($data);
+        /**
+         * Update user territory_id
+         * {
+         *      "success":    true
+         * }
+         */
+        $router->put('/territory/:user_id', function (Context $ctx) {
+            $data = array_merge($ctx->req->getParams(), $ctx->req->body);
+            $res = UserServices::updateUserTerritory($data);
+            if ($res === false) {
+                (new CtxException())->alreadyUsedName();
+            } elseif ($res === 0) {
+                (new CtxException())->invalidId();
+            }
+
+            $ctx->res->body = ['success' => true];
+            $ctx->res->send();
         });
 
-        $router->post('/info', function (Context $ctx) {
-            $data = $ctx->req->body;
-            $ctx->res->body = $data;
-            $ctx->res->send(true);
+        /**
+         * User information
+         * {
+         *      "user_id": ...
+         *      "territory_id": ...
+         *      "name": ...
+         *      ...
+         * }
+         */
+        $router->get('/info/:user_id', function (Context $ctx) {
+            $data = array_merge($ctx->req->getParams(), $ctx->req->body);
+            $res = UserServices::selectUserInfo($data);
+            if ($res === false) {
+                (new CtxException())->invalidId();
+            }
+            $ctx->res->body = $res;
+            $ctx->res->send();
+        });
+
+        $router->get('/tile/:user_id', function (Context $ctx) {
+            $data = $ctx->req->getParams();
+            $res = UserServices::selectUserTile($data);
+            if ($res === false) {
+                (new CtxException())->invalidId();
+            }
+            $ctx->res->body = $res;
+            $ctx->res->send();
+        });
+
+        $router->get('/territory/:user_id', function (Context $ctx) {
+            $data = $ctx->req->getParams();
+            $res = UserServices::selectUserExploration($data);
+            if ($res === false) {
+                (new CtxException())->invalidId();
+            }
+            $ctx->res->body = $res;
+            $ctx->res->send();
+        });
+
+        $router->get('/building/:user_id', function (Context $ctx) {
+            $data = $ctx->req->getParams();
+            $res = UserServices::selectUserBuilding($data);
+            if ($res === false) {
+                (new CtxException())->invalidId();
+            }
+            $ctx->res->body = $res;
+            $ctx->res->send();
         });
     }
 }

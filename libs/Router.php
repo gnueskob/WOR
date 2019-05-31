@@ -156,12 +156,10 @@ class Router
             $res = $this->ctx->res;
             $req = $this->ctx->req;
             $res->error($req->serverProtocol, $e->getCode(), $e->getMessage());
-
-            Log::getInstance()->addExceptionLog(CTX_EX, $e);
-        } catch (PDOException $e) {
-            Log::getInstance()->addExceptionLog(PDO_EX, $e);
+            Log::getInstance()->addExceptionLog(CATEGORY_CTX_EX, $e);
         } catch (Exception $e) {
-            Log::getInstance()->addExceptionLog(EX, $e);
+            // Internal Server Error
+            Log::getInstance()->addExceptionLog(CATEGORY_EX, $e);
         } finally {
             Log::getInstance()->flushLog();
         }

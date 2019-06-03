@@ -35,7 +35,7 @@ class Response
 
     public function send(): void
     {
-        $body = $this->body;
+        $body = ['success' => true, 'res' => $this->body];
         if ($this->httpContentType === 'json') {
             $body = json_encode($body);
         }

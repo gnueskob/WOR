@@ -7,7 +7,7 @@ require(__DIR__ . '/libs/log/thrift/autoload.php');
 use lsb\Config\Config;
 use lsb\App\App;
 use lsb\App\WOR;
-use lsb\Libs\DBConnection;
+use lsb\Libs\DB;
 
 $config = Config::getInstance();
 $config->setMode(DEV);
@@ -28,12 +28,8 @@ $app->get('/phpinfo', function () {
     phpinfo();
 });
 $app->get('/test', function () {
-    $dbMngr = DBConnection::getInstance();
-    $qry = "
-            UPDATE `building`
-            SET `upgrade` = 222
-            WHERE `building_id` = :id;
-        ";
+    $dbMngr = DB::getInstance();
+
     $qry = "SELECT *
 FROM building b,
       building_upgrade bu
@@ -48,7 +44,8 @@ WHERE b.building_id = bu.building_id;";
     try {
         $stmt = $dbMngr->query($qry, []);
         $res = $stmt->fetchAll();
-        var_dump($res);
+        $res = ['a' => true, 'res' => $res];
+        echo json_encode($res);
     } catch (Exception $e) {
         if ($e->getCode() === "23000") {
             echo 'hi';

@@ -96,6 +96,61 @@ class CtxException extends Exception
         $this->throwLogicException();
     }
 
+    /* @throws  CtxException */
+    public function insertBufFail(): void
+    {
+        $this->serverErrCode = 1006;
+        $this->serverMsg = 'input buf record failed';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function insertBuildingFail(): void
+    {
+        $this->serverErrCode = 1007;
+        $this->serverMsg = 'input building record failed';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function invalidBuildingId(): void
+    {
+        $this->serverErrCode = 1008;
+        $this->serverMsg = 'input building id is not valid';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function invalidBuildingUpgrade(): void
+    {
+        $this->serverErrCode = 1009;
+        $this->serverMsg = 'building upgrade logic is not valid';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function insertBuildingUpgradeFail(): void
+    {
+        $this->serverErrCode = 1010;
+        $this->serverMsg = 'building upgrade is fail';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function updateBuildingUpgradeFail(): void
+    {
+        $this->serverErrCode = 1011;
+        $this->serverMsg = 'updating building upgrade is fail';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function deleteBuildingUpgradeFail(): void
+    {
+        $this->serverErrCode = 1012;
+        $this->serverMsg = 'deleting building upgrade is fail';
+        $this->throwLogicException();
+    }
 
     /**************************************
      ** Fatal Exceptions                 **

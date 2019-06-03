@@ -144,7 +144,6 @@ CREATE TABLE `user_castle_upgrade` (
   * territory_id:         속한 영토 id (기획)
   * tile_id:              위치한 타일 id (기획)
   * building_id:          건물 종류 (기획)
-  * resource_id:          자원 종류 (기획)
 
   * create_finish_time:       설치 완료 시간
   * deploy_finish_time:       인구 배치 완료 시간
@@ -159,9 +158,8 @@ CREATE TABLE `building` (
   `territory_id`    BIGINT        NOT NULL,
   `tile_id`         BIGINT        NOT NULL,
   `building_type`   BIGINT        NOT NULL,
-  `resource_id`     BIGINT        NOT NULL,
 
-  `create_finish_time`    DATETIME   NOT NULL,
+  `create_finish_time`    DATETIME   NULL,
   `deploy_finish_time`    DATETIME   NULL,
   `upgrade_finish_time`   DATETIME   NULL,
   `upgrade`         BIGINT        NOT NULL      DEFAULT 1,
@@ -177,7 +175,7 @@ CREATE TABLE `building_upgrade` (
   `user_id`       BIGINT      NOT NULL,
   `from_level`    BIGINT      NOT NULL,
   `to_level`      BIGINT      NOT NULL,
-  `finish_time`   DATETIME    NOT NULL,
+  `upgrade_finish_time`   DATETIME    NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `idx_building_id` (`building_id`)
   INDEX `idx_time` (`finish_time`)
@@ -188,7 +186,7 @@ CREATE TABLE `building_deploy` (
   `building_id`   BIGINT      NOT NULL,
   `user_id`       BIGINT      NOT NULL,
   `building_type` BIGINT      NOT NULL,
-  `finish_time`   DATETIME    NOT NULL,
+  `deploy_finish_time`   DATETIME    NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `idx_building` (`building_id`),
   INDEX `idx_time` (`finish_time`)
@@ -198,7 +196,7 @@ CREATE TABLE `building_create` (
   `crate_id`      BIGINT      NOT NULL      AUTO_INCREMENT,
   `building_id`   BIGINT      NOT NULL,
   `user_id`       BIGINT      NOT NULL,
-  `finish_time`   DATETIME    NOT NULL,
+  `create_finish_time`   DATETIME    NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `idx_building_id` (`building_id`),
   INDEX `idx_time` (`finish_time`)
@@ -240,8 +238,8 @@ CREATE TABLE `weapon` (
   `upgrade_time`  DATETIME      NULL,
   `create_time`   DATETIME      NULL,
   `last_update`   DATETIME      NULL,
-  PRIMARY KEY (`weapon_pk_id`),
-  UNIQUE INDEX `uk_user_weaopn` (`user_id`, `weapon_id`),
+  PRIMARY KEY (`weapon_id`),
+  UNIQUE INDEX `uk_user_weaopn` (`user_id`, `weapon_type`),
   INDEX `idx_user_weapon_created` (`user_id`, `create_time`)
 ) COLLATE='utf8_unicode_ci';
 
@@ -251,7 +249,7 @@ CREATE TABLE `weapon_upgrade` (
   `user_id`     BIGINT      NOT NULL,
   `from_level`  BIGINT      NOT NULL,
   `to_level`    BIGINT      NOT NULL,
-  `finish_time` BIGINT      NOT NULL,
+  `upgrade_finish_time` BIGINT      NOT NULL,
 
   PRIMARY KEY (`id`),
   UNIQUE INDEX `idx_weapon` (`weapon_id`),
@@ -262,7 +260,7 @@ CREATE TABLE `weapon_create` (
   `id`          BIGINT      NOT NULL,
   `weapon_id`   BIGINT      NOT NULL,
   `user_id`     BIGINT      NOT NULL,
-  `finish_time` BIGINT      NOT NULL,
+  `create_finish_time` BIGINT      NOT NULL,
 
   PRIMARY KEY (`id`),
   UNIQUE INDEX `idx_weapon` (`weapon_id`),
@@ -298,6 +296,7 @@ CREATE TABLE `explore_territory` (
   `user_id`           BIGINT        NOT NULL,
   `territory_id`      BIGINT        NOT NULL,
   `finish_time`       DATETIME      NOT NULL,
+  `last_update`       DATETIME      NULL,
   PRIMARY KEY (`explore_id`),
   UNIQUE INDEX `idx_user_explore` (`user_id`, `territory_id`)
 ) COLLATE='utf8_unicode_ci';
@@ -378,17 +377,23 @@ CREATE TABLE `occupation` (
 */
 CREATE TABLE `alliance` (
   `alliance_id`     BIGINT      NOT NULL      AUTO_INCREMENT,
-  `unique_key`      VARCHAR(50) NOT NULL,
-  `is_accepted`     TINYINT     NOT NULL,
-  `req_user_id`     BIGINT      NOT NULL,
-  `res_user_id`     BIGINT      NOT NULL,
-  `created_date`    DATETIME    NOT NULL,
+  `user_id`         BIGINT      NOT NULL,
+  `friend_id`       BIGINT      NOT NULL,
+  `created_time`    DATETIME    NOT NULL,
   `last_update`     DATETIME    NOT NULL,
   PRIMARY KEY (`alliance_id`),
-  UNIQUE INDEX `uk_idx` (`unique_key`),
-  INDEX `idx_req_user` (`req_user_id`, `is_accepted`),
-  INDEX `idx_res_user` (`res_user_id`, `is_accepted`)
+  UNIQUE INDEX `uk_idx` (`user_id`, `friend_id`)
 ) COLLATE='utf8_unicode_ci';
+
+CREATE TABLE alliance_wait (
+  `wait_id`       BIGINT    NOT NULL    AUTO_INCREMENT,
+  `user_id`       BIGINT    NOT NULL,
+  `friend_id`     BIGINT    NOT NULL,
+  `created_time`  BIGINT    NOT NULL,
+  PRIMARY KEY (`waid_id`),
+  UNIQUE INDEX `uk_id` (`user_id`, `friend_id`),
+  INDEX `idx_friend` (`friend_id`)
+);
 
 /** 동맹 유저간 자원 공유용 우편 테이블
   * @desc: 서로 동맹인 유저 끼리 우편을 주고 받을 수 있기 위한 정보
@@ -404,36 +409,21 @@ CREATE TABLE `mail` (
   `mail_id`             BIGINT      NOT NULL    AUTO_INCREMENT,
   `from_user_id`        BIGINT      NOT NULL,
   `to_user_id`          BIGINT      NOT NULL,
-  `tactical_resource`   BIGINT      NOT NULL,
-  `food_resource`       BIGINT      NOT NULL,
-  `luxury_resource`     BIGINT      NOT NULL,
-  `is_accepted`         TINYINT     NOT NULL,
   `created_date`        DATETIME    NOT NULL,
   `last_update`         DATETIME    NOT NULL,
   PRIMARY KEY (`mail_id`),
-  INDEX `idx_to_user` (`to_user_id`, `is_accepted`, `last_update`)
+  INDEX `idx_to_user` (`to_user_id`)
 ) COLLATE='utf8_unicode_ci';
 
--- 2019. 5. 7. boss table deprecated
--- /** 레이드 보스 몬스터 정보
---   * @desc: 레이드 보스 몬스터 현황 정보
---   * boss_pk_id:       보스 id (AUTO_INC) [PK]
---   * boss_id:          보스 타입 (기획)
---   * territory_id:     영토 id (기획)
---   * hit_point:        보스 체력
---   * is_active:        전투 상태 유무
---   * limit_time:       보스 광폭화 시간
---   * dead_time:        보스 처치된 시간
--- */
--- CREATE TABLE `boss` (
---   `boss_pk_id`        BIGINT      NOT NULL      AUTO_INCREMENT,
---   `boss_id`           BIGINT      NOT NULL,
---   `territory_id`      BIGINT      NOT NULL,
---   `hit_point`         BIGINT      NOT NULL,
---   `is_active`         TINYINT     NOT NULL,
---   `limit_time`        DATETIME    NOT NULL,
---   `dead_time`         DATETIME    NOT NULL,
---   `last_update`       DATETIME    NOT NULL,
---   PRIMARY KEY (`boss_pk_id`),
---   INDEX `idx_territory` (`territory_id`, `is_active`)
--- ) COLLATE='utf8_unicode_ci';
+CREATE TABLE `mail_wait` (
+  `wait_id`         BIGINT    NOT NULL    AUTO_INCREMENT,
+  `from_user_id`    BIGINT    NOT NULL,
+  `to_user_id`      BIGINT    NOT NULL,
+  `text`                TEXT        NULL,
+  `tactical_resource`   BIGINT      NOT NULL,
+  `food_resource`       BIGINT      NOT NULL,
+  `luxury_resource`     BIGINT      NOT NULL,
+  `created_time`    BIGINT    NOT NULL,
+  PRIMARY KEY (`waid_id`),
+  INDEX `idx_to_user_id` (`to_user_id`)
+);

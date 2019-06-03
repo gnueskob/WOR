@@ -19,8 +19,10 @@ class User extends Router implements ISubRouter
          * User login
          * {
          *      "success":    true
-         *      "user_id":    :user_id
-         *      "token":      :token
+         *      "res": {
+         *          "user_id":    :user_id
+         *          "token":      :token
+         *      }
          * }
          */
         $router->put('/login', function (Context $ctx) {
@@ -39,7 +41,6 @@ class User extends Router implements ISubRouter
                 (new CtxException())->invalidHiveId();
             }
             $ctx->res->body = [
-                'success' => true,
                 'user_id' => $userId,
                 'token' => 'tokentokentoken'
             ];
@@ -50,8 +51,10 @@ class User extends Router implements ISubRouter
          * User register
          * {
          *      "success":    true
-         *      "user_id":    :user_id
-         *      "token":      :token
+         *      "res": {
+         *          "user_id":    :user_id
+         *          "token":      :token
+         *      }
          * }
          */
         $router->post('/register', function (Context $ctx) {
@@ -68,7 +71,6 @@ class User extends Router implements ISubRouter
             }
 
             $ctx->res->body = [
-                'success' => true,
                 'user_id' => $userId,
                 'token' => 'tokentokentoken'
             ];
@@ -90,7 +92,6 @@ class User extends Router implements ISubRouter
                 (new CtxException())->invalidId();
             }
 
-            $ctx->res->body = ['success' => true];
             $ctx->res->send();
         });
 
@@ -109,52 +110,24 @@ class User extends Router implements ISubRouter
                 (new CtxException())->invalidId();
             }
 
-            $ctx->res->body = ['success' => true];
             $ctx->res->send();
         });
 
         /**
          * User information
          * {
-         *      "user_id": ...
-         *      "territory_id": ...
-         *      "name": ...
-         *      ...
+         *      "success":  true,
+         *      "res": {
+         *          "user_id": ...
+         *          "territory_id": ...
+         *          "name": ...
+         *          ...
+         *      }
          * }
          */
         $router->get('/info/:user_id', function (Context $ctx) {
             $data = array_merge($ctx->req->getParams(), $ctx->req->body);
             $res = UserServices::selectUserInfo($data);
-            if ($res === false) {
-                (new CtxException())->invalidId();
-            }
-            $ctx->res->body = $res;
-            $ctx->res->send();
-        });
-
-        $router->get('/tile/:user_id', function (Context $ctx) {
-            $data = $ctx->req->getParams();
-            $res = UserServices::selectUserTile($data);
-            if ($res === false) {
-                (new CtxException())->invalidId();
-            }
-            $ctx->res->body = $res;
-            $ctx->res->send();
-        });
-
-        $router->get('/territory/:user_id', function (Context $ctx) {
-            $data = $ctx->req->getParams();
-            $res = UserServices::selectUserExploration($data);
-            if ($res === false) {
-                (new CtxException())->invalidId();
-            }
-            $ctx->res->body = $res;
-            $ctx->res->send();
-        });
-
-        $router->get('/building/:user_id', function (Context $ctx) {
-            $data = $ctx->req->getParams();
-            $res = UserServices::selectUserBuilding($data);
             if ($res === false) {
                 (new CtxException())->invalidId();
             }

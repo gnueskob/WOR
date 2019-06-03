@@ -3,53 +3,12 @@
 namespace lsb\App\services;
 
 use lsb\Libs\Timezone;
-use lsb\Libs\DBConnection;
+use lsb\Libs\DB;
 use Exception;
 use PDOException;
 
 class UserServices
 {
-    private static function getDBMngr()
-    {
-        return DBConnection::getInstance();
-    }
-
-    private static function getDBConnection()
-    {
-        return DBConnection::getInstance()->getDBConnection();
-    }
-
-    private static function trimColumn(array $data)
-    {
-        $res = [];
-        foreach ($data as $key => $value) {
-            if (is_int($key)) {
-                continue;
-            }
-            $res[$key] = $value;
-        }
-        return $res;
-    }
-
-    private static function selectReturn(string $query, array $param)
-    {
-        $dbMngr = self::getDBMngr();
-        $res = $dbMngr->query($query, $param)->fetch();
-        return $res === false ? false : self::trimColumn($res);
-    }
-
-    private static function updateReturn(string $query, array $param)
-    {
-        $dbMngr = self::getDBMngr();
-        $stmt = $dbMngr->query($query, $param);
-        return $stmt->rowCount();
-    }
-
-    private static function deleteReturn(string $query, array $param)
-    {
-        return false;
-    }
-
     public static function updateUserLastVisit(array $data)
     {
         $qry = "
@@ -61,7 +20,7 @@ class UserServices
             ':last_visit' => $data['last_visit'],
             ':hive_id' => $data['hive_id'],
         ];
-        return self::updateReturn($qry, $param);
+        return DB::getResultRowCount($qry, $param);
     }
 
     /**
@@ -79,7 +38,7 @@ class UserServices
             ':hive_id' => $data['hive_id'],
             ':hive_uid', $data['hive_uid']
         ];
-        return self::selectReturn($qry, $param);
+        return DB::getSelectResult($qry, $param);
     }
 
     /**
@@ -89,8 +48,8 @@ class UserServices
      */
     public static function registerNewAccount(array $data): int
     {
-        $dbMngr = self::getDBMngr();
-        $db = self::getDBConnection();
+        $dbMngr = DB::getInstance();
+        $db = $dbMngr->getDBConnection();
         try {
             $db->beginTransaction();
             $qry = "
@@ -184,10 +143,7 @@ class UserServices
             if ($db->commit() === false) {
                 return -1;
             }
-        } catch (PDOException $e) {
-            $db->rollBack();
-            throw $e;
-        } catch (Exception $e) {
+        } catch (PDOException | Exception $e) {
             $db->rollBack();
             throw $e;
         }
@@ -200,7 +156,6 @@ class UserServices
      */
     public static function updateUserName(array $data)
     {
-        $dbMngr = self::getDBMngr();
         $qry = "
             UPDATE user_info
             SET name = :name
@@ -211,7 +166,7 @@ class UserServices
             ':user_id' => $data['id']
         ];
         try {
-            return self::updateReturn($qry, $param);
+            return DB::getResultRowCount($qry, $param);
         } catch (PDOException $e) {
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
                 return false;
@@ -237,7 +192,7 @@ class UserServices
             ':user_id' => $data['user_id']
         ];
         try {
-            return self::updateReturn($qry, $param);
+            return DB::getResultRowCount($qry, $param);
         } catch (PDOException $e) {
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
                 return false;
@@ -257,42 +212,6 @@ class UserServices
               AND up.user_id = :user_id;
         ";
         $param = [':user_id' => $data['user_id']];
-        return self::selectReturn($qry, $param);
-    }
-
-    public static function selectUserTile(array $data)
-    {
-        $qry = "
-            SELECT *
-            FROM explore_tile
-            WHERE user_id = :user_id;
-        ";
-        $param = [':user_id' => $data['user_id']];
-        return self::selectReturn($qry, $param);
-    }
-
-    public static function selectUserExploration(array $data)
-    {
-        $qry = "
-            SELECT *
-            FROM explore_territory
-            WHERE user_id = :user_id;
-        ";
-        $param = [':user_id' => $data['user_id']];
-        return self::selectReturn($qry, $param);
-    }
-
-    public static function selectUserBuilding(array $data)
-    {
-        $qry = "
-            SELECT *
-            FROM building b, building_upgrade bu, building_deploy bd, building_crate bc
-            WHERE b.user_id = :user_id
-              AND b.building_id = bu.building_id
-              AND b.building_id = bd.building_id
-              AND b.building_id = bc.building_id;
-        ";
-        $param = [':user_id' => $data['user_id']];
-        return self::selectReturn($qry, $param);
+        return DB::getSelectResult($qry, $param);
     }
 }

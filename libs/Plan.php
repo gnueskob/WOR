@@ -9,7 +9,7 @@ use lsb\Config\Config;
 define('REDIS', 'redis');
 define('APCU', 'apcu');
 
-class CSVParser
+class Plan
 {
     private $driver;
 
@@ -114,6 +114,27 @@ class CSVParser
                 break;
             case APCU:
                 $res = apcu_store($keyTag, $this->csvData);
+                break;
+        }
+        return $res;
+    }
+
+    public static function getData(string $key)
+    {
+        $driver = Config::getInstance()->getConfig('plan')['driver'];
+        switch ($driver) {
+            default:
+            case REDIS:
+                try {
+                    $redis = Redis::getInstance()->getRedis();
+                    $res = $redis->get($key);
+                    $res = json_decode($res);
+                } catch (Exception $e) {
+                    $res = [];
+                }
+                break;
+            case APCU:
+                $res = apcu_fetch($key);
                 break;
         }
         return $res;

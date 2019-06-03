@@ -3,7 +3,7 @@
 namespace lsb\App\controller;
 
 use lsb\Config\Config;
-use lsb\Libs\CSVParser;
+use lsb\Libs\Plan as CSVParser;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\Libs\Context;
@@ -48,7 +48,7 @@ class Plan extends Router implements ISubRouter
             }
 
             $ctx->res->body = $res;
-            $ctx->res->send(true);
+            $ctx->res->send();
         });
     }
 }

@@ -2,6 +2,7 @@
 
 namespace lsb\App;
 
+use lsb\App\controller\Buf;
 use lsb\App\controller\Plan;
 use lsb\Libs\Context;
 use lsb\Libs\ISubRouter;
@@ -20,6 +21,7 @@ class WOR extends Router implements ISubRouter
                 $ctx->next();
             })
             ->use('/user', new User())
+            ->use('/buf', new Buf())
             ->use('/plan', new Plan());
     }
 }

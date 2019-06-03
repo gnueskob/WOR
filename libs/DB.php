@@ -10,7 +10,7 @@ use lsb\Config\Config;
 
 define('DUPLICATE_ERRORCODE', '23000');
 
-class DBConnection extends Singleton
+class DB extends Singleton
 {
     private $db = null;
 
@@ -99,5 +99,45 @@ class DBConnection extends Singleton
         $log->addLog(CATEGORY_QRY_PERF, json_encode($logMsg));
 
         return $stmt;
+    }
+
+    private static function trimColumn(array $data)
+    {
+        $res = [];
+        foreach ($data as $key => $value) {
+            if (is_int($key)) {
+                continue;
+            }
+            $res[$key] = $value;
+        }
+        return $res;
+    }
+
+    public static function getSelectResult(string $query, array $param, bool $all = false)
+    {
+        $dbMngr = self::getInstance();
+        if ($all) {
+            $res = $dbMngr->query($query, $param)->fetchAll();
+            foreach ($res as $key => $value) {
+                $res[$key] = self::trimColumn($value);
+            }
+            return $res;
+        } else {
+            $res = $dbMngr->query($query, $param)->fetch();
+            return $res === false ? false : self::trimColumn($res);
+        }
+    }
+
+    public static function getResultRowCount(string $query, array $param)
+    {
+        $dbMngr = self::getInstance();
+        $stmt = $dbMngr->query($query, $param);
+        return $stmt->rowCount();
+    }
+
+    public static function getInsertResult(string $query, array $param)
+    {
+        $dbMngr = self::getInstance();
+        return $dbMngr->query($query, $param);
     }
 }

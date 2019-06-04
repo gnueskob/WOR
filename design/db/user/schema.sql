@@ -175,8 +175,9 @@ CREATE TABLE `building_upgrade` (
   `user_id`       BIGINT      NOT NULL,
   `from_level`    BIGINT      NOT NULL,
   `to_level`      BIGINT      NOT NULL,
+  'done'          TINYINT     NULL,
   `upgrade_finish_time`   DATETIME    NOT NULL,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`upgrade_id`),
   UNIQUE INDEX `idx_building_id` (`building_id`)
   INDEX `idx_time` (`finish_time`)
 );
@@ -187,7 +188,7 @@ CREATE TABLE `building_deploy` (
   `user_id`       BIGINT      NOT NULL,
   `building_type` BIGINT      NOT NULL,
   `deploy_finish_time`   DATETIME    NOT NULL,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`deploy_id`),
   UNIQUE INDEX `idx_building` (`building_id`),
   INDEX `idx_time` (`finish_time`)
 );
@@ -197,7 +198,7 @@ CREATE TABLE `building_create` (
   `building_id`   BIGINT      NOT NULL,
   `user_id`       BIGINT      NOT NULL,
   `create_finish_time`   DATETIME    NOT NULL,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`crate_id`),
   UNIQUE INDEX `idx_building_id` (`building_id`),
   INDEX `idx_time` (`finish_time`)
 );

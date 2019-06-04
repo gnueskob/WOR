@@ -46,6 +46,64 @@ class CtxException extends Exception
     }
 
     /**************************************
+     ** DB Logical Exceptions            **
+     **************************************/
+    /**
+     * @param string $tag
+     * @throws CtxException
+     */
+    public function selectFail(string $tag): void
+    {
+        $this->serverErrCode = 10000;
+        $this->serverMsg = "select fail :{$tag}";
+        $this->throwDBLogicException();
+    }
+
+    /**
+     * @param string $tag
+     * @throws CtxException
+     */
+    public function insertFail(string $tag): void
+    {
+        $this->serverErrCode = 10001;
+        $this->serverMsg = "insert fail :{$tag}";
+        $this->throwDBLogicException();
+    }
+
+    /**
+     * @param string $tag
+     * @throws CtxException
+     */
+    public function updateFail(string $tag): void
+    {
+        $this->serverErrCode = 10002;
+        $this->serverMsg = "update fail :{$tag}";
+        $this->throwDBLogicException();
+    }
+
+    /**
+     * @param string $tag
+     * @throws CtxException
+     */
+    public function deleteFail(string $tag): void
+    {
+        $this->serverErrCode = 10003;
+        $this->serverMsg = "delete fail :{$tag}";
+        $this->throwDBLogicException();
+    }
+
+    /**
+     * @param string $tag
+     * @throws CtxException
+     */
+    public function transactionFail(string $tag): void
+    {
+        $this->serverErrCode = 10004;
+        $this->serverMsg = "transaction fail :{$tag}";
+        $this->throwDBLogicException();
+    }
+
+    /**************************************
      ** Only Logic Exceptions            **
      **************************************/
     /* @throws  CtxException */
@@ -81,74 +139,50 @@ class CtxException extends Exception
     }
 
     /* @throws  CtxException */
-    public function invalidId(): void
+    public function alreadyUsedTerritory(): void
     {
         $this->serverErrCode = 1004;
-        $this->serverMsg = 'input id is not valid';
+        $this->serverMsg = 'input territory is already in use';
         $this->throwLogicException();
     }
 
     /* @throws  CtxException */
-    public function invalidHiveId(): void
+    public function resourceInsufficient(): void
     {
         $this->serverErrCode = 1005;
-        $this->serverMsg = 'input hive id is not valid';
+        $this->serverMsg = 'resource Insufficient fail';
         $this->throwLogicException();
     }
 
     /* @throws  CtxException */
-    public function insertBufFail(): void
+    public function invalidBuildingType(): void
     {
         $this->serverErrCode = 1006;
-        $this->serverMsg = 'input buf record failed';
+        $this->serverMsg = 'invalid building type';
         $this->throwLogicException();
     }
 
     /* @throws  CtxException */
-    public function insertBuildingFail(): void
+    public function notYetCreatedBuilding(): void
     {
         $this->serverErrCode = 1007;
-        $this->serverMsg = 'input building record failed';
+        $this->serverMsg = 'building is not created yet';
         $this->throwLogicException();
     }
 
     /* @throws  CtxException */
-    public function invalidBuildingId(): void
+    public function exceedManpowerBuilding(): void
     {
         $this->serverErrCode = 1008;
-        $this->serverMsg = 'input building id is not valid';
+        $this->serverMsg = 'manpower what you deploy is greater than max value';
         $this->throwLogicException();
     }
 
     /* @throws  CtxException */
-    public function invalidBuildingUpgrade(): void
+    public function manpowerInsufficient(): void
     {
         $this->serverErrCode = 1009;
-        $this->serverMsg = 'building upgrade logic is not valid';
-        $this->throwLogicException();
-    }
-
-    /* @throws  CtxException */
-    public function insertBuildingUpgradeFail(): void
-    {
-        $this->serverErrCode = 1010;
-        $this->serverMsg = 'building upgrade is fail';
-        $this->throwLogicException();
-    }
-
-    /* @throws  CtxException */
-    public function updateBuildingUpgradeFail(): void
-    {
-        $this->serverErrCode = 1011;
-        $this->serverMsg = 'updating building upgrade is fail';
-        $this->throwLogicException();
-    }
-
-    /* @throws  CtxException */
-    public function deleteBuildingUpgradeFail(): void
-    {
-        $this->serverErrCode = 1012;
-        $this->serverMsg = 'deleting building upgrade is fail';
+        $this->serverMsg = 'manpower Insufficient fail';
         $this->throwLogicException();
     }
 
@@ -159,6 +193,12 @@ class CtxException extends Exception
     public function throwLogicException(): void
     {
         $this->throwException(200, "Logic error");
+    }
+
+    /* @throws  CtxException */
+    public function throwDBLogicException(): void
+    {
+        $this->throwException(201, "DB Logic error");
     }
 
     /* @throws  CtxException */

@@ -81,6 +81,12 @@ class Context extends Singleton implements IContext
         $this->res->send();
     }
 
+    public function getBody()
+    {
+        $data = array_merge($this->req->getParams(), $this->req->body);
+        return $data;
+    }
+
     /**
      * Throw CtxException for some reason
      * @param   int         $serverErrCode

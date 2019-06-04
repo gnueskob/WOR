@@ -28,30 +28,24 @@ $app->get('/phpinfo', function () {
     phpinfo();
 });
 $app->get('/test', function () {
-    $dbMngr = DB::getInstance();
-
     $qry = "SELECT *
-FROM building b,
-      building_upgrade bu
-WHERE b.building_id = bu.building_id;";
-    $qry = preg_replace('/\r\n/', ' ', $qry);
-    $qry = preg_replace('/  /', '', $qry);
-    $qry = preg_replace('/^ /', '', $qry);
-    $qry = preg_replace('/ $/', '', $qry);
+            FROM building b, building_upgrade bu
+            WHERE b.building_id = bu.building_id;";
+//    $qry = "INSERT INTO building
+//            VALUE (123, 123);";
 
-    $id = 111;
-
-    try {
-        $stmt = $dbMngr->query($qry, []);
-        $res = $stmt->fetchAll();
-        $res = ['a' => true, 'res' => $res];
-        echo json_encode($res);
-    } catch (Exception $e) {
-        if ($e->getCode() === "23000") {
-            echo 'hi';
-        } else {
-            throw $e;
-        }
-    }
+    $p = [];
+//    try {
+//        $stmt = DB::runQuery($qry, $p);
+//        var_dump($stmt->fe);
+//    } catch (Exception $e) {
+//        echo 'g';
+//    }
+    $p[0] = 'aa';
+    $p['asd'] = 'asd';
+    $p[3] = 'a';
+    var_dump($p);
+    unset($p[0]);
+    var_dump($p);
 });
 $app->run();

@@ -9,6 +9,22 @@ use lsb\Config\Config;
 define('REDIS', 'redis');
 define('APCU', 'apcu');
 
+define('PLAN_TERRITORY', 'territory');
+define('PLAN_TILE', 'tile');
+define('PLAN_RESOURCE', 'resource');
+define('PLAN_BUILDING', 'building');
+define('PLAN_BUILDING_NEED_RESOURCE', 'index_building_resource');
+define('PLAN_BOSS', 'boss');
+define('PLAN_BUF', 'buf');
+define('PLAN_BOSS_BUF', 'index_boss_buf');
+define('PLAN_UPG_CASTLE', 'upgrade_castle');
+define('PLAN_UPG_DEF_TOWER', 'upgrade_defense_tower');
+define('PLAN_UPG_ARMY', 'upgrade_army');
+define('PLAN_WEAPON', 'weapon');
+define('PLAN_UPG_WEAPON', 'upgrade_weapon');
+define('PLAN_UNIT_TIME', 'unit_time');
+define('ETC', 'etc');
+
 class Plan
 {
     private $driver;
@@ -119,7 +135,7 @@ class Plan
         return $res;
     }
 
-    public static function getData(string $key)
+    public static function getData(string $keyTag, string $key)
     {
         $driver = Config::getInstance()->getConfig('plan')['driver'];
         switch ($driver) {
@@ -127,14 +143,14 @@ class Plan
             case REDIS:
                 try {
                     $redis = Redis::getInstance()->getRedis();
-                    $res = $redis->get($key);
+                    $res = $redis->hGet($keyTag, $key);
                     $res = json_decode($res);
                 } catch (Exception $e) {
                     $res = [];
                 }
                 break;
             case APCU:
-                $res = apcu_fetch($key);
+                $res = apcu_fetch($keyTag)[$key];
                 break;
         }
         return $res;

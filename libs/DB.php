@@ -101,16 +101,19 @@ class DB extends Singleton
         return $stmt;
     }
 
-    private static function trimColumn(array $data)
+    public static function runQuery(string $q, array $p)
     {
-        $res = [];
+        return self::getInstance()->query($q, $p);
+    }
+
+    public static function trimColumn(array $data)
+    {
         foreach ($data as $key => $value) {
             if (is_int($key)) {
-                continue;
+                unset($data[$key]);
             }
-            $res[$key] = $value;
         }
-        return $res;
+        return $data;
     }
 
     public static function getSelectResult(string $query, array $param, bool $all = false)
@@ -118,13 +121,9 @@ class DB extends Singleton
         $dbMngr = self::getInstance();
         if ($all) {
             $res = $dbMngr->query($query, $param)->fetchAll();
-            foreach ($res as $key => $value) {
-                $res[$key] = self::trimColumn($value);
-            }
             return $res;
         } else {
-            $res = $dbMngr->query($query, $param)->fetch();
-            return $res === false ? false : self::trimColumn($res);
+            return $dbMngr->query($query, $param)->fetch();
         }
     }
 

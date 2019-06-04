@@ -46,7 +46,7 @@ class Auth
                 ];
 
                 $ctx->res->body = $errRes;
-                $ctx->res->send(true);
+                $ctx->res->send();
 
                 // Don't throw Exception more
                 // throw $e;

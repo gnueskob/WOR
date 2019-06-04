@@ -11,7 +11,7 @@ class Timezone extends DateTime
 {
     const FORMAT = 'Y-m-d H:i:s';
 
-    public function __construct(string $timezone, $time = 'now')
+    public function __construct(string $timezone = 'UTC', $time = 'now')
     {
         date_default_timezone_set("UTC");
         parent::__construct($time, new DateTimeZone('UTC'));

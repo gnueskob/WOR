@@ -14,7 +14,7 @@ class SpinLock
      */
     public static function spinLock($key, $expire)
     {
-        $db = DBConnection::getInstance()->getDBConnection();
+        $db = DB::getInstance()->getDBConnection();
         $db->setAttribute(PDO::ATTR_TIMEOUT, 1);
 
         $memcache = Memcached::getInstance()->getMemcached();

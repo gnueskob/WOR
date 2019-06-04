@@ -2,8 +2,9 @@
 
 namespace lsb\App\services;
 
+use lsb\App\models\BuildingQuery;
+use lsb\App\models\UserQuery;
 use lsb\Libs\CtxException;
-use lsb\Libs\Timezone;
 use lsb\Libs\DB;
 use Exception;
 use PDOException;
@@ -12,99 +13,140 @@ class BuildingServices
 {
     /**
      * @param array $data
+     * @return array
+     * @throws CtxException
+     */
+    public static function getBuildingsByUser(array $data)
+    {
+        $stmt = BuildingQuery::selectBuildingByUser($data);
+        $res = $stmt->fetchAll();
+        if ($res === false) {
+            (new CtxException())->selectFail('getUserBuilding');
+        }
+        foreach ($res as $key => $value) {
+            $res[$key] = DB::trimColumn($value);
+        }
+        return $res;
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     * @throws CtxException
+     */
+    public static function getBuilding(array $data)
+    {
+        $stmt = BuildingQuery::selectBuilding($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            (new CtxException())->selectFail('getBuilding');
+        }
+        return DB::trimColumn($res);
+    }
+
+    /**
+     * @param array $data
      * @return array|bool|mixed
      * @throws Exception
      */
-    public static function insertUserBuilding(array $data)
+    public static function createBuilding(array $data)
     {
-        $qry = "
-            INSERT INTO building
-            VALUE (
-                   :building_id,
-                   :user_id,
-                   :territory_id,
-                   :tile_id,
-                   :building_type,
-                   :create_finish_time,
-                   :deploy_finish_time,
-                   :upgrade_finish_time,
-                   :upgrade,
-                   :manpower,
-                   :last_update
-            );
-        ";
-        $param = [
-            ':building_id' => null,
-            ':user_id' => $data['user_id'],
-            ':territory_id' => $data['territory_id'],
-            ':tile_id' => $data['tile_id'],
-            ':building_type' => $data['building_type'],
-            ':create_finish_time' => null,
-            ':deploy_finish_time' => null,
-            ':upgrade_finish_time' => null,
-            ':upgrade' => 1,
-            ':manpower' => 0,
-            ':last_update' => Timezone::getNowUTC()
-        ];
-        return DB::getInsertResult($qry, $param);
-    }
+        $db = DB::getInstance()->getDBConnection();
 
-    public static function selectUserBuilding(array $data)
-    {
-        $qry = "
-            SELECT *
-            FROM building b, building_upgrade bu, building_deploy bd, building_crate bc
-            WHERE b.user_id = :user_id
-              AND b.building_id = bu.building_id
-              AND b.building_id = bd.building_id
-              AND b.building_id = bc.building_id;
-        ";
-        $param = [':user_id' => $data['user_id']];
-        return DB::getSelectResult($qry, $param, true);
-    }
-
-    public static function selectBuilding(array $data)
-    {
-        $qry = "
-            SELECT *
-            FROM building
-            WHERE building_id = :building_id;
-        ";
-        $param = [':building_id' => $data['building_id']];
-        return DB::getSelectResult($qry, $param);
-    }
-
-    public static function insertBuildingUpgrade(array $data)
-    {
-        $qry = "
-            INSERT INTO building_upgrade
-            VALUE (
-                   :upgrade_id,
-                   :building_id,
-                   :user_id,
-                   :from_level,
-                   :to_level,
-                   :done,
-                   :upgrade_finish_time
-            );
-        ";
-        $param = [
-            ':upgrade_id' => null,
-            ':building_id' => $data['building_id'],
-            ':user_id' => $data['user_id'],
-            ':from_level' => $data['from_level'],
-            ':to_level' => $data['to_level'],
-            ':done' => null,
-            ':upgrade_finish_time' => $data['upgrade_finish_time']
-        ];
         try {
-            return DB::getInsertResult($qry, $param);
-        } catch (PDOException $e) {
-            if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                return false;
-            } else {
-                throw $e;
+            $db->beginTransaction();
+
+            $stmt = UserQuery::updateUserResource($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('createBuilding');
             }
+
+            $stmt = BuildingQuery::insertBuilding($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('createBuilding');
+            }
+
+            $buildingId = $db->lastInsertId();
+            $data['building_id'] = $buildingId;
+            $stmt = BuildingQuery::insertBuildingCreate($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('createBuilding');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('createBuilding');
+            }
+
+            return $buildingId;
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array $data
+     * @throws CtxException
+     */
+    public static function resolveCreateBuilding(array $data)
+    {
+        $stmt = BuildingQuery::selectBuilding($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            (new CtxException())->selectFail('addFinishUserBuilding');
+        }
+        $createFinishTime = $res['create_finish_time'];
+
+        $db = DB::getInstance()->getDBConnection();
+        try {
+            $db->beginTransaction();
+
+            $stmt = BuildingQuery::deleteBuildingCreate($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('addFinishUserBuilding');
+            }
+
+            $data['create_time'] = $createFinishTime;
+            $stmt = BuildingQuery::updateBuildingWithCreateTime($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('addFinishUserBuilding');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('upgradeRequestBuilding');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array $data
+     * @throws CtxException
+     */
+    public static function upgradeBuilding(array $data)
+    {
+        $db = DB::getInstance()->getDBConnection();
+        try {
+            $db->beginTransaction();
+
+            $stmt = UserQuery::updateUserResource($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('upgradeRequestBuilding');
+            }
+
+            $stmt = BuildingQuery::insertBuildingUpgrade($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('upgradeRequestBuilding');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('upgradeRequestBuilding');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
         }
     }
 
@@ -113,31 +155,105 @@ class BuildingServices
      * @return int
      * @throws Exception
      */
-    public static function updateBuildingUpgrade(array $data)
+    public static function resolveUpgradeBuilding(array $data)
     {
-        $q = "
-            UPDATE building b, building_upgrade bu
-            SET b.upgrade = bu.to_level,
-                bu.done = 1
-            WHERE b.building_id = :building_id
-              AND b.building_id = bu.building_id
-              AND bu.finish_time <= :finish_time;
-        ";
-        $p = [
-            ':building_id' => $data['building_id'],
-            ':finish_time' => Timezone::getNowUTC()
-        ];
-        return DB::getResultRowCount($q, $p);
+        $stmt = BuildingQuery::selectBuilding($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            (new CtxException())->selectFail('upgradeFinishBuilding');
+        }
+        $toLevel = $res['to_level'];
+        $upgradeTime = $res['upgrade_finish_time'];
+
+        $db = DB::getInstance()->getDBConnection();
+        try {
+            $db->beginTransaction();
+
+            $stmt = BuildingQuery::deleteBuildingUpgrade($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->deleteFail('upgradeFinishBuilding');
+            }
+
+            $data['upgrade'] = $toLevel;
+            $data['upgrade_time'] = $upgradeTime;
+            $stmt = BuildingQuery::updateBuildingWithUpgrade($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('upgradeFinishBuilding');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('upgradeRequestBuilding');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
     }
 
-    public static function deleteBuildingUpgrade(array $data)
+    /**
+     * @param array $data
+     * @throws CtxException
+     */
+    public static function deployBuilding(array $data)
     {
-        $q = "
-            DELETE FROM building_upgrade
-            WHERE building_id = :building_id
-              AND done = 1;
-        ";
-        $p = [':building_id' => $data['building_id']];
-        return DB::getResultRowCount($q, $p);
+        $db = DB::getInstance()->getDBConnection();
+        try {
+            $db->beginTransaction();
+
+            $stmt = UserQuery::updateUserUsedManpower($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('deployBuilding');
+            }
+
+            $stmt = BuildingQuery::insertBuildingDeploy($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('deployBuilding');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('deployBuilding');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array $data
+     * @return int
+     * @throws Exception
+     */
+    public static function resolveDeployBuilding(array $data)
+    {
+        $stmt = BuildingQuery::selectBuilding($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            (new CtxException())->selectFail('resolveDeployBuilding');
+        }
+        $toLevel = $res['deploy_finish_time'];
+
+        $db = DB::getInstance()->getDBConnection();
+        try {
+            $db->beginTransaction();
+
+            $stmt = BuildingQuery::deleteBuildingDeploy($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->deleteFail('resolveDeployBuilding');
+            }
+
+            $data['upgrade'] = $toLevel;
+            $stmt = BuildingQuery::updateBuildingWithDeployTime($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('resolveDeployBuilding');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('resolveDeployBuilding');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
     }
 }

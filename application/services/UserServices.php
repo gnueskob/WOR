@@ -2,43 +2,40 @@
 
 namespace lsb\App\services;
 
-use lsb\Libs\Timezone;
+use lsb\Libs\CtxException;
 use lsb\Libs\DB;
+use lsb\App\models\UserQuery;
 use Exception;
 use PDOException;
 
 class UserServices
 {
-    public static function updateUserLastVisit(array $data)
+    /**
+     * @param array $data
+     * @throws CtxException
+     */
+    public static function setUserLastVisit(array $data)
     {
-        $qry = "
-            UPDATE user_info
-            SET last_visit = :last_visit
-            WHERE user_id = :user_id;
-        ";
-        $param = [
-            ':last_visit' => $data['last_visit'],
-            ':hive_id' => $data['hive_id'],
-        ];
-        return DB::getResultRowCount($qry, $param);
+        $stmt = UserQuery::updateUserLastVisit($data);
+        $cnt = $stmt->rowCount();
+        if ($cnt === 0) {
+            (new CtxException())->updateFail('setUserLastVisit');
+        }
     }
 
     /**
      * @param array $data
      * @return mixed    false: there are no record, array: any selected record
      */
-    public static function selectHiveUser(array $data)
+    public static function getHiveUserId(array $data)
     {
-        $qry = "
-            SELECT * FROM user_platform
-            WHERE hive_id = :hive_id
-              AND hive_uid = :hive_uid;
-        ";
-        $param = [
-            ':hive_id' => $data['hive_id'],
-            ':hive_uid', $data['hive_uid']
-        ];
-        return DB::getSelectResult($qry, $param);
+        $stmt = UserQuery::selectHiveUser($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return -1;
+        } else {
+            return $res['user_id'];
+        }
     }
 
     /**
@@ -48,102 +45,31 @@ class UserServices
      */
     public static function registerNewAccount(array $data): int
     {
-        $dbMngr = DB::getInstance();
-        $db = $dbMngr->getDBConnection();
+        $db = DB::getInstance()->getDBConnection();
         try {
             $db->beginTransaction();
-            $qry = "
-                INSERT INTO user_platform
-                VALUE (
-                      :user_id,
-                      :hive_id,
-                      :hive_uid,
-                      :register_date,
-                      :country,
-                      :lang,
-                      :os_version,
-                      :device_name,
-                      :app_version
-                );
-            ";
-            $param = [
-                ':user_id' => null,
-                ':hive_id' => $data['hive_id'],
-                ':hive_uid' => $data['hive_uid'],
-                ':register_date' => $data['register_date'],
-                ':country' => $data['country'],
-                ':lang' => $data['lang'],
-                ':os_version' => $data['os_version'],
-                ':device_name' => $data['device_name'],
-                ':app_version' => $data['app_version']
-            ];
-            $dbMngr->query($qry, $param);
-            $userId = $db->lastInsertId();
 
-            $qry = "
-                INSERT INTO user_info
-                VALUE (
-                      :user_id,
-                      :last_update,
-                      :territory_id,
-                      :name,
-                      :castle_level,
-                      :upgrade_finish_time,
-                      :auto_generate_manpower,
-                      :manpower,
-                      :appended_manpower,
-                      :tactical_resource,
-                      :food_resource,
-                      :luxury_resource
-                );
-            ";
-            $param = [
-                ':user_id' => $userId,
-                ':last_update' => Timezone::getNowUTC(),
-                ':territory_id' => 0,
-                ':name' => null,
-                ':castle_level' => 1,
-                ':upgrade_finish_time' => null,
-                ':auto_generate_manpower' => true,
-                ':manpower' => 10,
-                ':appended_manpower' => 0,
-                ':tactical_resource' => 0,
-                ':food_resource' => 0,
-                ':luxury_resource' => 0
-            ];
-            // TODO: 초기값 기획 데이터 변환
-            $dbMngr->query($qry, $param);
-
-            $qry = "
-                INSERT INTO user_statistic
-                VALUE (
-                      :user_id,
-                      :war_request,
-                      :war_victory,
-                      :war_defeated,
-                      :despoil_defense_success,
-                      :despoil_defense_fail,
-                      :boss1_kill_count,
-                      :boss2_kill_count,
-                      :boss3_kill_count
-                );
-            ";
-            $param = [
-                ':user_id' => $userId,
-                ':war_request' => 0,
-                ':war_victory' => 0,
-                ':war_defeated' => 0,
-                ':despoil_defense_success' => 0,
-                ':despoil_defense_fail' => 0,
-                ':boss1_kill_count' => 0,
-                ':boss2_kill_count' => 0,
-                ':boss3_kill_count' => 0
-            ];
-            $dbMngr->query($qry, $param);
-            if ($db->commit() === false) {
-                return -1;
+            $stmt = UserQuery::insertUserPlatform($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('registerNewAccount1');
             }
-        } catch (PDOException | Exception $e) {
+            $userId = $db->lastInsertId();
+            $data['user_id'] = $userId;
+
+            $stmt = UserQuery::insertUserPlatform($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('registerNewAccount2');
+            }
+
+            $stmt = UserQuery::insertUserStatistics($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('registerNewAccount3');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('registerNewAccount');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
             $db->rollBack();
             throw $e;
         }
@@ -152,21 +78,17 @@ class UserServices
 
     /**
      * @param array $data
-     * @return bool|int     false: duplicated name, {number}: # of updated records
+     * @return bool|int
+     * @throws CtxException
      */
-    public static function updateUserName(array $data)
+    public static function setUserName(array $data)
     {
-        $qry = "
-            UPDATE user_info
-            SET name = :name
-            WHERE user_id = :user_id;
-        ";
-        $param = [
-            ':name' => $data['name'],
-            ':user_id' => $data['id']
-        ];
         try {
-            return DB::getResultRowCount($qry, $param);
+            $stmt = UserQuery::updateUserName($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('setUserName');
+            }
+            return true;
         } catch (PDOException $e) {
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
                 return false;
@@ -178,21 +100,17 @@ class UserServices
 
     /**
      * @param array $data
-     * @return bool|int     false: duplicated name, {number}: # of updated records
+     * @return bool
+     * @throws CtxException
      */
-    public static function updateUserTerritory(array $data): bool
+    public static function setUserTerritory(array $data): bool
     {
-        $qry = "
-            UPDATE user_info
-            SET territory_id = :territory_id
-            WHERE user_id = :user_id;
-        ";
-        $param = [
-            ':territory_id' => $data['territory_id'],
-            ':user_id' => $data['user_id']
-        ];
         try {
-            return DB::getResultRowCount($qry, $param);
+            $stmt = UserQuery::updateUserTerritory($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('setUserTerritory');
+            }
+            return true;
         } catch (PDOException $e) {
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
                 return false;
@@ -202,16 +120,108 @@ class UserServices
         }
     }
 
-    public static function selectUserInfo(array $data)
+    /**
+     * @param array $data
+     * @return mixed
+     */
+    public static function getUser(array $data)
     {
-        $qry = "
-            SELECT *
-            FROM user_platform up, user_info ui, user_statistics us
-            WHERE up.user_id = ui.user_id
-              AND up.user_id = us.user_id
-              AND up.user_id = :user_id;
-        ";
-        $param = [':user_id' => $data['user_id']];
-        return DB::getSelectResult($qry, $param);
+        $stmt = UserQuery::selectUser($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return false;
+        } else {
+            return DB::trimColumn($res);
+        }
+    }
+
+    /**
+     * @param array $data
+     * @return mixed
+     * @throws CtxException
+     */
+    public static function upgradeUserCastle(array $data)
+    {
+        $db = DB::getInstance()->getDBConnection();
+        try {
+            $db->beginTransaction();
+
+            $stmt = UserQuery::updateUserResource($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('upgradeRequestUserCastle');
+            }
+
+            $stmt = UserQuery::insertUserCastleUpgrade($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail('upgradeRequestUserCastle');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('upgradeRequestUserCastle');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array $data
+     * @throws CtxException
+     */
+    public static function resolveUpgradeUserCastle(array $data)
+    {
+        $stmt = UserQuery::selectUserCastleUpgrade($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            (new CtxException())->selectFail('upgradeFinishUserCastle');
+        }
+        $toLevel = $res['to_level'];
+
+        $db = DB::getInstance()->getDBConnection();
+        try {
+            $db->beginTransaction();
+
+            $stmt = UserQuery::deleteUserCastleUpgrade($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->deleteFail('upgradeFinishUserCastle');
+            }
+
+            $data['upgrade'] = $toLevel;
+            $stmt = UserQuery::updateUserCastleUpgrade($data);
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->updateFail('upgradeFinishUserCastle');
+            }
+
+            if ($db->commit() === false) {
+                (new CtxException())->transactionFail('upgradeFinishUserCastle');
+            }
+        } catch (CtxException | PDOException | Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array $data
+     * @throws CtxException
+     */
+    public static function modifyUserResource(array $data)
+    {
+        $stmt = UserQuery::updateUserResource($data);
+        if ($stmt->rowCount() === 0) {
+            (new CtxException())->updateFail('setUserTerritory');
+        }
+    }
+
+    public static function getUserInfo(array $data)
+    {
+        $stmt = UserQuery::selectUserInfo($data);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return false;
+        } else {
+            return DB::trimColumn($res);
+        }
     }
 }

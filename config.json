@@ -4,7 +4,7 @@
       "driver": "mysql",
       "host": "localhost",
       "port": "3306",
-      "dbname": "BASICTRAINING",
+      "dbname": "world_of_renaisance",
       "charset": "utf8",
       "user": "root",
       "password": "1234"

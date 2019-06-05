@@ -75,9 +75,6 @@ class Context extends Singleton implements IContext
 
     public function send(): void
     {
-        if ($this->res->httpContentType === 'application/json') {
-            $this->res->body = json_encode($this->res->body);
-        }
         $this->res->send();
     }
 
@@ -85,6 +82,11 @@ class Context extends Singleton implements IContext
     {
         $data = array_merge($this->req->getParams(), $this->req->body);
         return $data;
+    }
+
+    public function addBody(array $data): void
+    {
+        $this->res->body = array_merge($this->res->body, $data);
     }
 
     /**

@@ -22,7 +22,7 @@ define('PLAN_UPG_DEF_TOWER', 'upgrade_defense_tower');
 define('PLAN_UPG_ARMY', 'upgrade_army');
 define('PLAN_WEAPON', 'weapon');
 define('PLAN_UPG_WEAPON', 'upgrade_weapon');
-define('PLAN_UNIT_TIME', 'unit_time');
+define('PLAN_UNIT', 'unit');
 define('ETC', 'etc');
 
 class Plan
@@ -151,6 +151,36 @@ class Plan
                 break;
             case APCU:
                 $res = apcu_fetch($keyTag)[$key];
+                break;
+        }
+        return $res;
+    }
+
+    public static function getDataAll(string $keyTag)
+    {
+        $driver = Config::getInstance()->getConfig('plan')['driver'];
+        switch ($driver) {
+            default:
+            case REDIS:
+                try {
+                    $redis = Redis::getInstance()->getRedis();
+                    $res = $redis->hGetAll($keyTag);
+                    $data = [];
+                    $tempKey = null;
+                    foreach ($res as $idx => $value) {
+                        if ($idx % 2 === 1) {
+                            $tempKey = $value;
+                        } else {
+                            $data[$tempKey] = json_decode($value);
+                        }
+                    }
+                    return $data;
+                } catch (Exception $e) {
+                    $res = [];
+                }
+                break;
+            case APCU:
+                $res = apcu_fetch($keyTag);
                 break;
         }
         return $res;

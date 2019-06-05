@@ -5,6 +5,9 @@ namespace lsb\Libs;
 use Exception;
 use PDO;
 
+define('RESOURCE', 'resource');
+define('MANPOWER', 'manpower');
+
 class SpinLock
 {
     /**
@@ -38,12 +41,16 @@ class SpinLock
         }
     }
 
-
     public static function spinUnlock($key)
     {
         $memcache = Memcached::getInstance()->getMemcached();
         $memcache->delete($key);
-        $db = DBConnection::getInstance()->getDBConnection();
+        $db = DB::getInstance()->getDBConnection();
         $db->setAttribute(PDO::ATTR_TIMEOUT, 10);
+    }
+
+    public static function getKey(string $field, int $id)
+    {
+        return "{$field}::{$id}";
     }
 }

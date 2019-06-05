@@ -16,17 +16,14 @@ class BuildingServices
      * @return array
      * @throws CtxException
      */
-    public static function getBuildingsByUser(array $data)
+    public static function getBuilding(array $data)
     {
-        $stmt = BuildingQuery::selectBuildingByUser($data);
-        $res = $stmt->fetchAll();
+        $stmt = BuildingQuery::selectBuilding($data);
+        $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail('getUserBuilding');
+            (new CtxException())->selectFail();
         }
-        foreach ($res as $key => $value) {
-            $res[$key] = DB::trimColumn($value);
-        }
-        return $res;
+        return DB::trimColumn($res);
     }
 
     /**
@@ -34,14 +31,17 @@ class BuildingServices
      * @return array
      * @throws CtxException
      */
-    public static function getBuilding(array $data)
+    public static function getBuildingsByUser(array $data)
     {
-        $stmt = BuildingQuery::selectBuilding($data);
-        $res = $stmt->fetch();
+        $stmt = BuildingQuery::selectBuildingByUser($data);
+        $res = $stmt->fetchAll();
         if ($res === false) {
-            (new CtxException())->selectFail('getBuilding');
+            (new CtxException())->selectFail();
         }
-        return DB::trimColumn($res);
+        foreach ($res as $key => $value) {
+            $res[$key] = DB::trimColumn($value);
+        }
+        return $res;
     }
 
     /**
@@ -56,25 +56,28 @@ class BuildingServices
         try {
             $db->beginTransaction();
 
-            $stmt = UserQuery::updateUserResource($data);
+            // 필요한 자원량 소모시키기
+            $stmt = UserQuery::updateUserInfoWithResource($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail('createBuilding');
+                (new CtxException())->updateFail();
             }
 
+            // 건물 데이터 추가
             $stmt = BuildingQuery::insertBuilding($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('createBuilding');
+                (new CtxException())->insertFail();
             }
 
+            // 건물 생성 job 추가
             $buildingId = $db->lastInsertId();
             $data['building_id'] = $buildingId;
             $stmt = BuildingQuery::insertBuildingCreate($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('createBuilding');
+                (new CtxException())->insertFail();
             }
 
             if ($db->commit() === false) {
-                (new CtxException())->transactionFail('createBuilding');
+                (new CtxException())->transactionFail();
             }
 
             return $buildingId;
@@ -90,10 +93,11 @@ class BuildingServices
      */
     public static function resolveCreateBuilding(array $data)
     {
+        // 기존 건물 건설 job 정보 검색
         $stmt = BuildingQuery::selectBuilding($data);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail('addFinishUserBuilding');
+            (new CtxException())->selectFail();
         }
         $createFinishTime = $res['create_finish_time'];
 
@@ -101,19 +105,21 @@ class BuildingServices
         try {
             $db->beginTransaction();
 
+            // 건물 건설 job 삭제
             $stmt = BuildingQuery::deleteBuildingCreate($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('addFinishUserBuilding');
+                (new CtxException())->deleteFail();
             }
 
+            // 건물 건설 시간 갱신
             $data['create_time'] = $createFinishTime;
             $stmt = BuildingQuery::updateBuildingWithCreateTime($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail('addFinishUserBuilding');
+                (new CtxException())->updateFail();
             }
 
             if ($db->commit() === false) {
-                (new CtxException())->transactionFail('upgradeRequestBuilding');
+                (new CtxException())->transactionFail();
             }
         } catch (CtxException | PDOException | Exception $e) {
             $db->rollBack();
@@ -131,18 +137,20 @@ class BuildingServices
         try {
             $db->beginTransaction();
 
-            $stmt = UserQuery::updateUserResource($data);
+            // 건물 업그레이드에 필요한 유저 자원 소모
+            $stmt = UserQuery::updateUserInfoWithResource($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail('upgradeRequestBuilding');
+                (new CtxException())->updateFail();
             }
 
+            // 건물 업그레이드 job 생성
             $stmt = BuildingQuery::insertBuildingUpgrade($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('upgradeRequestBuilding');
+                (new CtxException())->insertFail();
             }
 
             if ($db->commit() === false) {
-                (new CtxException())->transactionFail('upgradeRequestBuilding');
+                (new CtxException())->transactionFail();
             }
         } catch (CtxException | PDOException | Exception $e) {
             $db->rollBack();
@@ -157,10 +165,11 @@ class BuildingServices
      */
     public static function resolveUpgradeBuilding(array $data)
     {
+        // 기존 건물 업그레이드 정보 검색
         $stmt = BuildingQuery::selectBuilding($data);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail('upgradeFinishBuilding');
+            (new CtxException())->selectFail();
         }
         $toLevel = $res['to_level'];
         $upgradeTime = $res['upgrade_finish_time'];
@@ -169,20 +178,22 @@ class BuildingServices
         try {
             $db->beginTransaction();
 
+            // 업그레이드 job 삭제
             $stmt = BuildingQuery::deleteBuildingUpgrade($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->deleteFail('upgradeFinishBuilding');
+                (new CtxException())->deleteFail();
             }
 
+            // 업그레이드 레벨 갱신
             $data['upgrade'] = $toLevel;
             $data['upgrade_time'] = $upgradeTime;
             $stmt = BuildingQuery::updateBuildingWithUpgrade($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail('upgradeFinishBuilding');
+                (new CtxException())->updateFail();
             }
 
             if ($db->commit() === false) {
-                (new CtxException())->transactionFail('upgradeRequestBuilding');
+                (new CtxException())->transactionFail();
             }
         } catch (CtxException | PDOException | Exception $e) {
             $db->rollBack();
@@ -200,18 +211,20 @@ class BuildingServices
         try {
             $db->beginTransaction();
 
-            $stmt = UserQuery::updateUserUsedManpower($data);
+            // 유저 가용 인력 정보 갱신
+            $stmt = UserQuery::updateUserInfoWithUsedManpower($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail('deployBuilding');
+                (new CtxException())->updateFail();
             }
 
+            // 인구 배치 job 생성
             $stmt = BuildingQuery::insertBuildingDeploy($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('deployBuilding');
+                (new CtxException())->insertFail();
             }
 
             if ($db->commit() === false) {
-                (new CtxException())->transactionFail('deployBuilding');
+                (new CtxException())->transactionFail();
             }
         } catch (CtxException | PDOException | Exception $e) {
             $db->rollBack();
@@ -226,30 +239,33 @@ class BuildingServices
      */
     public static function resolveDeployBuilding(array $data)
     {
+        // 기존 인구 배치 정보 검색
         $stmt = BuildingQuery::selectBuilding($data);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail('resolveDeployBuilding');
+            (new CtxException())->selectFail();
         }
-        $toLevel = $res['deploy_finish_time'];
+        $deployFinishTime = $res['deploy_finish_time'];
 
         $db = DB::getInstance()->getDBConnection();
         try {
             $db->beginTransaction();
 
+            // 인구 배치 job 삭제
             $stmt = BuildingQuery::deleteBuildingDeploy($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->deleteFail('resolveDeployBuilding');
+                (new CtxException())->deleteFail();
             }
 
-            $data['upgrade'] = $toLevel;
-            $stmt = BuildingQuery::updateBuildingWithDeployTime($data);
+            // 인구 배치 시간 갱신
+            $data['deploy_time'] = $deployFinishTime;
+            $stmt = BuildingQuery::updateBuildingWithDeployTimeManpower($data);
             if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail('resolveDeployBuilding');
+                (new CtxException())->updateFail();
             }
 
             if ($db->commit() === false) {
-                (new CtxException())->transactionFail('resolveDeployBuilding');
+                (new CtxException())->transactionFail();
             }
         } catch (CtxException | PDOException | Exception $e) {
             $db->rollBack();

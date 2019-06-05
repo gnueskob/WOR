@@ -52,8 +52,9 @@ class CtxException extends Exception
      * @param string $tag
      * @throws CtxException
      */
-    public function selectFail(string $tag): void
+    public function selectFail(string $tag = ''): void
     {
+        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
         $this->serverErrCode = 10000;
         $this->serverMsg = "select fail :{$tag}";
         $this->throwDBLogicException();
@@ -63,8 +64,9 @@ class CtxException extends Exception
      * @param string $tag
      * @throws CtxException
      */
-    public function insertFail(string $tag): void
+    public function insertFail(string $tag = ''): void
     {
+        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
         $this->serverErrCode = 10001;
         $this->serverMsg = "insert fail :{$tag}";
         $this->throwDBLogicException();
@@ -74,8 +76,9 @@ class CtxException extends Exception
      * @param string $tag
      * @throws CtxException
      */
-    public function updateFail(string $tag): void
+    public function updateFail(string $tag = ''): void
     {
+        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
         $this->serverErrCode = 10002;
         $this->serverMsg = "update fail :{$tag}";
         $this->throwDBLogicException();
@@ -85,8 +88,9 @@ class CtxException extends Exception
      * @param string $tag
      * @throws CtxException
      */
-    public function deleteFail(string $tag): void
+    public function deleteFail(string $tag = ''): void
     {
+        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
         $this->serverErrCode = 10003;
         $this->serverMsg = "delete fail :{$tag}";
         $this->throwDBLogicException();
@@ -96,8 +100,9 @@ class CtxException extends Exception
      * @param string $tag
      * @throws CtxException
      */
-    public function transactionFail(string $tag): void
+    public function transactionFail(string $tag = ''): void
     {
+        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
         $this->serverErrCode = 10004;
         $this->serverMsg = "transaction fail :{$tag}";
         $this->throwDBLogicException();
@@ -183,6 +188,22 @@ class CtxException extends Exception
     {
         $this->serverErrCode = 1009;
         $this->serverMsg = 'manpower Insufficient fail';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function notUsedTile(): void
+    {
+        $this->serverErrCode = 1010;
+        $this->serverMsg = 'tile is not available';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function notUsedTerritory(): void
+    {
+        $this->serverErrCode = 1011;
+        $this->serverMsg = 'territory is not available';
         $this->throwLogicException();
     }
 

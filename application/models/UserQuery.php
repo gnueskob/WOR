@@ -9,8 +9,21 @@ use PDOStatement;
 
 class UserQuery
 {
-    // TODO: 함수 이름 정리
-    public static function selectHiveUser(array $d)
+    public static function selectUser(array $d)
+    {
+        $q = "
+            SELECT up.*, ui.*, us.*,
+                   ucu.from_level, ucu.to_level, ucu.finish_time
+            FROM user_platform up JOIN user_info ui ON up.user_id = ui.user_id
+                JOIN user_statistics us ON up.user_id = us.user_id
+                LEFT JOIN user_castle_upgrade ucu ON up.user_id = ucu.user_id
+            WHERE up.user_id = :user_id;
+        ";
+        $p = [':user_id' => $d['user_id']];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function selectUserByHive(array $d)
     {
         $q = "
             SELECT user_id
@@ -25,7 +38,29 @@ class UserQuery
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserLastVisit(array $d)
+    public static function selectUserInfo(array $d)
+    {
+        $q = "
+            SELECT *
+            FROM user_info
+            WHERE user_id = :user_id;
+        ";
+        $p = [':user_id' => $d['user_id']];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function selectUserCastleUpgrade(array $d)
+    {
+        $q = "
+            SELECT *
+            FROM user_castle_upgrade
+            WHERE user_id = :user_id;
+        ";
+        $p = [':user_id' => $d['user_id']];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function updateUserInfoWithLastVisit(array $d)
     {
         $q = "
             UPDATE user_info
@@ -34,11 +69,90 @@ class UserQuery
         ";
         $p = [
             ':last_visit' => $d['last_visit'],
-            ':hive_id' => $d['hive_id'],
+            ':user_id' => $d['user_id'],
         ];
         return DB::runQuery($q, $p);
     }
 
+    public static function updateUserInfoWithName(array $d)
+    {
+        $q = "
+            UPDATE user_info
+            SET name = :name
+            WHERE user_id = :user_id;
+        ";
+        $p = [
+            ':name' => $d['name'],
+            ':user_id' => $d['user_id']
+        ];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function updateUserInfoWithTerritory(array $d)
+    {
+        $q = "
+            UPDATE user_info
+            SET territory_id = :territory_id
+            WHERE user_id = :user_id;
+        ";
+        $p = [
+            ':territory_id' => $d['territory_id'],
+            ':user_id' => $d['user_id']
+        ];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function updateUserInfoWithResource(array $d)
+    {
+        $q = "
+            UPDATE user_info
+            SET tactical_resource = tactical_resource - :need_tactical_resource,
+                food_resource = food_resource - :need_food_resource,
+                luxury_resource = luxury_resource - :need_luxury_resource
+            WHERE user_id = :user_id;
+        ";
+        $p = [
+            ':need_tactical_resource' => $d['need_tactical_resource'],
+            ':need_food_resource' => $d['need_food_resource'],
+            ':need_luxury_resource' => $d['need_luxury_resource'],
+            ':user_id' => $d['user_id']
+        ];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function updateUserInfoWithUpgrade(array $d)
+    {
+        $q = "
+            UPDATE user_info
+            SET upgrade = :upgrade
+            WHERE user_id = :user_id;
+        ";
+        $p = [
+            ':upgrade' => $d['upgrade'],
+            ':user_id' => $d['user_id']
+        ];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function updateUserInfoWithUsedManpower(array $d)
+    {
+        $q = "
+            UPDATE user_info
+            SET manpower_used = manpower_used + :manpower_used
+            WHERE user_id = :user_id;
+        ";
+        $p = [
+            ':manpower_used' => $d['manpower_used'],
+            ':user_id' => $d['user_id']
+        ];
+        return DB::runQuery($q, $p);
+    }
+
+    /**
+     * @param array $d
+     * @return PDOStatement
+     * @throws Exception
+     */
     public static function insertUserPlatform(array $d)
     {
         $q = "
@@ -59,7 +173,7 @@ class UserQuery
             ':user_id' => null,
             ':hive_id' => $d['hive_id'],
             ':hive_uid' => $d['hive_uid'],
-            ':register_date' => $d['register_date'],
+            ':register_date' => Timezone::getNowUTC(),
             ':country' => $d['country'],
             ':lang' => $d['lang'],
             ':os_version' => $d['os_version'],
@@ -142,76 +256,6 @@ class UserQuery
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserName(array $d)
-    {
-        $q = "
-            UPDATE user_info
-            SET name = :name
-            WHERE user_id = :user_id;
-        ";
-        $p = [
-            ':name' => $d['name'],
-            ':user_id' => $d['id']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function updateUserTerritory(array $d)
-    {
-        $q = "
-            UPDATE user_info
-            SET territory_id = :territory_id
-            WHERE user_id = :user_id;
-        ";
-        $p = [
-            ':territory_id' => $d['territory_id'],
-            ':user_id' => $d['user_id']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function selectUser(array $d)
-    {
-        $q = "
-            SELECT *
-            FROM user_platform up, user_info ui, user_statistics us
-            WHERE up.user_id = ui.user_id
-              AND up.user_id = us.user_id
-              AND up.user_id = :user_id;
-        ";
-        $p = [':user_id' => $d['user_id']];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function updateUserResource(array $d)
-    {
-        $q = "
-            UPDATE user_info
-            SET tactical_resource = tactical_resource - :need_tactical_resource,
-                food_resource = food_resource - :need_food_resource,
-                luxury_resource = luxury_resource - :need_luxury_resource
-            WHERE user_id = :user_id;
-        ";
-        $p = [
-            ':need_tactical_resource' => $d['need_tactical_resource'],
-            ':need_food_resource' => $d['need_food_resource'],
-            ':need_luxury_resource' => $d['need_luxury_resource'],
-            ':user_id' => $d['user_id']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function selectUserInfo(array $d)
-    {
-        $q = "
-            SELECT *
-            FROM user_info
-            WHERE user_id = :user_id;
-        ";
-        $p = [':user_id' => $d['user_id']];
-        return DB::runQuery($q, $p);
-    }
-
     public static function insertUserCastleUpgrade(array $d)
     {
         $q = "
@@ -221,7 +265,7 @@ class UserQuery
                    :user_id,
                    :from_level,
                    :to_level,
-                   :finish_time
+                   :upgrade_finish_time
             );
         ";
         $p = [
@@ -229,22 +273,16 @@ class UserQuery
             ':user_id' => $d['user_id'],
             ':from_level' => $d['from_level'],
             ':to_level' => $d['to_level'],
-            ':finish_time' => $d['finish_time']
+            ':upgrade_finish_time' => $d['upgrade_finish_time']
         ];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectUserCastleUpgrade(array $d)
-    {
-        $q = "
-            SELECT *
-            FROM user_castle_upgrade
-            WHERE user_id = :user_id;
-        ";
-        $p = [':user_id' => $d['user_id']];
-        return DB::runQuery($q, $p);
-    }
-
+    /**
+     * @param array $d
+     * @return PDOStatement
+     * @throws Exception
+     */
     public static function deleteUserCastleUpgrade(array $d)
     {
         $q = "
@@ -254,35 +292,7 @@ class UserQuery
         ";
         $p = [
             ':user_id' => $d['user_id'],
-            ':finish_time' => $d['finish_time']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function updateUserCastleUpgrade(array $d)
-    {
-        $q = "
-            UPDATE user_castle_upgrade
-            SET upgrade = :upgrade
-            WHERE user_id = :user_id;
-        ";
-        $p = [
-            ':upgrdae' => $d['upgrade'],
-            ':user_id' => $d['user_id']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function updateUserUsedManpower(array $d)
-    {
-        $q = "
-            UPDATE user_info
-            SET manpower_used = manpower_used + :manpower_used
-            WHERE user_id = :user_id;
-        ";
-        $p = [
-            ':manpower_used' => $d['manpower_used'],
-            ':user_id' => $d['user_id']
+            ':finish_time' => Timezone::getNowUTC()
         ];
         return DB::runQuery($q, $p);
     }

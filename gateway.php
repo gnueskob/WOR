@@ -8,6 +8,7 @@ use lsb\Config\Config;
 use lsb\App\App;
 use lsb\App\WOR;
 use lsb\Libs\DB;
+use lsb\Libs\CtxException;
 
 $config = Config::getInstance();
 $config->setMode(DEV);
@@ -35,17 +36,12 @@ $app->get('/test', function () {
 //            VALUE (123, 123);";
 
     $p = [];
-//    try {
+    try {
 //        $stmt = DB::runQuery($qry, $p);
 //        var_dump($stmt->fe);
-//    } catch (Exception $e) {
-//        echo 'g';
-//    }
-    $p[0] = 'aa';
-    $p['asd'] = 'asd';
-    $p[3] = 'a';
-    var_dump($p);
-    unset($p[0]);
-    var_dump($p);
+        (new CtxException())->selectFail();
+    } catch (CtxException $e) {
+        echo 'g';
+    }
 });
 $app->run();

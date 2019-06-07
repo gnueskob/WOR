@@ -29,19 +29,8 @@ $app->get('/phpinfo', function () {
     phpinfo();
 });
 $app->get('/test', function () {
-    $qry = "SELECT *
-            FROM building b, building_upgrade bu
-            WHERE b.building_id = bu.building_id;";
-//    $qry = "INSERT INTO building
-//            VALUE (123, 123);";
-
-    $p = [];
-    try {
-//        $stmt = DB::runQuery($qry, $p);
-//        var_dump($stmt->fe);
-        (new CtxException())->selectFail();
-    } catch (CtxException $e) {
-        echo 'g';
-    }
+    $t = new \lsb\App\models\UserDAO([], true);
+    $t->update('userId', 1);
+    print_r($t->getQueryParameters(\lsb\App\models\UserDAO::$dbColumMap));
 });
 $app->run();

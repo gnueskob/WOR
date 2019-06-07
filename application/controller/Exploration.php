@@ -19,7 +19,7 @@ class Exploration extends Router implements ISubRouter
         $router = $this;
 
         // 유저 타일 탐사 정보
-        $router->get('/info/:user_id', function (Context $ctx) {
+        $router->get('/tile/info/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $res = ExploratoinServices::getTilesByUser($data);
             $ctx->addBody($res);
@@ -60,6 +60,14 @@ class Exploration extends Router implements ISubRouter
             $data = $ctx->getBody();
             ExploratoinServices::resolveExploreTile($data);
             $ctx->addBody(ExploratoinServices::getTile($data));
+            $ctx->send();
+        });
+
+        // 유저 타일 탐사 정보
+        $router->get('/territory/info/:user_id', function (Context $ctx) {
+            $data = $ctx->getBody();
+            $res = ExploratoinServices::getTerritoriesByUser($data);
+            $ctx->addBody($res);
             $ctx->send();
         });
 

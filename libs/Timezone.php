@@ -24,18 +24,18 @@ class Timezone extends DateTime
         return $this->getTime();
     }
 
-    public function addDate(string $dateInterval): string
+    public function addDate(string $dateInterval): Timezone
     {
         $interval = DateInterval::createFromDateString($dateInterval);
         $this->add($interval);
-        return $this->getTime();
+        return $this;
     }
 
-    public function subDate(string $dateInterval): string
+    public function subDate(string $dateInterval): Timezone
     {
         $interval = DateInterval::createFromDateString($dateInterval);
         $this->sub($interval);
-        return $this->getTime();
+        return $this;
     }
 
     /**

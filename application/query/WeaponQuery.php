@@ -1,6 +1,6 @@
 <?php
 
-namespace lsb\App\models;
+namespace lsb\App\query;
 
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;

@@ -2,23 +2,23 @@
 -- made by gnues
 
 -- Create WOR db
-DROP DATABASE IF EXISTS `world_of_renaissance`;
-CREATE DATABASE IF NOT EXISTS `world_of_renaissance`;
-USE `world_of_renaissance`;
+DROP DATABASE IF EXISTS world_of_renaissance;
+CREATE DATABASE IF NOT EXISTS world_of_renaissance;
+USE world_of_renaissance;
 
 SELECT 'CREATING DATABASE STRUCTURE' as 'INFO';
 
 -- Drop already exists table
-DROP TABLE IF EXISTS `user`,
-                     `building`,
-                     `resource`,
-                     `buf`,
-                     `weapon`,
-                     `exploration_in_territory`,
-                     `exploration_out_of_territory`,
-                     `war`,
-                     `occupation`,
-                     `alliance`;
+DROP TABLE IF EXISTS user,
+                     building,
+                     resource,
+                     buf,
+                     weapon,
+                     exploration_in_territory,
+                     exploration_out_of_territory,
+                     war,
+                     occupation,
+                     alliance;
 
 /** 유저 정보 테이블
   * user_id:        유저 id
@@ -67,74 +67,76 @@ DROP TABLE IF EXISTS `user`,
   # 보스 처치
   * boss{id}_kill_count:  보스 처치 횟수 (기획)
 */
-CREATE TABLE `user_platform` (
-  `user_id`       BIGINT        NOT NULL      AUTO_INCREMENT,
-  `hive_id`       VARCHAR(30)   NOT NULL,
-  `hive_uid`      BIGINT        NOT NULL,
-  `register_date` DATETIME      NOT NULL,
-  `country`       CHAR(2)       NOT NULL,
-  `lang`          CHAR(5)       NOT NULL,
-  `os_version`    VARCHAR(20)   NOT NULL,
-  `device_name`   VARCHAR(20)   NOT NULL,
-  `app_version`   VARCHAR(10)   NOT NULL,
-  PRIMARY KEY (`user_id`),
-  UNIQUE INDEX `uk_hive` (`hive_id`, `hive_uid`),
-  UNIQUE INDEX `uk_hive_uid` (`hive_uid`)
+CREATE TABLE user_platform (
+  user_id       BIGINT        NOT NULL      AUTO_INCREMENT,
+  hive_id       VARCHAR(30)   NOT NULL,
+  hive_uid      BIGINT        NOT NULL,
+  register_date DATETIME      NOT NULL,
+  country       CHAR(2)       NOT NULL,
+  lang          CHAR(5)       NOT NULL,
+  os_version    VARCHAR(20)   NOT NULL,
+  device_name   VARCHAR(20)   NOT NULL,
+  app_version   VARCHAR(10)   NOT NULL,
+  PRIMARY KEY (user_id),
+  UNIQUE INDEX uk_hive (hive_id, hive_uid),
+  UNIQUE INDEX uk_hive_uid (hive_uid)
 );
 
-CREATE TABLE `user_info` (
-  `user_id`       BIGINT        NOT NULL,
+CREATE TABLE user_info (
+  user_id       BIGINT        NOT NULL,
 
   -- game infos
-  `last_visit`    DATETIME      NOT NULL,
+  last_visit    DATETIME      NOT NULL,
 
   -- user map info
-  `territory_id`  BIGINT        NULL,
-  `name`          VARCHAR(30)   NULL,
-  `castle_level`  BIGINT        NOT NULL      DEFAULT 1,
-  `upgrade_finish_time`         DATETIME      NOT NULL,
+  territory_id  BIGINT        NULL,
+  name          VARCHAR(30)   NULL,
+  castle_level  BIGINT        NOT NULL      DEFAULT 1,
+  upgrade_time         DATETIME      NOT NULL,
 
   -- resource / manpower amount
-  `auto_generate_manpower`      TINYINT       NOT NULL    DEFAULT TRUE,
-  `manpower`             BIGINT        NOT NULL    DEFAULT 0,
-  `appended_manpower`    BIGINT        NOT NULL    DEFAULT 0,
-  `tactical_resource`    BIGINT        NOT NULL    DEFAULT 0,
-  `food_resource`        BIGINT        NOT NULL    DEFAULT 0,
-  `luxury_resource`      BIGINT        NOT NULL    DEFAULT 0,
+  penalty_finish_time         DATETIME      NULL,
+  auto_generate_manpower      TINYINT       NOT NULL    DEFAULT TRUE,
+  manpower             BIGINT        NOT NULL    DEFAULT 0,
+  manpower_used        BIGINT        NOT NULL    DEFAULT 0,
+  appended_manpower    BIGINT        NOT NULL    DEFAULT 0,
+  tactical_resource    BIGINT        NOT NULL    DEFAULT 0,
+  food_resource        BIGINT        NOT NULL    DEFAULT 0,
+  luxury_resource      BIGINT        NOT NULL    DEFAULT 0,
 
-  PRIMARY KEY (`user_id`),
-  UNIQUE INDEX `uk_territory` (`territory_id`),
-  UNIQUE INDEX `uk_name` (`name`),
-  INDEX `idx_last_update` (`last_update`)
+  PRIMARY KEY (user_id),
+  UNIQUE INDEX uk_territory (territory_id),
+  UNIQUE INDEX uk_name (name),
+  INDEX idx_last_update (last_update)
 );
 
-CREATE TABLE `user_statistics` (
-  `user_id`       BIGINT        NOT NULL
+CREATE TABLE user_statistics (
+  user_id       BIGINT        NOT NULL
 
   -- statistical info
-  `war_requset`                 BIGINT        NOT NULL    DEFAULT 0,
-  `war_victory`                 BIGINT        NOT NULL    DEFAULT 0,
-  `war_defeated`                BIGINT        NOT NULL    DEFAULT 0,
+  war_requset                 BIGINT        NOT NULL    DEFAULT 0,
+  war_victory                 BIGINT        NOT NULL    DEFAULT 0,
+  war_defeated                BIGINT        NOT NULL    DEFAULT 0,
 
-  `despoil_defense_success`     BIGINT        NOT NULL    DEFAULT 0,
-  `despoil_defense_fail`        BIGINT        NOT NULL    DEFAULT 0,
+  despoil_defense_success     BIGINT        NOT NULL    DEFAULT 0,
+  despoil_defense_fail        BIGINT        NOT NULL    DEFAULT 0,
 
-  `boss1_kill_count`            BIGINT        NOT NULL    DEFAULT 0,
-  `boss2_kill_count`            BIGINT        NOT NULL    DEFAULT 0,
-  `boss3_kill_count`            BIGINT        NOT NULL    DEFAULT 0,
+  boss1_kill_count            BIGINT        NOT NULL    DEFAULT 0,
+  boss2_kill_count            BIGINT        NOT NULL    DEFAULT 0,
+  boss3_kill_count            BIGINT        NOT NULL    DEFAULT 0,
 
-  PRIMARY KEY (`user_id`)
+  PRIMARY KEY (user_id)
 );
 
-CREATE TABLE `user_castle_upgrade` (
-  `id`            BIGINT      NOT NULL,
-  `user_id`       BIGINT      NOT NULL,
-  `from_level`    BIGINT      NOT NULL,
-  `to_level`      BIGINT      NOT NULL,
-  `finish_time`   DATETIME    NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_time` (`finish_time`)
+CREATE TABLE user_castle_upgrade (
+  id            BIGINT      NOT NULL,
+  user_id       BIGINT      NOT NULL,
+  from_level    BIGINT      NOT NULL,
+  to_level      BIGINT      NOT NULL,
+  upgrade_finish_time   DATETIME    NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE INDEX idx_user_id (user_id),
+  INDEX idx_time (finish_time)
 );
 
 /** 건물 정보 테이블
@@ -152,55 +154,55 @@ CREATE TABLE `user_castle_upgrade` (
   * upgrade:              건물 업그레이드 수준
   * manpower:             건물에 투입된 인력
 */
-CREATE TABLE `building` (
-  `building_id`     BIGINT        NOT NULL      AUTO_INCREMENT,
-  `user_id`         BIGINT        NOT NULL,
-  `territory_id`    BIGINT        NOT NULL,
-  `tile_id`         BIGINT        NOT NULL,
-  `building_type`   BIGINT        NOT NULL,
+CREATE TABLE building (
+  building_id     BIGINT        NOT NULL      AUTO_INCREMENT,
+  user_id         BIGINT        NOT NULL,
+  territory_id    BIGINT        NOT NULL,
+  tile_id         BIGINT        NOT NULL,
+  building_type   BIGINT        NOT NULL,
 
-  `create_finish_time`    DATETIME   NULL,
-  `deploy_finish_time`    DATETIME   NULL,
-  `upgrade_finish_time`   DATETIME   NULL,
-  `upgrade`         BIGINT        NOT NULL      DEFAULT 1,
-  `manpower`        BIGINT        NOT NULL      DEFAULT 0,
-  `last_update`     DATETIME      NULL,
-  PRIMARY KEY (`building_id`),
-  INDEX `idx_user_deployed` (`user_id`, `deploy_finish_time`)
+  create_time    DATETIME   NULL,
+  deploy_time    DATETIME   NULL,
+  upgrade_time   DATETIME   NULL,
+  upgrade         BIGINT        NOT NULL      DEFAULT 1,
+  manpower        BIGINT        NOT NULL      DEFAULT 0,
+  last_update     DATETIME      NULL,
+  PRIMARY KEY (building_id),
+  INDEX idx_user_deployed (user_id, deploy_finish_time),
+  UNIQUE KEY uk_building_tile (user_id, tile_id)
 );
 
-CREATE TABLE `building_upgrade` (
-  `upgrade_id`    BIGINT      NOT NULL      AUTO_INCREMENT,
-  `building_id`   BIGINT      NOT NULL,
-  `user_id`       BIGINT      NOT NULL,
-  `from_level`    BIGINT      NOT NULL,
-  `to_level`      BIGINT      NOT NULL,
-  'done'          TINYINT     NULL,
-  `upgrade_finish_time`   DATETIME    NOT NULL,
-  PRIMARY KEY (`upgrade_id`),
-  UNIQUE INDEX `idx_building_id` (`building_id`)
-  INDEX `idx_time` (`finish_time`)
+CREATE TABLE building_upgrade (
+  upgrade_id    BIGINT      NOT NULL      AUTO_INCREMENT,
+  building_id   BIGINT      NOT NULL,
+  user_id       BIGINT      NOT NULL,
+  from_level    BIGINT      NOT NULL,
+  to_level      BIGINT      NOT NULL,
+  done          TINYINT     NULL,
+  upgrade_finish_time   DATETIME    NOT NULL,
+  PRIMARY KEY (upgrade_id),
+  UNIQUE INDEX idx_building_id (building_id),
+  INDEX idx_time (upgrade_finish_time)
 );
 
-CREATE TABLE `building_deploy` (
-  `deploy_id`     BIGINT      NOT NULL      AUTO_INCREMENT,
-  `building_id`   BIGINT      NOT NULL,
-  `user_id`       BIGINT      NOT NULL,
-  `building_type` BIGINT      NOT NULL,
-  `deploy_finish_time`   DATETIME    NOT NULL,
-  PRIMARY KEY (`deploy_id`),
-  UNIQUE INDEX `idx_building` (`building_id`),
-  INDEX `idx_time` (`finish_time`)
+CREATE TABLE building_deploy (
+  deploy_id     BIGINT      NOT NULL      AUTO_INCREMENT,
+  building_id   BIGINT      NOT NULL,
+  user_id       BIGINT      NOT NULL,
+  deploy_finish_time   DATETIME    NOT NULL,
+  PRIMARY KEY (deploy_id),
+  UNIQUE INDEX idx_building (building_id),
+  INDEX idx_time (deploy_finish_time)
 );
 
-CREATE TABLE `building_create` (
-  `crate_id`      BIGINT      NOT NULL      AUTO_INCREMENT,
-  `building_id`   BIGINT      NOT NULL,
-  `user_id`       BIGINT      NOT NULL,
-  `create_finish_time`   DATETIME    NOT NULL,
-  PRIMARY KEY (`crate_id`),
-  UNIQUE INDEX `idx_building_id` (`building_id`),
-  INDEX `idx_time` (`finish_time`)
+CREATE TABLE building_create (
+  crate_id      BIGINT      NOT NULL      AUTO_INCREMENT,
+  building_id   BIGINT      NOT NULL,
+  user_id       BIGINT      NOT NULL,
+  create_finish_time   DATETIME    NOT NULL,
+  PRIMARY KEY (crate_id),
+  UNIQUE INDEX idx_building_id (building_id),
+  INDEX idx_time (create_finish_time)
 );
 
 /** 유저 버프 정보
@@ -211,14 +213,14 @@ CREATE TABLE `building_create` (
   * buf_id:           버프 타입 (기획)
   * finish_time:      버프 종료 시간
 */
-CREATE TABLE `buf` (
-  `buf_id`        BIGINT    NOT NULL      AUTO_INCREMENT,
-  `user_id`       BIGINT    NOT NULL,
-  `buf_type`      BIGINT    NOT NULL,
-  `finish_time`   DATETIME  NOT NULL,
-  `last_update`   DATETIME  NULL,
-  PRIMARY KEY (`buf_id`),
-  INDEX `idx_user_buf` (`user_id`, `finish_time`)
+CREATE TABLE buf (
+  buf_id        BIGINT    NOT NULL      AUTO_INCREMENT,
+  user_id       BIGINT    NOT NULL,
+  buf_type      BIGINT    NOT NULL,
+  finish_time   DATETIME  NOT NULL,
+  last_update   DATETIME  NULL,
+  PRIMARY KEY (buf_id),
+  INDEX idx_user_buf (user_id, finish_time)
 );
 
 /** 유저 무기 정보 테이블
@@ -231,41 +233,41 @@ CREATE TABLE `buf` (
   * upgrade_finish_time:      무기 업그레이드 완료 시간
   * create_finish_time:       무기 생산 완료 시간
 */
-CREATE TABLE `weapon` (
-  `weapon_id`     BIGINT        NOT NULL      AUTO_INCREMENT,
-  `user_id`       BIGINT        NOT NULL,
-  `weapon_type`   BIGINT        NOT NULL,
-  `upgrade`       TINYINT       NOT NULL      DEFAULT 1,
-  `upgrade_time`  DATETIME      NULL,
-  `create_time`   DATETIME      NULL,
-  `last_update`   DATETIME      NULL,
-  PRIMARY KEY (`weapon_id`),
-  UNIQUE INDEX `uk_user_weaopn` (`user_id`, `weapon_type`),
-  INDEX `idx_user_weapon_created` (`user_id`, `create_time`)
-) COLLATE='utf8_unicode_ci';
-
-CREATE TABLE `weapon_upgrade` (
-  `id`          BIGINT      NOT NULL,
-  `weapon_id`   BIGINT      NOT NULL,
-  `user_id`     BIGINT      NOT NULL,
-  `from_level`  BIGINT      NOT NULL,
-  `to_level`    BIGINT      NOT NULL,
-  `upgrade_finish_time` BIGINT      NOT NULL,
-
-  PRIMARY KEY (`id`),
-  UNIQUE INDEX `idx_weapon` (`weapon_id`),
-  INDEX `idx_time` (`finish_time`)
+CREATE TABLE weapon (
+  weapon_id     BIGINT        NOT NULL      AUTO_INCREMENT,
+  user_id       BIGINT        NOT NULL,
+  weapon_type   BIGINT        NOT NULL,
+  upgrade       TINYINT       NOT NULL      DEFAULT 1,
+  upgrade_time  DATETIME      NULL,
+  create_time   DATETIME      NULL,
+  last_update   DATETIME      NULL,
+  PRIMARY KEY (weapon_id),
+  UNIQUE INDEX uk_user_weaopn (user_id, weapon_type),
+  INDEX idx_user_weapon_created (user_id, create_time)
 );
 
-CREATE TABLE `weapon_create` (
-  `id`          BIGINT      NOT NULL,
-  `weapon_id`   BIGINT      NOT NULL,
-  `user_id`     BIGINT      NOT NULL,
-  `create_finish_time` BIGINT      NOT NULL,
+CREATE TABLE weapon_upgrade (
+  upgrade_id          BIGINT      NOT NULL,
+  weapon_id   BIGINT      NOT NULL,
+  user_id     BIGINT      NOT NULL,
+  from_level  BIGINT      NOT NULL,
+  to_level    BIGINT      NOT NULL,
+  upgrade_finish_time BIGINT      NOT NULL,
 
-  PRIMARY KEY (`id`),
-  UNIQUE INDEX `idx_weapon` (`weapon_id`),
-  INDEX `idx_time` (`finish_time`)
+  PRIMARY KEY (id),
+  UNIQUE INDEX idx_weapon (weapon_id),
+  INDEX idx_time (finish_time)
+);
+
+CREATE TABLE weapon_create (
+  create_id          BIGINT      NOT NULL,
+  weapon_id   BIGINT      NOT NULL,
+  user_id     BIGINT      NOT NULL,
+  create_finish_time BIGINT      NOT NULL,
+
+  PRIMARY KEY (id),
+  UNIQUE INDEX idx_weapon (weapon_id),
+  INDEX idx_time (finish_time)
 )
 
 /** 유저 영내 탐사 정보 테이블 구현
@@ -275,15 +277,23 @@ CREATE TABLE `weapon_create` (
   * tile_id:        타일 id (기획)
   * finish_time:    탐사 완료 시간
 */
-CREATE TABLE `explore_tile` (
-  `explore_id`        BIGINT        NOT NULL    AUTO_INCREMENT,
-  `user_id`           BIGINT        NOT NULL,
-  `tile_id`           BIGINT        NOT NULL,
-  `finish_time`       DATETIME      NOT NULL,
-  `last_update`       DATETIME      NULL,
-  PRIMARY KEY (`explore_id`),
-  UNIQUE INDEX `idx_user_explore` (`user_id`, `tile_id`)
-) COLLATE='utf8_unicode_ci';
+CREATE TABLE tile (
+  explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
+  user_id           BIGINT        NOT NULL,
+  tile_id           BIGINT        NOT NULL,
+  explore_time       DATETIME      NOT NULL,
+  last_update       DATETIME      NULL,
+  PRIMARY KEY (explore_id),
+  UNIQUE INDEX idx_user_explore (user_id, tile_id)
+);
+
+CREATE TABLE tile_explore (
+  explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
+  tile_id           BIGINT        NOT NULL,
+  explore_finish_time       DATETIME      NOT NULL,
+  PRIMARY KEY (explore_id),
+  UNIQUE KEY uk_tile (tile_id)
+);
 
 /** 유저 영외 탐사 정보 테이블 구현
   * @desc: 유저가 다른 유저의 영토를 탐사할 때의 정보
@@ -292,15 +302,23 @@ CREATE TABLE `explore_tile` (
   * territory_id:   영토 id (기획)
   * finish_time:    탐사 완료 시간
 */
-CREATE TABLE `explore_territory` (
-  `explore_id`        BIGINT        NOT NULL    AUTO_INCREMENT,
-  `user_id`           BIGINT        NOT NULL,
-  `territory_id`      BIGINT        NOT NULL,
-  `finish_time`       DATETIME      NOT NULL,
-  `last_update`       DATETIME      NULL,
-  PRIMARY KEY (`explore_id`),
-  UNIQUE INDEX `idx_user_explore` (`user_id`, `territory_id`)
-) COLLATE='utf8_unicode_ci';
+CREATE TABLE territory (
+  explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
+  user_id           BIGINT        NOT NULL,
+  territory_id      BIGINT        NOT NULL,
+  explore_time       DATETIME      NOT NULL,
+  last_update       DATETIME      NULL,
+  PRIMARY KEY (explore_id),
+  UNIQUE INDEX idx_user_explore (user_id, territory_id)
+);
+
+CREATE TABLE tile_explore (
+  explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
+  territory_id           BIGINT        NOT NULL,
+  explore_finish_time       DATETIME      NOT NULL,
+  PRIMARY KEY (explore_id),
+  UNIQUE KEY uk_tile (territory_id)
+);
 
 /** 전쟁(출전) / 보스 레이드 출전 정보
   * @desc: 다른 영토(유저)에 선전포고할 때의 정보
@@ -315,22 +333,24 @@ CREATE TABLE `explore_territory` (
   * food_resource:  선전포고 당시 사용한 군량
   * finish_time:    출전 완료 시간
 */
-CREATE TABLE `war` (
-  `war_id`        BIGINT        NOT NULL        AUTO_INCREMENT,
-  `user_id`       BIGINT        NOT NULL,
-  `territory_id`  BIGINT        NOT NULL,
-  `is_victory`              TINYINT       NULL,
-  `penanlty_finish_time`    DATETIME      NULL,
-  `attack`        BIGINT        NOT NULL,
-  `manpower`      BIGINT        NOT NULL,
-  `food_resource` BIGINT        NOT NULL,
-  `finish_time`   DATETIME      NOT NULL,
-  `last_update`   DATETIME      NOT NULL,
-  PRIMARY KEY (`war_id`),
-  INDEX `idx_user_war` (`user_id`, `finish_time`),
-  INDEX `idx_territory` (`territory_id`, `finish_time`),
-  INDEX `idx_raid` (`raid_id`, `finish_time`)
-) COLLATE='utf8_unicode_ci';
+CREATE TABLE war (
+  war_id        BIGINT        NOT NULL        AUTO_INCREMENT,
+  user_id       BIGINT        NOT NULL,
+  territory_id  BIGINT        NOT NULL,
+  attack        BIGINT        NOT NULL,
+  manpower      BIGINT        NOT NULL,
+  food_resource BIGINT        NOT NULL,
+  finish_time   DATETIME      NOT NULL,
+  last_update   DATETIME      NOT NULL,
+  PRIMARY KEY (war_id),
+  INDEX idx_user_war (user_id, finish_time),
+  INDEX idx_territory (territory_id, finish_time),
+  INDEX idx_raid (raid_id, finish_time)
+);
+
+CREATE TABLE war_end (
+
+)
 
 /** 레이드 정보
   * @des: 레이드 신청시 생성되는 레이드 정보
@@ -338,13 +358,13 @@ CREATE TABLE `war` (
   * user_id:      레이드를 신청한 유저 id
   * finish_time:  해당 레이드 정보가 만료되는 시간 (특수지역 출전 만료시간 / 점령전 영토 만료 시간)
 */
-CREATE TABLE `raid` (
-  `raid_id`     BIGINT      NOT NULL        AUTO_INCREMENT,
-  `user_id`     BIGINT      NOT NULL,
-  `finish_time` DATETIME    NOT NULL,
-  PRIMARY KEY (`raid_id`),
-  INDEX `idx_finish_time` (`finish_time`)
-) COLLATE='utf8_unicode_ci';
+CREATE TABLE raid (
+  raid_id     BIGINT      NOT NULL        AUTO_INCREMENT,
+  user_id     BIGINT      NOT NULL,
+  finish_time DATETIME    NOT NULL,
+  PRIMARY KEY (raid_id),
+  INDEX idx_finish_time (finish_time)
+);
 
 /** 점령 정보
   * @desc: 유저 점령지역 정보
@@ -354,18 +374,18 @@ CREATE TABLE `raid` (
   * territory_id:     영토 id (기획)
   * finish_time:      점령 유지 완료 시간
 */
-CREATE TABLE `occupation` (
-  `occupation_id` BIGINT      NOT NULL      AUTO_INCREMENT,
-  `raid_id`       BIGINT      NOT NULL,
-  `territory_id`  BIGINT      NOT NULL,
-  `user_id`       BIGINT      NOT NULL,
-  `finish_time`   DATETIME    NOT NULL,
-  `last_update`   DATETIME    NULL,
-  PRIMARY KEY (`occupation_Id`),
-  INDEX `idx_raid` (`raid_id`),
-  INDEX `idx_user_occupation` (`user_id`, `finish_time`),
-  INDEX `idx_finish_territory` (`territory_id`, `finish_time`)
-) COLLATE='utf8_unicode_ci';
+CREATE TABLE occupation (
+  occupation_id BIGINT      NOT NULL      AUTO_INCREMENT,
+  raid_id       BIGINT      NOT NULL,
+  territory_id  BIGINT      NOT NULL,
+  user_id       BIGINT      NOT NULL,
+  finish_time   DATETIME    NOT NULL,
+  last_update   DATETIME    NULL,
+  PRIMARY KEY (occupation_Id),
+  INDEX idx_raid (raid_id),
+  INDEX idx_user_occupation (user_id, finish_time),
+  INDEX idx_finish_territory (territory_id, finish_time)
+);
 
 /** 동맹 정보 테이블 구현
   * @desc: 유저 상호간 동맹 정보
@@ -376,24 +396,24 @@ CREATE TABLE `occupation` (
   * res_user_id:      동맹 요청을 받은 유저 id
   * created_date:     동맹 요청 생성 시간
 */
-CREATE TABLE `alliance` (
-  `alliance_id`     BIGINT      NOT NULL      AUTO_INCREMENT,
-  `user_id`         BIGINT      NOT NULL,
-  `friend_id`       BIGINT      NOT NULL,
-  `created_time`    DATETIME    NOT NULL,
-  `last_update`     DATETIME    NOT NULL,
-  PRIMARY KEY (`alliance_id`),
-  UNIQUE INDEX `uk_idx` (`user_id`, `friend_id`)
-) COLLATE='utf8_unicode_ci';
+CREATE TABLE alliance (
+  alliance_id     BIGINT      NOT NULL      AUTO_INCREMENT,
+  user_id         BIGINT      NOT NULL,
+  friend_id       BIGINT      NOT NULL,
+  created_time    DATETIME    NOT NULL,
+  last_update     DATETIME    NOT NULL,
+  PRIMARY KEY (alliance_id),
+  UNIQUE INDEX uk_idx (user_id, friend_id)
+);
 
 CREATE TABLE alliance_wait (
-  `wait_id`       BIGINT    NOT NULL    AUTO_INCREMENT,
-  `user_id`       BIGINT    NOT NULL,
-  `friend_id`     BIGINT    NOT NULL,
-  `created_time`  BIGINT    NOT NULL,
-  PRIMARY KEY (`waid_id`),
-  UNIQUE INDEX `uk_id` (`user_id`, `friend_id`),
-  INDEX `idx_friend` (`friend_id`)
+  wait_id       BIGINT    NOT NULL    AUTO_INCREMENT,
+  user_id       BIGINT    NOT NULL,
+  friend_id     BIGINT    NOT NULL,
+  created_time  BIGINT    NOT NULL,
+  PRIMARY KEY (waid_id),
+  UNIQUE INDEX uk_id (user_id, friend_id),
+  INDEX idx_friend (friend_id)
 );
 
 /** 동맹 유저간 자원 공유용 우편 테이블
@@ -406,25 +426,25 @@ CREATE TABLE alliance_wait (
   * luxury_resource:      사치 자원 수량
   * created_date:         보낸 날짜
 */
-CREATE TABLE `mail` (
-  `mail_id`             BIGINT      NOT NULL    AUTO_INCREMENT,
-  `from_user_id`        BIGINT      NOT NULL,
-  `to_user_id`          BIGINT      NOT NULL,
-  `created_date`        DATETIME    NOT NULL,
-  `last_update`         DATETIME    NOT NULL,
-  PRIMARY KEY (`mail_id`),
-  INDEX `idx_to_user` (`to_user_id`)
-) COLLATE='utf8_unicode_ci';
+CREATE TABLE mail (
+  mail_id             BIGINT      NOT NULL    AUTO_INCREMENT,
+  from_user_id        BIGINT      NOT NULL,
+  to_user_id          BIGINT      NOT NULL,
+  created_date        DATETIME    NOT NULL,
+  last_update         DATETIME    NOT NULL,
+  PRIMARY KEY (mail_id),
+  INDEX idx_to_user (to_user_id)
+);
 
-CREATE TABLE `mail_wait` (
-  `wait_id`         BIGINT    NOT NULL    AUTO_INCREMENT,
-  `from_user_id`    BIGINT    NOT NULL,
-  `to_user_id`      BIGINT    NOT NULL,
-  `text`                TEXT        NULL,
-  `tactical_resource`   BIGINT      NOT NULL,
-  `food_resource`       BIGINT      NOT NULL,
-  `luxury_resource`     BIGINT      NOT NULL,
-  `created_time`    BIGINT    NOT NULL,
-  PRIMARY KEY (`waid_id`),
-  INDEX `idx_to_user_id` (`to_user_id`)
+CREATE TABLE mail_wait (
+  wait_id         BIGINT    NOT NULL    AUTO_INCREMENT,
+  from_user_id    BIGINT    NOT NULL,
+  to_user_id      BIGINT    NOT NULL,
+  text                TEXT        NULL,
+  tactical_resource   BIGINT      NOT NULL,
+  food_resource       BIGINT      NOT NULL,
+  luxury_resource     BIGINT      NOT NULL,
+  created_time    BIGINT    NOT NULL,
+  PRIMARY KEY (waid_id),
+  INDEX idx_to_user_id (to_user_id)
 );

@@ -1,7 +1,8 @@
 <?php
 
-namespace lsb\App\models;
+namespace lsb\App\query;
 
+use lsb\App\models\Utils;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use Exception;
@@ -12,14 +13,13 @@ class UserQuery
     public static function selectUser(array $d)
     {
         $q = "
-            SELECT up.*, ui.*, us.*,
-                   ucu.from_level, ucu.to_level, ucu.finish_time
-            FROM user_platform up JOIN user_info ui ON up.user_id = ui.user_id
+            SELECT up.*, ui.*, us.*
+            FROM user_platform up 
+                JOIN user_info ui ON up.user_id = ui.user_id
                 JOIN user_statistics us ON up.user_id = us.user_id
-                LEFT JOIN user_castle_upgrade ucu ON up.user_id = ucu.user_id
             WHERE up.user_id = :user_id;
         ";
-        $p = [':user_id' => $d['user_id']];
+        $p = Utils::getParamenters($d);
         return DB::runQuery($q, $p);
     }
 
@@ -31,10 +31,7 @@ class UserQuery
             WHERE hive_id = :hive_id
               AND hive_uid = :hive_uid;
         ";
-        $p = [
-            ':hive_id' => $d['hive_id'],
-            ':hive_uid', $d['hive_uid']
-        ];
+        $p = Utils::getParamenters($d);
         return DB::runQuery($q, $p);
     }
 
@@ -45,10 +42,11 @@ class UserQuery
             FROM user_info
             WHERE user_id = :user_id;
         ";
-        $p = [':user_id' => $d['user_id']];
+        $p = Utils::getParamenters($d);
         return DB::runQuery($q, $p);
     }
 
+    /* not used
     public static function selectUserCastleUpgrade(array $d)
     {
         $q = "
@@ -58,19 +56,20 @@ class UserQuery
         ";
         $p = [':user_id' => $d['user_id']];
         return DB::runQuery($q, $p);
-    }
+    }*/
 
-    public static function updateUserInfoWithLastVisit(array $d)
+    public static function updateUserInfoByUserId(array $d)
     {
+        $setParam = array_filter($d, function ($key) {
+            return $key !== 'user_id';
+        }, ARRAY_FILTER_USE_KEY);
+        $set = Utils::getUpdateSetClause($setParam);
         $q = "
             UPDATE user_info
-            SET last_visit = :last_visit
+            SET {$set}
             WHERE user_id = :user_id;
         ";
-        $p = [
-            ':last_visit' => $d['last_visit'],
-            ':user_id' => $d['user_id'],
-        ];
+        $p = Utils::getParamenters($d);
         return DB::runQuery($q, $p);
     }
 
@@ -120,15 +119,32 @@ class UserQuery
         return DB::runQuery($q, $p);
     }
 
+    public static function updateUserInfoWithPenaltyTime(array $d)
+    {
+        $q = "
+            UPDATE user_info
+            SET penalty_finish_time = :penalty_finish_time
+            WHERE user_id = :user_id;
+        ";
+        $p = [
+            ':penalty_finish_time' => $d['penalty_finish_time'],
+            ':user_id' => $d['user_id']
+        ];
+        return DB::runQuery($q, $p);
+    }
+
     public static function updateUserInfoWithUpgrade(array $d)
     {
         $q = "
             UPDATE user_info
-            SET upgrade = :upgrade
+            SET castle_level = :castle_level,
+                castle_to_level = :castle_to_level,
+                to_level = :to_level
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':upgrade' => $d['upgrade'],
+            ':castle_level' => $d['castle_level'],
+            ':castle_to_level' => $d['castle_to_level'],
             ':user_id' => $d['user_id']
         ];
         return DB::runQuery($q, $p);
@@ -198,7 +214,9 @@ class UserQuery
                     :territory_id,
                     :name,
                     :castle_level,
-                    :upgrade_finish_time,
+                    :castle_to_level,
+                    :upgrade_time,
+                    :penalty_finish_time,
                     :auto_generate_manpower,
                     :manpower,
                     :appended_manpower,
@@ -214,7 +232,9 @@ class UserQuery
             ':territory_id' => 0,
             ':name' => null,
             ':castle_level' => 1,
-            ':upgrade_finish_time' => null,
+            ':castle_to_level' => 1,
+            ':upgrade_time' => null,
+            ':penalty_finish_time' => null,
             ':auto_generate_manpower' => true,
             ':manpower' => 10,
             ':appended_manpower' => 0,
@@ -256,6 +276,7 @@ class UserQuery
         return DB::runQuery($q, $p);
     }
 
+    /* not used
     public static function insertUserCastleUpgrade(array $d)
     {
         $q = "
@@ -276,13 +297,12 @@ class UserQuery
             ':upgrade_finish_time' => $d['upgrade_finish_time']
         ];
         return DB::runQuery($q, $p);
-    }
+    }*/
 
-    /**
+    /* not used
      * @param array $d
      * @return PDOStatement
      * @throws Exception
-     */
     public static function deleteUserCastleUpgrade(array $d)
     {
         $q = "
@@ -295,5 +315,5 @@ class UserQuery
             ':finish_time' => Timezone::getNowUTC()
         ];
         return DB::runQuery($q, $p);
-    }
+    }*/
 }

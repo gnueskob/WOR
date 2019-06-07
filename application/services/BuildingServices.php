@@ -2,8 +2,8 @@
 
 namespace lsb\App\services;
 
-use lsb\App\models\BuildingQuery;
-use lsb\App\models\UserQuery;
+use lsb\App\query\BuildingQuery;
+use lsb\App\query\UserQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use Exception;

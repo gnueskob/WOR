@@ -2,8 +2,8 @@
 
 namespace lsb\App\services;
 
-use lsb\App\models\UserQuery;
-use lsb\App\models\ExplorationQuery;
+use lsb\App\query\UserQuery;
+use lsb\App\query\ExplorationQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use Exception;
@@ -236,5 +236,4 @@ class ExploratoinServices
             throw $e;
         }
     }
-
 }

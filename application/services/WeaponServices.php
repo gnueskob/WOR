@@ -2,8 +2,8 @@
 
 namespace lsb\App\services;
 
-use lsb\App\models\UserQuery;
-use lsb\App\models\WeaponQuery;
+use lsb\App\query\UserQuery;
+use lsb\App\query\WeaponQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use Exception;

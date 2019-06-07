@@ -207,6 +207,14 @@ class CtxException extends Exception
         $this->throwLogicException();
     }
 
+    /* @throws  CtxException */
+    public function notCompletedYet(): void
+    {
+        $this->serverErrCode = 1012;
+        $this->serverMsg = 'job is not completed yet';
+        $this->throwLogicException();
+    }
+
     /**************************************
      ** Fatal Exceptions                 **
      **************************************/

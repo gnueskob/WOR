@@ -2,49 +2,59 @@
 
 namespace lsb\App\services;
 
+use lsb\App\controller\User;
+use lsb\App\models\UserDAO;
+use lsb\App\models\Utils;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
-use lsb\App\models\UserQuery;
+use lsb\App\query\UserQuery;
 use Exception;
 use PDOException;
 
 class UserServices
 {
     /**
-     * @param array $data
-     * @return array
-     * @throws CtxException
+     * @param int $userId
+     * @return UserDAO
+     * @throws CtxException|Exception
      */
-    public static function getUser(array $data)
+    public static function getUser(int $userId)
     {
+        $data = ['user_id' => $userId];
         $stmt = UserQuery::selectUser($data);
         $res = $stmt->fetch();
         if ($res === false) {
             (new CtxException())->selectFail();
         } else {
-            return DB::trimColumn($res);
+            return new UserDAO($res);
         }
     }
 
     /**
-     * @param array $data
-     * @return mixed    false: there are no record, array: any selected record
+     * @param $hiveId
+     * @param $hiveUid
+     * @return UserDAO|null
+     * @throws Exception
      */
-    public static function getUserByHive(array $data)
+    public static function getUserByHive(string $hiveId, int $hiveUid)
     {
+        $data = [
+            'hive_id' => $hiveId,
+            'hive_uid' => $hiveUid
+        ];
         $stmt = UserQuery::selectUserByHive($data);
         $res = $stmt->fetch();
         if ($res === false) {
-            return -1;
+            return null;
         } else {
-            return $res['user_id'];
+            return new UserDAO($res);
         }
     }
 
     /**
      * @param array $data
-     * @return array
-     * @throws CtxException
+     * @return UserDAO
+     * @throws CtxException|Exception
      */
     public static function getUserInfo(array $data)
     {
@@ -53,17 +63,18 @@ class UserServices
         if ($res === false) {
             (new CtxException())->selectFail();
         } else {
-            return DB::trimColumn($res);
+            return new UserDAO($res);
         }
     }
 
     /**
-     * @param array $data
-     * @throws CtxException
+     * @param UserDAO $user
+     * @throws CtxException|Exception
      */
-    public static function setUserLastVisit(array $data)
+    public static function setUserLastVisit(UserDAO $user)
     {
-        $stmt = UserQuery::updateUserInfoWithLastVisit($data);
+        $data = Utils::getQueryParameters($user, UserDAO::$dbColumMap);
+        $stmt = UserQuery::updateUserInfoByUserId($data);
         $cnt = $stmt->rowCount();
         if ($cnt === 0) {
             (new CtxException())->updateFail();
@@ -71,14 +82,15 @@ class UserServices
     }
 
     /**
-     * @param array $data
-     * @return bool|int
-     * @throws CtxException
+     * @param UserDAO $user
+     * @return bool
+     * @throws CtxException|Exception
      */
-    public static function setUserName(array $data)
+    public static function setUserName(UserDAO $user)
     {
+        $data = Utils::getQueryParameters($user, UserDAO::$dbColumMap);
         try {
-            $stmt = UserQuery::updateUserInfoWithName($data);
+            $stmt = UserQuery::updateUserInfoByUserId($data);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->updateFail();
             }
@@ -94,14 +106,15 @@ class UserServices
     }
 
     /**
-     * @param array $data
+     * @param UserDAO $user
      * @return bool
-     * @throws CtxException
+     * @throws CtxException|Exception
      */
-    public static function setUserTerritory(array $data)
+    public static function setUserTerritory(UserDAO $user)
     {
+        $data = Utils::getQueryParameters($user, UserDAO::$dbColumMap);
         try {
-            $stmt = UserQuery::updateUserInfoWithTerritory($data);
+            $stmt = UserQuery::updateUserInfoByUserId($data);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->updateFail();
             }
@@ -117,23 +130,24 @@ class UserServices
     }
 
     /**
-     * @param array $data
-     * @return int      -1 : register failed, {number} : registered user_id
-     * @throws Exception
+     * @param UserDAO $user
+     * @return int
+     * @throws CtxException
      */
-    public static function registerNewAccount(array $data): int
+    public static function registerNewAccount(UserDAO $user): int
     {
         $db = DB::getInstance()->getDBConnection();
         try {
             $db->beginTransaction();
 
             // user_platform 테이블 레코드 추가
+            $data = Utils::getQueryParameters($user, UserDAO::$dbColumMap);
             $stmt = UserQuery::insertUserPlatform($data);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->insertFail('registerNewAccount1');
             }
-            $userId = $db->lastInsertId();
-            $data['user_id'] = $userId;
+            $user->userId = $db->lastInsertId();
+            $data = Utils::getQueryParameters($user, UserDAO::$dbColumMap);
 
             // user_info 테이블 레코드 추가
             $stmt = UserQuery::insertUserInfo($data);
@@ -158,41 +172,22 @@ class UserServices
     }
 
     /**
-     * @param array $data
-     * @return mixed
-     * @throws CtxException
+     * @param UserDAO $user
+     * @throws CtxException|Exception
      */
-    public static function upgradeUserCastle(array $data)
+    public static function upgradeUserCastle(UserDAO $user)
     {
-        $db = DB::getInstance()->getDBConnection();
-        try {
-            $db->beginTransaction();
-
-            // 유저 자원 소모시키기
-            $stmt = UserQuery::updateUserInfoWithResource($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
-
-            // 성 업그레이드 job 추가
-            $stmt = UserQuery::insertUserCastleUpgrade($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
+        $data = Utils::getQueryParameters($user, UserDAO::$dbColumMap);
+        // 유저 자원 소모시키기 및 업그레이드 갱신
+        $stmt = UserQuery::updateUserInfoByUserId($data);
+        if ($stmt->rowCount() === 0) {
+            (new CtxException())->updateFail();
         }
     }
 
-    /**
+    /* not used
      * @param array $data
      * @throws CtxException
-     */
     public static function resolveUpgradeUserCastle(array $data)
     {
         // 성 업그레이드 정보 검색 후 업그레이드 레벨 가져오기
@@ -227,7 +222,7 @@ class UserServices
             $db->rollBack();
             throw $e;
         }
-    }
+    }*/
 
     /**
      * @param array $data

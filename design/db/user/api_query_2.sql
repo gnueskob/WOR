@@ -64,4 +64,23 @@ WHERE `user_id` = :user_id;
 
 -- 유저 정보 가져오기
 -- 1. 로그인 후 유저 정보 렌더링    /user/info/:user_id
+SELECT *
+FROM user_platform up, user_info ui, user_statistics us
+WHERE up.user_id = ui.user_id
+  AND up.user_id = us.user_id
+  AND up.user_id = :user_id;
+
+-- 유저 타일 정보
+-- 1. 로그인 후 유저 정보 랜더링    /user/tile/:user_id
+SELECT *
+FROM explore_tile
+WHERE user_id = :user_id;
+
+-- 유저 영토탐사 정보
+-- 1. 로그인 후 유저 정보 랜더링    /user/territory/:user_id
+SELECT *
+FROM explore_territory
+WHERE user_id = :user_id;
+
+
 

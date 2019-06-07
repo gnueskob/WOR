@@ -89,10 +89,11 @@ CREATE TABLE user_info (
   last_visit    DATETIME      NOT NULL,
 
   -- user map info
-  territory_id  BIGINT        NULL,
-  name          VARCHAR(30)   NULL,
-  castle_level  BIGINT        NOT NULL      DEFAULT 1,
-  upgrade_time         DATETIME      NOT NULL,
+  territory_id          BIGINT        NULL,
+  name                  VARCHAR(30)   NULL,
+  castle_level          BIGINT        NOT NULL      DEFAULT 1,
+  castle_to_level       BIGINT        NOT NULL      DEFAULT 1,
+  upgrade_time          DATETIME      NOT NULL,
 
   -- resource / manpower amount
   penalty_finish_time         DATETIME      NULL,
@@ -128,17 +129,6 @@ CREATE TABLE user_statistics (
   PRIMARY KEY (user_id)
 );
 
-CREATE TABLE user_castle_upgrade (
-  id            BIGINT      NOT NULL,
-  user_id       BIGINT      NOT NULL,
-  from_level    BIGINT      NOT NULL,
-  to_level      BIGINT      NOT NULL,
-  upgrade_finish_time   DATETIME    NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE INDEX idx_user_id (user_id),
-  INDEX idx_time (finish_time)
-);
-
 /** 건물 정보 테이블
   * @desc: 각 유저별로 사용하는 건물 정보
   * building_pk_id:       건물 id (AUTO_INC) [PK]
@@ -161,10 +151,11 @@ CREATE TABLE building (
   tile_id         BIGINT        NOT NULL,
   building_type   BIGINT        NOT NULL,
 
-  create_time    DATETIME   NULL,
-  deploy_time    DATETIME   NULL,
-  upgrade_time   DATETIME   NULL,
-  upgrade         BIGINT        NOT NULL      DEFAULT 1,
+  create_time     DATETIME   NULL,
+  deploy_time     DATETIME   NULL,
+  upgrade_time    DATETIME   NULL,
+  level           BIGINT        NOT NULL      DEFAULT 1,
+  to_levl         BIGINT        NOT NULL      DEFAULT 1,
   manpower        BIGINT        NOT NULL      DEFAULT 0,
   last_update     DATETIME      NULL,
   PRIMARY KEY (building_id),
@@ -345,7 +336,6 @@ CREATE TABLE war (
   PRIMARY KEY (war_id),
   INDEX idx_user_war (user_id, finish_time),
   INDEX idx_territory (territory_id, finish_time),
-  INDEX idx_raid (raid_id, finish_time)
 );
 
 CREATE TABLE war_end (

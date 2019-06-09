@@ -47,27 +47,21 @@ class Utils
     }
 
     /**
-     * @param object $obj
-     * @param array $dbColumMap
+     * @param DAO $obj
      * @return array
      * @throws Exception
      */
-    public static function getQueryParameters(object $obj, array $dbColumMap)
+    public static function getQueryParameters(DAO $obj)
     {
-        $properties = get_object_vars($obj);
+        $map = $obj->getPropertyToDBColumnMap();
+        $properties = $obj->getUpdateValue();
         $res = [];
-        foreach ($properties as $key => $value) {
-            if (is_null($value)) {
-                continue;
-            } elseif ($value === 'NULL') {
-                $value = null;
+        foreach ($properties as $property) {
+            $dbColumn = $map[$property];
+            if (is_null($dbColumn)) {
+                throw new Exception("Can not map DAO object property to db column", 500);
             }
-
-            $dbColumn = $dbColumMap[$key];
-            if (empty($dbColumn)) {
-                throw new Exception("Can not map object property to db column", 500);
-            }
-            $res[$dbColumn] = $value;
+            $res[$dbColumn] = $obj->{$property};
         }
         return $res;
     }

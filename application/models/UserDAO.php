@@ -7,36 +7,37 @@ use Exception;
 
 class UserDAO extends DAO
 {
-    public static $dbColumMap = [
-        'userId' => 'user_id',
-        'hiveId' => 'hive_id',
-        'hiveUid' => 'hive_uid',
-        'registerDate' => 'register_date',
+    private static $propertyToDBColumnMap = [];
+    private static $dbColumToPropertyMap = [
+        'user_id' => 'userId',
+        'hive_id' => 'hiveId',
+        'hive_uid' => 'hiveUid',
+        'register_date' => 'registerDate',
         'country' => 'country',
         'lang' => 'lang',
-        'osVersion' => 'os_version',
-        'appVersion' => 'app_version',
+        'os_version' => 'osVersion',
+        'app_version' => 'appVersion',
         'lastVisit' => 'last_visit',
-        'territoryId' => 'territory_id',
+        'territory_id' => 'territoryId',
         'name' => 'name',
-        'castleLevel' => 'castle_level',
-        'upgradeTime' => 'upgrade_time',
-        'penaltyFinishTime' => 'penalty_finish_time',
-        'autoGenerateManpower' => 'auto_generate_manpower',
+        'castle_level' => 'castleLevel',
+        'upgrade_time' => 'upgradeTime',
+        'penalty_finish_time' => 'penaltyFinishTime',
+        'auto_generate_manpower' => 'autoGenerateManpower',
         'manpower' => 'manpower',
-        'manpowerUsed' => 'manpower_used',
-        'appendedManpower' => 'appended_manpower',
-        'tacticalResource' => 'tactical_resource',
-        'foodResource' => 'food_resource',
-        'luxuryResource' => 'luxury_resource',
-        'warRequest' => 'war_request',
-        'warVictory' => 'war_victory',
-        'warDefeated' => 'war_defeated',
-        'despoilDefenseSuccess' => 'despoil_defense_success',
-        'despoilDefenseFail' => 'despoil_defense_fail',
-        'boss1KillCount' => 'boss1_kill_count',
-        'boss2KillCount' => 'boss2_kill_count',
-        'boss3KillCount' => 'boss3_kill_count'
+        'manpower_used' => 'manpowerUsed',
+        'appended_manpower' => 'appendedManpower',
+        'tactical_resource' => 'tacticalResource',
+        'food_resource' => 'foodResource',
+        'luxury_resource' => 'luxuryResource',
+        'war_request' => 'warRequest',
+        'war_victory' => 'warVictory',
+        'war_defeated' => 'warDefeated',
+        'despoil_defense_success' => 'despoilDefenseSuccess',
+        'despoil_defense_fail' => 'despoilDefenseFail',
+        'boss1_kill_count' => 'boss1KillCount',
+        'boss2_kill_count' => 'boss2KillCount',
+        'boss3_kill_count' => 'boss3KillCount'
     ];
 
     // platform
@@ -83,21 +84,18 @@ class UserDAO extends DAO
     /**
      * UserDAO constructor.
      * @param array $data
-     * @param bool $forUpdate
      * @throws Exception
      */
-    public function __construct(array $data = [], bool $forUpdate = false)
+    public function __construct(array $data = [])
     {
-        if ($forUpdate) {
+        if (count($data) === 0) {
+            if (count(self::$propertyToDBColumnMap) === 0) {
+                self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
+            }
             return;
         }
 
-        foreach ($data as $key => $value) {
-            if (is_int($key)) {
-                continue;
-            }
-            $this->{$key} = $value;
-        }
+        parent::__construct($data, self::$dbColumToPropertyMap);
         if (isset($this->upgradeTime) &&
             $this->upgradeTime <= Timezone::getNowUTC()) {
             $this->currentCastleLevel = $this->castleToLevel;
@@ -108,5 +106,15 @@ class UserDAO extends DAO
             isset($this->manpowerUsed)) {
             $this->manpowerAvailable = $this->manpower - $this->manpowerUsed;
         }
+    }
+
+    public function getDBColumnToPropertyMap()
+    {
+        return self::$dbColumToPropertyMap;
+    }
+
+    public function getPropertyToDBColumnMap()
+    {
+        return self::$propertyToDBColumnMap;
     }
 }

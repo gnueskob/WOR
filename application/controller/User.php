@@ -32,9 +32,7 @@ class User extends Router implements ISubRouter
             }
 
             // 로그인 성공 시 마지막 방문일자 갱신
-            $userContainer = new UserDAO();
-            $userContainer->lastVisit = Timezone::getNowUTC();
-            UserServices::setUserLastVisit($userContainer);
+            UserServices::setUserLastVisit($user->userId, Timezone::getNowUTC());
 
             $user = UserServices::getUser($user->userId);
             $ctx->addBody(['user' => Utils::toArray($user)]);
@@ -55,10 +53,7 @@ class User extends Router implements ISubRouter
             }
 
             // 없는 정보일 시 새로운 계정 생성
-            $userContainer = new UserDAO();
-            $userContainer->hiveId = $hiveId;
-            $userContainer->hiveUid = $hiveUid;
-            $userId = UserServices::registerNewAccount($userContainer);
+            $userId = UserServices::registerNewAccount($hiveId, $hiveUid);
 
             $user = UserServices::getUser($userId);
             $ctx->addBody(['user' => Utils::toArray($user)]);
@@ -73,10 +68,7 @@ class User extends Router implements ISubRouter
             $userId = $data['user_id'];
             $name = $data['name'];
 
-            $userContainer = new UserDAO();
-            $userContainer->userId = $userId;
-            $userContainer->name = $name;
-            if (UserServices::setUserName($userContainer) === false) {
+            if (UserServices::setUserName($userId, $name) === false) {
                 (new CtxException())->alreadyUsedName();
             }
             $user = UserServices::getUser($userId);
@@ -91,11 +83,7 @@ class User extends Router implements ISubRouter
             $userId = $data['user_id'];
             $territoryId = $data['territory_id'];
 
-            $userContainer = new UserDAO();
-            $userContainer->userId = $userId;
-            $userContainer->territoryId = $territoryId;
-
-            if (UserServices::setUserTerritory($userContainer) === false) {
+            if (UserServices::setUserTerritory($userId, $territoryId) === false) {
                 (new CtxException())->alreadyUsedTerritory();
             }
 
@@ -123,34 +111,33 @@ class User extends Router implements ISubRouter
             SpinLock::spinLock($spinlockKey, 1);
 
             // 유저 자원 정보 확인
-            $user = UserServices::getUserInfo($data);
+            $user = UserServices::getUserInfo($userId);
 
             $currentCastleLevel = $user->castleLevel;
             $plan = Plan::getData(PLAN_UPG_CASTLE, $currentCastleLevel);
 
+            // 업그레이드 후 남는 자원
+            $tacticalResource = $user->tacticalResource - $plan['need_tactical_resource'];
+            $foodResource = $user->foodResource - $plan['need_food_resource'];
+            $luxuryResource = $user->luxuryResource - $plan['need_luxury_resource'];
+
             // 필요한 재료를 가지고 있는 지 검사
-            if ($plan['need_tactical_resource'] > $user->tacticalResource ||
-                $plan['need_food_resource'] > $user->foodResource ||
-                $plan['need_luxury_resource'] > $user->luxuryResource) {
+            if ($tacticalResource < 0 || $foodResource < 0 || $luxuryResource < 0) {
                 SpinLock::spinUnlock($spinlockKey);
                 (new CtxException())->resourceInsufficient();
             }
 
-            // 유저 정보 갱신용 컨테이너
-            $userContainer = new UserDAO([], true);
-            $userContainer->userId = $userId;
-
-            $userContainer->tacticalResource = $user->tacticalResource + (-1) * $plan['need_tactical_resource'];
-            $userContainer->foodResource = $user->foodResource + (-1) * $plan['need_food_resource'];
-            $userContainer->luxuryResource = $user->luxuryResource + (-1) * $plan['need_luxury_resource'];
-
-            $userContainer->castleLevel = $currentCastleLevel;
-            $userContainer->castleToLevel = $currentCastleLevel + 1;
-
             // TODO: 완료 시간 기획 데이터로 변환
-            $userContainer->upgradeTime = (new Timezone())->addDate('600 seconds')->getTime();
+            $upgradeTime = (new Timezone())->addDate('600 seconds')->getTime();
 
-            UserServices::upgradeUserCastle($userContainer);
+            UserServices::upgradeUserCastle(
+                $userId,
+                $tacticalResource,
+                $foodResource,
+                $luxuryResource,
+                $currentCastleLevel,
+                $upgradeTime
+            );
             SpinLock::spinUnlock($spinlockKey);
 
             $user = UserServices::getUser($userId);
@@ -158,8 +145,8 @@ class User extends Router implements ISubRouter
             $ctx->send();
         });
 
-        // 성 업그레이드 완료 요청
-        $router->put('/upgrade/:user_id', function (Context $ctx) {
+        // 성 업그레이드 완료 확인
+        $router->get('/upgrade/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $userId = $data['user_id'];
             $user = UserServices::getUser($userId);

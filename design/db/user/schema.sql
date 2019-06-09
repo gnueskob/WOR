@@ -144,7 +144,7 @@ CREATE TABLE user_statistics (
   * upgrade:              건물 업그레이드 수준
   * manpower:             건물에 투입된 인력
 */
-CREATE TABLE building (
+CREATE TABLE building_upgradeable (
   building_id     BIGINT        NOT NULL      AUTO_INCREMENT,
   user_id         BIGINT        NOT NULL,
   territory_id    BIGINT        NOT NULL,
@@ -163,37 +163,20 @@ CREATE TABLE building (
   UNIQUE KEY uk_building_tile (user_id, tile_id)
 );
 
-CREATE TABLE building_upgrade (
-  upgrade_id    BIGINT      NOT NULL      AUTO_INCREMENT,
-  building_id   BIGINT      NOT NULL,
-  user_id       BIGINT      NOT NULL,
-  from_level    BIGINT      NOT NULL,
-  to_level      BIGINT      NOT NULL,
-  done          TINYINT     NULL,
-  upgrade_finish_time   DATETIME    NOT NULL,
-  PRIMARY KEY (upgrade_id),
-  UNIQUE INDEX idx_building_id (building_id),
-  INDEX idx_time (upgrade_finish_time)
-);
+CREATE TABLE building (
+  building_id     BIGINT        NOT NULL      AUTO_INCREMENT,
+  user_id         BIGINT        NOT NULL,
+  territory_id    BIGINT        NOT NULL,
+  tile_id         BIGINT        NOT NULL,
+  building_type   BIGINT        NOT NULL,
 
-CREATE TABLE building_deploy (
-  deploy_id     BIGINT      NOT NULL      AUTO_INCREMENT,
-  building_id   BIGINT      NOT NULL,
-  user_id       BIGINT      NOT NULL,
-  deploy_finish_time   DATETIME    NOT NULL,
-  PRIMARY KEY (deploy_id),
-  UNIQUE INDEX idx_building (building_id),
-  INDEX idx_time (deploy_finish_time)
-);
-
-CREATE TABLE building_create (
-  crate_id      BIGINT      NOT NULL      AUTO_INCREMENT,
-  building_id   BIGINT      NOT NULL,
-  user_id       BIGINT      NOT NULL,
-  create_finish_time   DATETIME    NOT NULL,
-  PRIMARY KEY (crate_id),
-  UNIQUE INDEX idx_building_id (building_id),
-  INDEX idx_time (create_finish_time)
+  create_time     DATETIME   NULL,
+  deploy_time     DATETIME   NULL,
+  manpower        BIGINT        NOT NULL      DEFAULT 0,
+  last_update     DATETIME      NULL,
+  PRIMARY KEY (building_id),
+  INDEX idx_user_deployed (user_id, deploy_finish_time),
+  UNIQUE KEY uk_building_tile (user_id, tile_id)
 );
 
 /** 유저 버프 정보

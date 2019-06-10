@@ -2,20 +2,51 @@
 
 namespace lsb\App\services;
 
-use lsb\Libs\DB;
+use lsb\App\models\WarDAO;
+use lsb\App\query\WarQuery;
+use Exception;
 
 class WarServices
 {
-    public static function selectUserWar(array $data)
+    /**
+     * @param int $userId
+     * @return WarDAO|null
+     * @throws Exception
+     */
+    public static function selectUserWar(int $userId)
     {
-        $qry = "
-            SELECT *
-            FROM war w, weapon_upgrade wu, weapon_crate wc
-            WHERE w.user_id = :user_id
-              AND w.weapon_id = wu.weapon_id
-              AND w.weapon_id = wc.weapon_id;
-        ";
-        $param = [':user_id' => $data['user_id']];
-        return DB::getSelectResult($qry, $param, true);
+        $container = new WarDAO();
+        $container->userId = $userId;
+
+        $stmt = WarQuery::selectWarByUser($container);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return null;
+        }
+        return new WarDAO($res);
+    }
+
+    /**
+     * @param int $userId
+     * @throws Exception
+     */
+    public static function refreshWarByUser(int $userId)
+    {
+        $container = new WarDAO();
+        $container->userId = $userId;
+
+        WarQuery::deleteWarByUser($container);
+    }
+
+    /**
+     * @param int $territoryId
+     * @throws Exception
+     */
+    public static function refreshWarByTerritory(int $territoryId)
+    {
+        $container = new WarDAO();
+        $container->territoryId = $territoryId;
+
+        WarQuery::deleteWarByTerritory($container);
     }
 }

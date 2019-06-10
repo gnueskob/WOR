@@ -2,7 +2,6 @@
 
 namespace lsb\App\controller;
 
-use lsb\App\models\UserDAO;
 use lsb\App\models\Utils;
 use lsb\App\services\UserServices;
 use lsb\Libs\CtxException;
@@ -27,7 +26,7 @@ class User extends Router implements ISubRouter
             $hiveId = $data['hive_id'];
             $hiveUid = $data['hive_uid'];
             $user = UserServices::getUserByHive($hiveId, $hiveUid);
-            if (empty($user)) {
+            if (is_null($user)) {
                 (new CtxException())->invaildUser();
             }
 
@@ -35,6 +34,7 @@ class User extends Router implements ISubRouter
             UserServices::setUserLastVisit($user->userId, Timezone::getNowUTC());
 
             $user = UserServices::getUser($user->userId);
+            Utils::checkNull($user);
             $ctx->addBody(['user' => Utils::toArray($user)]);
             $ctx->addBody(['token' => "token_temp"]);
             $ctx->send();
@@ -56,6 +56,7 @@ class User extends Router implements ISubRouter
             $userId = UserServices::registerNewAccount($hiveId, $hiveUid);
 
             $user = UserServices::getUser($userId);
+            Utils::checkNull($user);
             $ctx->addBody(['user' => Utils::toArray($user)]);
             $ctx->addBody(['token' => 'token_temp']);
             $ctx->send();
@@ -68,10 +69,12 @@ class User extends Router implements ISubRouter
             $userId = $data['user_id'];
             $name = $data['name'];
 
-            if (UserServices::setUserName($userId, $name) === false) {
+            $isSuccess = UserServices::setUserName($userId, $name);
+            if ($isSuccess === false) {
                 (new CtxException())->alreadyUsedName();
             }
             $user = UserServices::getUser($userId);
+            Utils::checkNull($user);
             $ctx->addBody(['user' => Utils::toArray($user)]);
             $ctx->send();
         });
@@ -83,11 +86,13 @@ class User extends Router implements ISubRouter
             $userId = $data['user_id'];
             $territoryId = $data['territory_id'];
 
-            if (UserServices::setUserTerritory($userId, $territoryId) === false) {
+            $isSuccess = UserServices::setUserTerritory($userId, $territoryId);
+            if ($isSuccess === false) {
                 (new CtxException())->alreadyUsedTerritory();
             }
 
             $user = UserServices::getUser($userId);
+            Utils::checkNull($user);
             $ctx->addBody(['user' => Utils::toArray($user)]);
             $ctx->send();
         });
@@ -97,6 +102,7 @@ class User extends Router implements ISubRouter
             $data = $ctx->getBody();
             $userId = $data['user_id'];
             $user = UserServices::getUser($userId);
+            Utils::checkNull($user);
             $ctx->addBody(['user' => Utils::toArray($user)]);
             $ctx->send();
         });
@@ -112,6 +118,13 @@ class User extends Router implements ISubRouter
 
             // 유저 자원 정보 확인
             $user = UserServices::getUserInfo($userId);
+            Utils::checkNull($user);
+
+            // 이미 업그레이드 진행중 인지 검사
+            if ($user->upgradeTime > Timezone::getNowUTC()) {
+                SpinLock::spinUnlock($spinlockKey);
+                (new CtxException())->notCompletedYet();
+            }
 
             $currentCastleLevel = $user->castleLevel;
             $plan = Plan::getData(PLAN_UPG_CASTLE, $currentCastleLevel);
@@ -141,6 +154,7 @@ class User extends Router implements ISubRouter
             SpinLock::spinUnlock($spinlockKey);
 
             $user = UserServices::getUser($userId);
+            Utils::checkNull($user);
             $ctx->addBody(['user' => Utils::toArray($user)]);
             $ctx->send();
         });
@@ -150,6 +164,7 @@ class User extends Router implements ISubRouter
             $data = $ctx->getBody();
             $userId = $data['user_id'];
             $user = UserServices::getUser($userId);
+            Utils::checkNull($user);
             if ($user->upgradeTime > Timezone::getNowUTC()) {
                 (new CtxException())->notCompletedYet();
             }

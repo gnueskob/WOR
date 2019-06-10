@@ -2,70 +2,97 @@
 
 namespace lsb\App\services;
 
+use lsb\App\models\BufDAO;
+use lsb\App\query\BufQuery;
+use lsb\Libs\CtxException;
 use lsb\Libs\Timezone;
 use lsb\Libs\DB;
 use Exception;
+use PDOException;
 
 class BufServices
 {
     /**
-     * @param array $data
-     * @return array|bool|mixed
-     * @throws Exception
+     * @param int $bufId
+     * @return BufDAO
+     * @throws CtxException|Exception
      */
-    public static function insertUserBuf(array $data)
+    public static function getBuf(int $bufId)
     {
-        $qry = "
-            INSERT INTO buf
-            VALUE (
-                   :buf_id,
-                   :user_id,
-                   :buf_type,
-                   :finish_time,
-                   :last_update
-            );
-        ";
-        $param = [
-            ':buf_id' => null,
-            ':user_id' => $data['user_id'],
-            ':buf_type' => $data['buf_type'],
-            ':finish_time' => Timezone::getNowUTC(),
-            ':last_update' => Timezone::getNowUTC()
-        ];
-        return DB::getInsertResult($qry, $param);
+        $container = new BufDAO();
+        $container->bufId = $bufId;
+
+        $stmt = BufQuery::selectBufByUser($container);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return null;
+        }
+        return new BufDAO($res);
     }
 
     /**
-     * @param array $data
-     * @return array|bool|mixed
+     * @param int $userId
+     * @return array
+     * @throws Exception|Exception
      */
-    public static function selectUserBuf(array $data)
+    public static function getBufsByUser(int $userId)
     {
-        $qry = "
-            SELECT *
-            FROM buf
-            WHERE user_id = :user_id;
-        ";
-        $param = [':user_id' => $data['user_id']];
-        return DB::getSelectResult($qry, $param, true);
+        $container = new BufDAO();
+        $container->userId = $userId;
+
+        $stmt = BufQuery::selectBufByUser($container);
+        $res = $stmt->fetchAll();
+        if ($res === false) {
+            return [];
+        }
+        foreach ($res as $key => $value) {
+            $res[$key] = new BufDAO($value);
+        }
+        return $res;
     }
 
     /**
-     * @param array $data
-     * @return bool
+     * @param int $userId
+     * @param int $bufType
+     * @param string $date
+     * @return string
+     * @throws CtxException|Exception
+     */
+    public static function makeBuf(int $userId, int $bufType, string $date)
+    {
+        $container = new BufDAO();
+        $container->userId = $userId;
+        $container->bufType = $bufType;
+        $container->finishTime = $date;
+
+        try {
+            $stmt = BufQuery::insertBuf($container);
+
+            if ($stmt->rowCount() === 0) {
+                (new CtxException())->insertFail();
+            }
+
+            $db = DB::getInstance()->getDBConnection();
+            return $db->lastInsertId();
+        } catch (PDOException $e) {
+            // Unique key 중복 제한으로 걸릴 경우 따로 처리
+            if ($e->getCode() === DUPLICATE_ERRORCODE) {
+                (new CtxException())->alreadyExistsBuf();
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * @param int $userId
      * @throws Exception
      */
-    public static function deleteUserBuf(array $data)
+    public static function refreshBuf(int $userId)
     {
-        $qry = "
-            DELETE FROM buf
-            WHERE user_id = :user_id
-              AND finish_time <= :finish_time;
-        ";
-        $param = [
-            ':user_id' => $data['user_id'],
-            ':finish_time' => Timezone::getNowUTC()
-        ];
-        return DB::getResultRowCount($qry, $param);
+        $container = new BufDAO();
+        $container->userId = $userId;
+
+        BufQuery::deleteBufByUser($container);
     }
 }

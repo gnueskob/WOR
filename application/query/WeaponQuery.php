@@ -2,6 +2,7 @@
 
 namespace lsb\App\query;
 
+use lsb\App\models\WeaponDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use Exception;
@@ -9,38 +10,34 @@ use PDOStatement;
 
 class WeaponQuery
 {
-    public static function selectWeapon(array $d)
+    public static function selectWeapon(WeaponDAO $weapon)
     {
         $q = "
             SELECT *
-            FROM weapon w
-                LEFT JOIN weapon_upgrade wu ON w.weapon_id = wu.weapon_id
-                LEFT JOIN weapon_crate wc ON w.weapon_id = wc.weapon_id 
-            WHERE w.weapon_id = :weapon_id;
+            FROM weapon
+            WHERE weapon_id = :weapon_id;
         ";
-        $p = [':weapon_id' => $d['weapon_id']];
+        $p = [':weapon_id' => $weapon->weaponId];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectWeaponsByUser(array $d)
+    public static function selectWeaponsByUser(WeaponDAO $weapon)
     {
         $q = "
             SELECT *
-            FROM weapon w
-                LEFT JOIN weapon_upgrade wu ON w.weapon_id = wu.weapon_id
-                LEFT JOIN weapon_crate wc ON w.weapon_id = wc.weapon_id 
-            WHERE w.user_id = :user_id;
+            FROM weapon
+            WHERE user_id = :user_id;
         ";
-        $p = [':user_id' => $d['user_id']];
+        $p = [':user_id' => $weapon->userId];
         return DB::runQuery($q, $p);
     }
 
     /**
-     * @param array $d
+     * @param WeaponDAO $weapon
      * @return PDOStatement
      * @throws Exception
      */
-    public static function insertWeapon(array $d)
+    public static function insertWeapon(WeaponDAO $weapon)
     {
         $q = "
             INSERT INTO weapon
@@ -56,9 +53,9 @@ class WeaponQuery
         ";
         $p = [
             ':weapon_id' => null,
-            ':user_id' => $d['user_id'],
-            ':weapon_type' => $d['weapon_type'],
-            ':upgrade' => $d['upgrade'],
+            ':user_id' => $weapon->userId,
+            ':weapon_type' => $weapon->weaponType,
+            ':upgrade' => 1,
             ':upgrade_time' => null,
             ':create_time' => null,
             ':last_update' => Timezone::getNowUTC()
@@ -110,11 +107,7 @@ class WeaponQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
+    /*
     public static function updateWeaponWithCreateTime(array $d)
     {
         $q = "
@@ -128,24 +121,22 @@ class WeaponQuery
         ];
         return DB::runQuery($q, $p);
     }
+    */
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
-    public static function updateWeaponWithUpgrade(array $d)
+    public static function updateWeaponWithLevel(WeaponDAO $weapon)
     {
         $q = "
             UPDATE weapon
             SET upgrade_time = :upgrade_time,
-                upgrade = :upgrade
+                level = :level,
+                to_level = :to_level
             WHERE weapon_id = :weapon_id;
         ";
         $p = [
-            ':weapon_id' => $d['weapon_id'],
-            ':upgrade_time' => $d['upgrade_time'],
-            ':upgrade' => $d['upgrade']
+            ':upgrade_time' => $weapon->upgradeTime,
+            ':level' => $weapon->level,
+            ':to_level' => $weapon->toLevel,
+            ':weapon_id' => $weapon->weaponId
         ];
         return DB::runQuery($q, $p);
     }

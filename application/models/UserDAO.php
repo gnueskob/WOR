@@ -7,7 +7,9 @@ use Exception;
 
 class UserDAO extends DAO
 {
+    /*
     private static $propertyToDBColumnMap = [];
+    */
     private static $dbColumToPropertyMap = [
         'user_id' => 'userId',
         'hive_id' => 'hiveId',
@@ -89,9 +91,6 @@ class UserDAO extends DAO
     public function __construct(array $data = [])
     {
         if (count($data) === 0) {
-            if (count(self::$propertyToDBColumnMap) === 0) {
-                self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
-            }
             return;
         }
 
@@ -108,6 +107,7 @@ class UserDAO extends DAO
         }
     }
 
+    /*
     public function getDBColumnToPropertyMap()
     {
         return self::$dbColumToPropertyMap;
@@ -115,6 +115,9 @@ class UserDAO extends DAO
 
     public function getPropertyToDBColumnMap()
     {
+        if (count(self::$propertyToDBColumnMap) === 0) {
+            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
+        }
         return self::$propertyToDBColumnMap;
-    }
+    }*/
 }

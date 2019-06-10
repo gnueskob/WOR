@@ -2,6 +2,7 @@
 
 namespace lsb\App\query;
 
+use lsb\App\models\BuildingDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use Exception;
@@ -9,39 +10,40 @@ use PDOStatement;
 
 class BuildingQuery
 {
-    public static function selectBuilding(array $d)
+    public static function selectBuilding(BuildingDAO $building)
     {
         $q = "
-            SELECT b.*,
-                    bu.to_level, bu.from_level, bu.done, bu.upgrade_finish_time,
-                    bc.create_finish_time,
-                    bd.deploy_finish_time
-            FROM building b LEFT JOIN building_upgrade bu ON b.building_id = bu.building_id
-               LEFT JOIN building_deploy bd ON b.building_id = bd.building_id
-               LEFT JOIN building_create bc ON b.building_id = bc.building_id
-            WHERE b.building_id = :building_id;
+            SELECT *
+            FROM building
+            WHERE building_id = :building_id;
         ";
-        $p = [':building_id' => $d['building_id']];
+        $p = [':building_id' => $building->buildingId];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectBuildingByUser(array $d)
+    public static function selectBuildingByTile(BuildingDAO $building)
     {
         $q = "
-            SELECT b.*,
-                    bu.to_level, bu.from_level, bu.done, bu.upgrade_finish_time,
-                    bc.create_finish_time,
-                    bd.deploy_finish_time
-            FROM building b LEFT JOIN building_upgrade bu ON b.building_id = bu.building_id
-               LEFT JOIN building_deploy bd ON b.building_id = bd.building_id
-               LEFT JOIN building_create bc ON b.building_id = bc.building_id
-            WHERE b.user_id = :user_id;
+            SELECT *
+            FROM building
+            WHERE tile_id = :tile_id;
         ";
-        $p = [':user_id' => $d['user_id']];
+        $p = [':tile_id' => $building->tileId];
         return DB::runQuery($q, $p);
     }
 
-    // 각 테이블 별로 쿼리 분할 시 비용 하락으로 더 좋으나... 시간 없음 ㅎ;
+    public static function selectBuildingByUser(BuildingDAO $building)
+    {
+        $q = "
+            SELECT b.*
+            FROM building
+            WHERE user_id = :user_id;
+        ";
+        $p = [':user_id' => $building->userId];
+        return DB::runQuery($q, $p);
+    }
+
+    /* 각 테이블 별로 쿼리 분할 시 비용 하락으로 더 좋으나... 시간 없음 ㅎ;
     public static function selectBuildingUpgrade(array $d)
     {
         $q = "
@@ -51,34 +53,26 @@ class BuildingQuery
         ";
         $p = [':building_id' => $d['building_id']];
         return DB::runQuery($q, $p);
-    }
+    }*/
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
-    public static function updateBuildingWithUpgrade(array $d)
+    public static function updateBuildingWithLevel(BuildingDAO $building)
     {
         $q = "
             UPDATE building
-            SET upgrade = :upgrade,
+            SET level = :level,
+                to_level = :to_level,
                 upgrade_time = :upgrade_time
             WHERE building_id = :building_id;
         ";
         $p = [
-            ':building_id' => $d['building_id'],
-            ':upgrade' => $d['upgrade'],
-            ':upgrade_time' => $d['upgrade_time']
+            ':level' => $building->level,
+            ':to_level' => $building->toLevel,
+            ':upgrade_time' => $building->upgradeTime
         ];
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
+    /*
     public static function updateBuildingWithCreateTime(array $d)
     {
         $q = "
@@ -91,14 +85,9 @@ class BuildingQuery
             ':create_time' => $d['create_time']
         ];
         return DB::runQuery($q, $p);
-    }
+    }*/
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
-    public static function updateBuildingWithDeployTimeManpower(array $d)
+    public static function updateBuildingWithDeployTimeAndManpower(BuildingDAO $building)
     {
         $q = "
             UPDATE building
@@ -107,18 +96,19 @@ class BuildingQuery
             WHERE building_id = :building_id;
         ";
         $p = [
-            ':building_id' => $d['building_id'],
-            ':deploy_time' => $d['deploy_time']
+            ':deploy_time' => $building->deployTime,
+            ':manpower' => $building->manpower,
+            ':building_id' => $building->buildingId
         ];
         return DB::runQuery($q, $p);
     }
 
     /**
-     * @param array $d
+     * @param BuildingDAO $building
      * @return PDOStatement
      * @throws Exception
      */
-    public static function insertBuilding(array $d)
+    public static function insertBuilding(BuildingDAO $building)
     {
         $q = "
             INSERT INTO building
@@ -138,11 +128,11 @@ class BuildingQuery
         ";
         $p = [
             ':building_id' => null,
-            ':user_id' => $d['user_id'],
-            ':territory_id' => $d['territory_id'],
-            ':tile_id' => $d['tile_id'],
-            ':building_type' => $d['building_type'],
-            ':create_time' => null,
+            ':user_id' => $building->userId,
+            ':territory_id' => $building->territoryId,
+            ':tile_id' => $building->tileId,
+            ':building_type' => $building->buildingType,
+            ':create_time' => $building->createTime,
             ':deploy_time' => null,
             ':upgrade_time' => null,
             ':upgrade' => 1,
@@ -152,6 +142,7 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
+    /*
     public static function insertBuildingCreate(array $d)
     {
         $q = "
@@ -220,11 +211,6 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteBuildingCreate(array $d)
     {
         $q = "
@@ -239,11 +225,6 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteBuildingUpgrade(array $d)
     {
         $q = "
@@ -258,11 +239,6 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteBuildingDeploy(array $d)
     {
         $q = "
@@ -276,4 +252,5 @@ class BuildingQuery
         ];
         return DB::runQuery($q, $p);
     }
+    */
 }

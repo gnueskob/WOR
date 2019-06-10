@@ -3,27 +3,41 @@
 namespace lsb\App\models;
 
 use Exception;
+use lsb\Libs\CtxException;
 
 class Utils
 {
-    public static function getUpdateSetClause(... $d)
+    /*
+    public static function getUpdateSetClause(DAO $dao, array $d)
     {
+        $map = $dao->getPropertyToDBColumnMap();
+        $d = $dao->getPropertyToQuery();
         $set = '';
-        foreach ($d as $key => $value) {
-            $set = "{$set}, {$key}=:{$key}";
+        foreach ($d as $key) {
+            $column = $map[$key];
+            if (is_null($column)) {
+                throw new Exception('No property exists in column map', 500);
+            }
+            $set = "{$set}, {$map[$key]}=:{$map[$key]}";
         }
         return ltrim($set, ', ');
     }
 
-    public static function getParamenters(... $d)
+    public static function getBindParamenters(DAO $dao)
     {
+        $map = $dao->getPropertyToDBColumnMap();
+        $d = $dao->getPropertyToQuery();
         $param = [];
-        foreach ($d as $key => $value) {
-            $paramKey = ":{$key}";
-            $param[$paramKey] = $value;
+        foreach ($d as $key) {
+            $column = $map[$key];
+            if (is_null($column)) {
+                throw new Exception('No property exists in column map', 500);
+            }
+            $paramKey = ":{$map[$key]}";
+            $param[$paramKey] = $dao->{$key};
         }
         return $param;
-    }
+    }*/
 
     public static function makeSnakeCase($input)
     {
@@ -35,9 +49,9 @@ class Utils
         return implode('_', $ret);
     }
 
-    public static function toArray(object $class)
+    private static function makePropertySnakeCase(DAO $dao)
     {
-        $properties = get_object_vars($class);
+        $properties = get_object_vars($dao);
         $res = [];
         foreach ($properties as $key => $value) {
             $resKey = self::makeSnakeCase($key);
@@ -47,14 +61,40 @@ class Utils
     }
 
     /**
-     * @param DAO $obj
+     * @param DAO $dao
      * @return array
      * @throws Exception
      */
+    public static function toArray(DAO $dao)
+    {
+        return self::makePropertySnakeCase($dao);
+    }
+
+    public static function toArrayAll(array $daos)
+    {
+        $res = [];
+        foreach ($daos as $dao) {
+            $res[] = self::makePropertySnakeCase($dao);
+        }
+        return $res;
+    }
+
+    /**
+     * @param DAO $dao
+     * @throws CtxException
+     */
+    public static function checkNull(DAO $dao)
+    {
+        if (is_null($dao)) {
+            (new CtxException())->selectFail();
+        }
+    }
+
+    /*
     public static function getQueryParameters(DAO $obj)
     {
         $map = $obj->getPropertyToDBColumnMap();
-        $properties = $obj->getUpdateValue();
+        $properties = $obj->getPropertyToQuery();
         $res = [];
         foreach ($properties as $property) {
             $dbColumn = $map[$property];
@@ -64,5 +104,5 @@ class Utils
             $res[$dbColumn] = $obj->{$property};
         }
         return $res;
-    }
+    }*/
 }

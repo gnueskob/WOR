@@ -2,6 +2,7 @@
 
 namespace lsb\App\services;
 
+use lsb\App\models\WeaponDAO;
 use lsb\App\query\UserQuery;
 use lsb\App\query\WeaponQuery;
 use lsb\Libs\CtxException;
@@ -12,85 +13,67 @@ use PDOException;
 class WeaponServices
 {
     /**
-     * @param array $data
-     * @return mixed
-     * @throws CtxException
+     * @param int $weaponId
+     * @return WeaponDAO
+     * @throws CtxException|Exception
      */
-    public static function getWeapon(array $data)
+    public static function getWeapon(int $weaponId)
     {
-        $stmt = WeaponQuery::selectWeapon($data);
+        $container = new WeaponDAO();
+        $container->weaponId = $weaponId;
+
+        $stmt = WeaponQuery::selectWeapon($container);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return null;
         }
-        return $res;
+        return new WeaponDAO($res);
     }
 
     /**
-     * @param array $data
-     * @return mixed
-     * @throws CtxException
+     * @param int $userId
+     * @return array|bool
+     * @throws CtxException|Exception
      */
-    public static function getWeaponsByUser(array $data)
+    public static function getWeaponsByUser(int $userId)
     {
-        $stmt = WeaponQuery::selectWeaponsByUser($data);
+        $container = new WeaponDAO();
+        $container->userId = $userId;
+
+        $stmt = WeaponQuery::selectWeaponsByUser($container);
         $res = $stmt->fetchAll();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return [];
         }
         foreach ($res as $key => $value) {
-            $res[$key] = DB::trimColumn($value);
+            $res[$key] = new WeaponDAO($value);
         }
         return $res;
     }
 
     /**
-     * @param array $data
-     * @return array|bool|mixed
-     * @throws Exception
+     * @param int $userId
+     * @param int $weaponType
+     * @param string $creatTime
+     * @return string
+     * @throws CtxException|Exception
      */
-    public static function createWeapon(array $data)
+    public static function createWeapon(int $userId, int $weaponType, string $creatTime)
     {
-        $db = DB::getInstance()->getDBConnection();
+        $container = new WeaponDAO();
+        $container->userId = $userId;
+        $container->weaponType = $weaponType;
+        $container->createTime = $creatTime;
 
-        try {
-            $db->beginTransaction();
-
-            // 필요한 자원량 소모시키기
-            $stmt = UserQuery::updateUserInfoWithResource($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
-
-            // 무기 데이터 추가
-            $stmt = WeaponQuery::insertWeapon($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            // 무기 생성 job 추가
-            $weaponId = $db->lastInsertId();
-            $data['weapon_id'] = $weaponId;
-            $stmt = WeaponQuery::insertWeaponCreate($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-
-            return $weaponId;
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
+        $stmt = WeaponQuery::insertWeapon($container);
+        if ($stmt->rowCount() === 0) {
+            (new CtxException())->insertFail();
         }
+        $db = DB::getInstance()->getDBConnection();
+        return $db->lastInsertId();
     }
 
-    /**
-     * @param array $data
-     * @throws CtxException
-     */
+    /*
     public static function resolveCreateBuilding(array $data)
     {
         // 기존 건물 건설 job 정보 검색
@@ -125,44 +108,30 @@ class WeaponServices
             $db->rollBack();
             throw $e;
         }
-    }
+    }*/
 
     /**
-     * @param array $data
-     * @throws CtxException
+     * @param int $weaponId
+     * @param int $currentLevel
+     * @param string $date
+     * @throws CtxException|Exception
      */
-    public static function upgradeWeapon(array $data)
+    public static function upgradeWeapon(int $weaponId, int $currentLevel, string $date)
     {
-        $db = DB::getInstance()->getDBConnection();
-        try {
-            $db->beginTransaction();
+        $container = new WeaponDAO();
+        $container->weaponId = $weaponId;
+        $container->level = $currentLevel;
+        $container->toLevel = $currentLevel + 1;
+        $container->upgradeTime = $date;
 
-            // 건물 업그레이드에 필요한 유저 자원 소모
-            $stmt = UserQuery::updateUserInfoWithResource($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
-
-            // 건물 업그레이드 job 생성
-            $stmt = WeaponQuery::insertWeaponUpgrade($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
+        // 건물 업그레이드 job 생성
+        $stmt = WeaponQuery::updateWeaponWithLevel($container);
+        if ($stmt->rowCount() === 0) {
+            (new CtxException())->insertFail();
         }
     }
 
-    /**
-     * @param array $data
-     * @return int
-     * @throws Exception
-     */
+    /*
     public static function resolveUpgradeBuilding(array $data)
     {
         // 기존 무기 업그레이드 정보 검색
@@ -199,5 +168,5 @@ class WeaponServices
             $db->rollBack();
             throw $e;
         }
-    }
+    }*/
 }

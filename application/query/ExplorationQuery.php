@@ -2,67 +2,62 @@
 
 namespace lsb\App\query;
 
+use lsb\App\models\TerritoryDAO;
+use lsb\App\models\TileDAO;
 use lsb\Libs\DB;
-use lsb\Libs\Timezone;
-use Exception;
 use PDOStatement;
 
 class ExplorationQuery
 {
-    public static function selectTile(array $d)
+    public static function selectTile(TileDAO $tile)
     {
         $q = "
-                SELECT t.*, te.explore_finish_time
-                FROM tile t
-                    LEFT JOIN tile_explore te ON t.tile_id = te.tile_id 
-                WHERE t.explore_id = :explore_id;
+                SELECT *
+                FROM tile
+                WHERE explore_id = :explore_id;
             ";
-        $p = [':explore_id' => $d['explore_id']];
+        $p = [':explore_id' => $tile->exploreId];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectTilesByUser(array $d)
+    public static function selectTilesByUser(TileDAO $tile)
     {
         $q = "
-            SELECT t.*, te.explore_finish_time
-            FROM tile t
-                LEFT JOIN tile_explore te ON t.tile_id = te.tile_id 
-            WHERE t.user_id = :user_id;
+            SELECT *
+            FROM tile 
+            WHERE user_id = :user_id;
         ";
-        $p = [':user_id' => $d['user_id']];
+        $p = [':user_id' => $tile->userId];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectTerritory(array $d)
+    public static function selectTerritory(TerritoryDAO $territory)
     {
         $q = "
-            SELECT t.*, te.explore_finish_time
-            FROM territory t
-                LEFT JOIN territory_explore te ON t.territory_id = te.territory_id 
-            WHERE t.explore_id = :explore_id;
+            SELECT *
+            FROM territory 
+            WHERE explore_id = :explore_id;
         ";
-        $p = [':explore_id' => $d['explore_id']];
+        $p = [':explore_id' => $territory->exploreId];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectTerritoriesByUser(array $d)
+    public static function selectTerritoriesByUser(TerritoryDAO $territory)
     {
         $q = "
-            SELECT t.*, te.explore_finish_time
-            FROM territory t
-                LEFT JOIN territory_explore te ON t.territory_id = te.territory_id 
-            WHERE t.user_id = :user_id;
+            SELECT *
+            FROM territory
+            WHERE user_id = :user_id;
         ";
-        $p = [':user_id' => $d['user_id']];
+        $p = [':user_id' => $territory->userId];
         return DB::runQuery($q, $p);
     }
 
     /**
-     * @param array $d
+     * @param TileDAO $tile
      * @return PDOStatement
-     * @throws Exception
      */
-    public static function insertTile(array $d)
+    public static function insertTile(TileDAO $tile)
     {
         $q = "
             INSERT INTO tile
@@ -70,20 +65,19 @@ class ExplorationQuery
                    :explore_id,
                    :user_id,
                    :tile_id,
-                   :explore_time,
-                   :last_update
+                   :explore_time
             );
         ";
         $p = [
             ':explore_id' => null,
-            ':user_id' => $d['user_id'],
-            ':tile_id' => $d['tile_id'],
-            ':explore_time' => null,
-            ':last_update' => Timezone::getNowUTC()
+            ':user_id' => $tile->userId,
+            ':tile_id' => $tile->tileId,
+            ':explore_time' => $tile->exploreTime
         ];
         return DB::runQuery($q, $p);
     }
 
+    /*
     public static function insertTileExplore(array $d)
     {
         $q = "
@@ -101,13 +95,13 @@ class ExplorationQuery
         ];
         return DB::runQuery($q, $p);
     }
+    */
 
     /**
-     * @param array $d
+     * @param TerritoryDAO $territory
      * @return PDOStatement
-     * @throws Exception
      */
-    public static function insertTerritory(array $d)
+    public static function insertTerritory(TerritoryDAO $territory)
     {
         $q = "
             INSERT INTO territory
@@ -115,20 +109,19 @@ class ExplorationQuery
                    :explore_id,
                    :user_id,
                    :territory_id,
-                   :explore_time,
-                   :last_update
+                   :explore_time
             );
         ";
         $p = [
             ':explore_id' => null,
-            ':user_id' => $d['user_id'],
-            ':territory_id' => $d['territory_id'],
-            ':explore_time' => null,
-            ':last_update' => Timezone::getNowUTC()
+            ':user_id' => $territory->userId,
+            ':territory_id' => $territory->territoryId,
+            ':explore_time' => $territory->exploreTime
         ];
         return DB::runQuery($q, $p);
     }
 
+    /*
     public static function insertTerritoryExplore(array $d)
     {
         $q = "
@@ -145,8 +138,9 @@ class ExplorationQuery
             ':explore_finish_time' => $d['explore_finish_time']
         ];
         return DB::runQuery($q, $p);
-    }
+    }*/
 
+    /*
     public static function updateTileWithExploreTime(array $d)
     {
         $q = "
@@ -175,11 +169,6 @@ class ExplorationQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteTimeExplore(array $d)
     {
         $q = "
@@ -194,11 +183,6 @@ class ExplorationQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteTerritoryExplore(array $d)
     {
         $q = "
@@ -212,4 +196,5 @@ class ExplorationQuery
         ];
         return DB::runQuery($q, $p);
     }
+    */
 }

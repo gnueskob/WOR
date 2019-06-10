@@ -6,10 +6,12 @@ use Exception;
 
 abstract class DAO
 {
+    /*
     private $updatedProperty = [];
 
     abstract public function getDBColumnToPropertyMap();
     abstract public function getPropertyToDBColumnMap();
+    */
 
     /**
      * DAO constructor.
@@ -51,16 +53,16 @@ abstract class DAO
         throw new Exception("No property exists in DAO", 500);
     }
 
+    /*
     public function updateProperty(array $p)
     {
         foreach ($p as $property => $value) {
-            $this->{$property} = $value;
             $this->updatedProperty[] = $property;
         }
     }
 
-    public function getUpdateValue()
+    public function getPropertyToQuery()
     {
         return $this->updatedProperty;
-    }
+    }*/
 }

@@ -2,7 +2,7 @@
 
 namespace lsb\App\query;
 
-use lsb\App\models\Utils;
+use lsb\App\models\UserDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use Exception;
@@ -10,7 +10,7 @@ use PDOStatement;
 
 class UserQuery
 {
-    public static function selectUser(array $d)
+    public static function selectUser(UserDAO $user)
     {
         $q = "
             SELECT up.*, ui.*, us.*
@@ -19,11 +19,11 @@ class UserQuery
                 JOIN user_statistics us ON up.user_id = us.user_id
             WHERE up.user_id = :user_id;
         ";
-        $p = Utils::getParamenters($d);
+        $p = [':user_id' => $user->userId];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectUserByHive(array $d)
+    public static function selectUserPlatformByHive(UserDAO $user)
     {
         $q = "
             SELECT user_id
@@ -31,18 +31,21 @@ class UserQuery
             WHERE hive_id = :hive_id
               AND hive_uid = :hive_uid;
         ";
-        $p = Utils::getParamenters($d);
+        $p = [
+            ':hive_id' => $user->hiveId,
+            ':hive_uid' => $user->hiveUid
+        ];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectUserInfo(array $d)
+    public static function selectUserInfo(UserDAO $user)
     {
         $q = "
             SELECT *
             FROM user_info
             WHERE user_id = :user_id;
         ";
-        $p = Utils::getParamenters($d);
+        $p = ['user_id' => $user->userId];
         return DB::runQuery($q, $p);
     }
 
@@ -58,22 +61,21 @@ class UserQuery
         return DB::runQuery($q, $p);
     }*/
 
-    public static function updateUserInfoByUserId(array $d)
+    public static function updateUserInfoWithLastVisit(UserDAO $user)
     {
-        $setParam = array_filter($d, function ($key) {
-            return $key !== 'user_id';
-        }, ARRAY_FILTER_USE_KEY);
-        $set = Utils::getUpdateSetClause($setParam);
         $q = "
             UPDATE user_info
-            SET {$set}
+            SET last_visit = :last_visit
             WHERE user_id = :user_id;
         ";
-        $p = Utils::getParamenters($d);
+        $p = [
+            ':name' => $user->name,
+            ':last_visit' => $user->userId
+        ];
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserInfoWithName(array $d)
+    public static function updateUserInfoWithName(UserDAO $user)
     {
         $q = "
             UPDATE user_info
@@ -81,13 +83,13 @@ class UserQuery
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':name' => $d['name'],
-            ':user_id' => $d['user_id']
+            ':name' => $user->name,
+            ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserInfoWithTerritory(array $d)
+    public static function updateUserInfoWithTerritory(UserDAO $user)
     {
         $q = "
             UPDATE user_info
@@ -95,31 +97,31 @@ class UserQuery
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':territory_id' => $d['territory_id'],
-            ':user_id' => $d['user_id']
+            ':territory_id' => $user->territoryId,
+            ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserInfoWithResource(array $d)
+    public static function updateUserInfoWithResource(UserDAO $user)
     {
         $q = "
             UPDATE user_info
-            SET tactical_resource = tactical_resource - :need_tactical_resource,
-                food_resource = food_resource - :need_food_resource,
-                luxury_resource = luxury_resource - :need_luxury_resource
+            SET tactical_resource = :tactical_resource,
+                food_resource = :food_resource,
+                luxury_resource = :luxury_resource
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':need_tactical_resource' => $d['need_tactical_resource'],
-            ':need_food_resource' => $d['need_food_resource'],
-            ':need_luxury_resource' => $d['need_luxury_resource'],
-            ':user_id' => $d['user_id']
+            ':tactical_resource' => $user->tacticalResource,
+            ':food_resource' => $user->foodResource,
+            ':luxury_resource' => $user->luxuryResource,
+            ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserInfoWithPenaltyTime(array $d)
+    public static function updateUserInfoWithPenaltyTime(UserDAO $user)
     {
         $q = "
             UPDATE user_info
@@ -127,30 +129,36 @@ class UserQuery
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':penalty_finish_time' => $d['penalty_finish_time'],
-            ':user_id' => $d['user_id']
+            ':penalty_finish_time' => $user->penaltyFinishTime,
+            ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserInfoWithUpgrade(array $d)
+    public static function updateUserInfoWithUpgradeAndResource(UserDAO $user)
     {
         $q = "
             UPDATE user_info
-            SET castle_level = :castle_level,
+            SET tactical_resource = :tactical_resource,
+                food_resource = :food_resource,
+                luxury_resource = :luxury_resource,
+                castle_level = :castle_level,
                 castle_to_level = :castle_to_level,
                 to_level = :to_level
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':castle_level' => $d['castle_level'],
-            ':castle_to_level' => $d['castle_to_level'],
-            ':user_id' => $d['user_id']
+            ':tactical_resource' => $user->tacticalResource,
+            ':food_resource' => $user->foodResource,
+            ':luxury_resource' => $user->luxuryResource,
+            ':castle_level' => $user->castleLevel,
+            ':castle_to_level' => $user->castleToLevel,
+            ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
     }
 
-    public static function updateUserInfoWithUsedManpower(array $d)
+    public static function updateUserInfoWithUsedManpower(UserDAO $user)
     {
         $q = "
             UPDATE user_info
@@ -158,18 +166,18 @@ class UserQuery
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':manpower_used' => $d['manpower_used'],
-            ':user_id' => $d['user_id']
+            ':manpower_used' => $user->manpowerUsed,
+            ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
     }
 
     /**
-     * @param array $d
+     * @param UserDAO $user
      * @return PDOStatement
      * @throws Exception
      */
-    public static function insertUserPlatform(array $d)
+    public static function insertUserPlatform(UserDAO $user)
     {
         $q = "
             INSERT INTO user_platform
@@ -187,24 +195,24 @@ class UserQuery
         ";
         $p = [
             ':user_id' => null,
-            ':hive_id' => $d['hive_id'],
-            ':hive_uid' => $d['hive_uid'],
+            ':hive_id' => $user->hiveId,
+            ':hive_uid' => $user->hiveUid,
             ':register_date' => Timezone::getNowUTC(),
-            ':country' => $d['country'],
-            ':lang' => $d['lang'],
-            ':os_version' => $d['os_version'],
-            ':device_name' => $d['device_name'],
-            ':app_version' => $d['app_version']
+            ':country' => $user->country,
+            ':lang' => $user->lang,
+            ':os_version' => $user->osVersion,
+            ':device_name' => $user->deviceName,
+            ':app_version' => $user->appVersion
         ];
         return DB::runQuery($q, $p);
     }
 
     /**
-     * @param array $d
+     * @param UserDAO $user
      * @return PDOStatement
      * @throws Exception
      */
-    public static function insertUserInfo(array $d)
+    public static function insertUserInfo(UserDAO $user)
     {
         $q = "
             INSERT INTO user_info
@@ -227,7 +235,7 @@ class UserQuery
         ";
         // TODO: 초기값 기획 데이터 변환
         $p = [
-            ':user_id' => $d['user_id'],
+            ':user_id' => $user->userId,
             ':last_update' => Timezone::getNowUTC(),
             ':territory_id' => 0,
             ':name' => null,
@@ -245,7 +253,7 @@ class UserQuery
         return DB::runQuery($q, $p);
     }
 
-    public static function insertUserStatistics(array $d)
+    public static function insertUserStatistics(UserDAO $user)
     {
         $q = "
             INSERT INTO user_statistic
@@ -263,7 +271,7 @@ class UserQuery
         ";
         // TODO: 초기값 기획 데이터 변환
         $p = [
-            ':user_id' => $d['user_id'],
+            ':user_id' => $user->userId,
             ':war_request' => 0,
             ':war_victory' => 0,
             ':war_defeated' => 0,

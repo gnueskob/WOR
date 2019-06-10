@@ -23,7 +23,66 @@ define('PLAN_UPG_ARMY', 'upgrade_army');
 define('PLAN_WEAPON', 'weapon');
 define('PLAN_UPG_WEAPON', 'upgrade_weapon');
 define('PLAN_UNIT', 'unit');
-define('ETC', 'etc');
+define('PLAN_ETC', 'etc');
+
+// Resource
+define('PLAN_RESOURCE_ID_IRON', 1);
+define('PLAN_RESOURCE_ID_COPPER', 2);
+define('PLAN_RESOURCE_ID_COAL', 3);
+define('PLAN_RESOURCE_ID_STONE', 4);
+define('PLAN_RESOURCE_ID_WOOD', 5);
+define('PLAN_RESOURCE_ID_RICE', 6);
+define('PLAN_RESOURCE_ID_BARLEY', 7);
+define('PLAN_RESOURCE_ID_WHEAT', 8);
+define('PLAN_RESOURCE_ID_POTATO', 9);
+define('PLAN_RESOURCE_ID_CORN', 10);
+define('PLAN_RESOURCE_ID_GOLD', 11);
+define('PLAN_RESOURCE_ID_SILVER', 12);
+define('PLAN_RESOURCE_ID_PEARL', 13);
+define('PLAN_RESOURCE_ID_SPICE', 14);
+define('PLAN_RESOURCE_ID_TEA', 15);
+
+// Building
+define('PLAN_BUILDING_ID_MINE', 1);
+define('PLAN_BUILDING_ID_FARM', 2);
+define('PLAN_BUILDING_ID_TOWER', 3);
+define('PLAN_BUILDING_ID_ARMY', 4);
+define('PLAN_BUILDING_ID_CRAFT_SHOP', 5);
+define('PLAN_BUILDING_ID_GRANARY', 6);
+define('PLAN_BUILDING_ID_FACTORY', 7);
+define('PLAN_BUILDING_ID_MUSEUM', 8);
+
+// Boss
+define('PLAN_BOSS_ID_SEOLMOON', 1);
+define('PLAN_BOSS_ID_SEORYEON', 2);
+define('PLAN_BOSS_ID_SAMSEUNG', 3);
+
+// Trophy
+define('PLAN_TROPHY_ID_PORRIDGE', 1);
+define('PLAN_TROPHY_ID_SILK', 2);
+define('PLAN_TROPHY_ID_BOW', 3);
+
+// Buf
+define('PLAN_BUF_ID_LOYALTY', 1);
+define('PLAN_BUF_ID_TABOO', 2);
+define('PLAN_BUF_ID_FLOWER', 3);
+
+// Weapon
+define('PLAN_WEAPON_ID_BOW', 1);
+define('PLAN_WEAPON_ID_KNIFE', 2);
+
+// Unit
+define('UNIT_TIME', 'unit_time');
+define('WAR_PENALTY_TIME', 'war_penalty_time');
+define('TILE_H', 'tile_height_num');
+define('TILE_W', 'tile_width_num');
+define('TERRITORY_H', 'territory_height_num');
+define('TERRITORY_W', 'territory_width_num');
+define('TILE_EXPLORE_UNIT_TIME', 'tile_explore_time_coeff');
+define('TERRITORY_EXPLORE_UNIT_TIME', 'territory_explore_time_coeff');
+define('TERRITORY_EXPLORE_MANPOWER', 'territory_explore_manpower');
+define('WAR_UNIT_TIME', 'war_time_coeff');
+define('WAR_UNIT_RESOURCE', 'war_resource_coeff');
 
 class Plan
 {

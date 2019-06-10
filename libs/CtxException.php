@@ -215,6 +215,30 @@ class CtxException extends Exception
         $this->throwLogicException();
     }
 
+    /* @throws  CtxException */
+    public function alreadyUsedTile(): void
+    {
+        $this->serverErrCode = 1013;
+        $this->serverMsg = 'tile is already used another building';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function alreadyExistsBuf(): void
+    {
+        $this->serverErrCode = 1014;
+        $this->serverMsg = 'buf is already in use';
+        $this->throwLogicException();
+    }
+
+    /* @throws  CtxException */
+    public function notYetExplored(): void
+    {
+        $this->serverErrCode = 1015;
+        $this->serverMsg = 'location is not explored yet';
+        $this->throwLogicException();
+    }
+
     /**************************************
      ** Fatal Exceptions                 **
      **************************************/

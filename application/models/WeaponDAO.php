@@ -5,45 +5,34 @@ namespace lsb\App\models;
 use lsb\Libs\Timezone;
 use Exception;
 
-class BuildingDAO extends DAO
+class WeaponDAO extends DAO
 {
-    /*
-    private static $propertyToDBColumnMap = [];
-    */
     private static $dbColumToPropertyMap = [
-        'building_id' => 'buildingId',
+        'weapon_id' => 'weaponId',
         'user_id' => 'userId',
-        'territory_id' => 'territoryId',
-        'tile_id' => 'tileId',
-        'building_type' => 'buildingType',
+        'weapon_type' => 'weaponType',
         'create_time' => 'createTime',
-        'deploy_time' => 'deployTime',
         'upgrade_time' => 'upgradeTime',
         'level' => 'level',
         'toLevel' => 'to_level',
-        'manpower' => 'manpower',
         'last_update' => 'lastUpdate'
     ];
 
-    public $buildingId;
+    public $weaponId;
     public $userId;
-    public $territoryId;
-    public $tileId;
-    public $buildingType;
+    public $weaponType;
 
     public $createTime;
-    public $deployTime;
     public $upgradeTime;
     public $level;
     public $toLevel;
-    public $manpower;
     public $lastUpdate;
 
     // hidden property
     public $currentLevel;
 
     /**
-     * BuildingDAO constructor.
+     * WeaponDAO constructor.
      * @param array $data
      * @throws Exception
      */
@@ -61,18 +50,4 @@ class BuildingDAO extends DAO
             $this->currentLevel = $this->level;
         }
     }
-
-    /*
-    public function getDBColumnToPropertyMap()
-    {
-        return self::$dbColumToPropertyMap;
-    }
-
-    public function getPropertyToDBColumnMap()
-    {
-        if (count(self::$propertyToDBColumnMap) === 0) {
-            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
-        }
-        return self::$propertyToDBColumnMap;
-    }*/
 }

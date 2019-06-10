@@ -2,6 +2,8 @@
 
 namespace lsb\App\services;
 
+use lsb\App\models\TerritoryDAO;
+use lsb\App\models\TileDAO;
 use lsb\App\query\UserQuery;
 use lsb\App\query\ExplorationQuery;
 use lsb\Libs\CtxException;
@@ -12,112 +14,106 @@ use PDOException;
 class ExploratoinServices
 {
     /**
-     * @param array $data
-     * @return array|bool
-     * @throws CtxException
+     * @param int $exploreId
+     * @return bool|TileDAO
+     * @throws Exception
      */
-    public static function getTile(array $data)
+    public static function getTile(int $exploreId)
     {
-        $stmt = ExplorationQuery::selectTile($data);
+        $container = new TileDAO();
+        $container->exploreId = $exploreId;
+
+        $stmt = ExplorationQuery::selectTile($container);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return null;
         }
-        return $res;
+        return new TileDAO($res);
     }
 
     /**
-     * @param array $data
-     * @return array|bool
-     * @throws CtxException
+     * @param int $userId
+     * @return array
+     * @throws Exception|Exception
      */
-    public static function getTilesByUser(array $data)
+    public static function getTilesByUser(int $userId)
     {
-        $stmt = ExplorationQuery::selectTilesByUser($data);
+        $container = new TileDAO();
+        $container->userId = $userId;
+        $stmt = ExplorationQuery::selectTilesByUser($container);
         $res = $stmt->fetchAll();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return [];
         }
         foreach ($res as $key => $value) {
-            $res[$key] = DB::trimColumn($value);
+            $res[$key] = new TileDAO($value);
         }
         return $res;
     }
 
     /**
-     * @param array $data
-     * @return mixed
-     * @throws CtxException
+     * @param int $exploreId
+     * @return TerritoryDAO
+     * @throws CtxException|Exception
      */
-    public static function getTerritory(array $data)
+    public static function getTerritory(int $exploreId)
     {
-        $stmt = ExplorationQuery::selectTerritory($data);
+        $container = new TerritoryDAO();
+        $container->exploreId = $exploreId;
+
+        $stmt = ExplorationQuery::selectTerritory($container);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return null;
         }
-        return $res;
+        return new TerritoryDAO($res);
     }
 
     /**
-     * @param array $data
+     * @param int $userId
      * @return array|bool
-     * @throws CtxException
+     * @throws CtxException|Exception
      */
-    public static function getTerritoriesByUser(array $data)
+    public static function getTerritoriesByUser(int $userId)
     {
-        $stmt = ExplorationQuery::selectTerritoriesByUser($data);
+        $container = new TerritoryDAO();
+        $container->userId = $userId;
+
+        $stmt = ExplorationQuery::selectTerritoriesByUser($container);
         $res = $stmt->fetchAll();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return [];
         }
         foreach ($res as $key => $value) {
-            $res[$key] = DB::trimColumn($value);
+            $res[$key] = new TerritoryDAO($value);
         }
         return $res;
     }
 
     /**
-     * @param array $data
+     * @param int $userId
+     * @param int $tileId
+     * @param string $date
      * @return string
      * @throws CtxException
      */
-    public static function exploreTile(array $data)
+    public static function exploreTile(int $userId, int $tileId, string $date)
     {
-        $db = DB::getInstance()->getDBConnection();
+        $container = new TileDAO();
+        $container->userId = $userId;
+        $container->tileId = $tileId;
+        $container->exploreTime = $date;
 
-        try {
-            $db->beginTransaction();
-
-            // 타일 탐사 데이터 추가
-            $stmt = ExplorationQuery::insertTile($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            // 타일 탐사 job 추가
-            $exploreId = $db->lastInsertId();
-            $data['explore_id'] = $exploreId;
-            $stmt = ExplorationQuery::insertTileExplore($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-
-            return $exploreId;
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
+        // 타일 탐사 데이터 추가
+        $stmt = ExplorationQuery::insertTile($container);
+        if ($stmt->rowCount() === 0) {
+            (new CtxException())->insertFail();
         }
+        $db = DB::getInstance()->getDBConnection();
+        return $db->lastInsertId();
     }
 
-    /**
-     * @param array $data
-     * @throws CtxException
-     */
+    /*
     public static function resolveExploreTile(array $data)
     {
         // 기존 타일 탐사 정보 검색
@@ -152,55 +148,32 @@ class ExploratoinServices
             $db->rollBack();
             throw $e;
         }
-    }
+    }*/
 
     /**
-     * @param array $data
+     * @param int $userId
+     * @param int $territoryId
+     * @param string $date
      * @return string
      * @throws CtxException
      */
-    public static function exploreTerritory(array $data)
+    public static function exploreTerritory(int $userId, int $territoryId, string $date)
     {
-        $db = DB::getInstance()->getDBConnection();
+        $container = new TerritoryDAO();
+        $container->userId = $userId;
+        $container->territoryId = $territoryId;
+        $container->exploreTime = $date;
 
-        try {
-            $db->beginTransaction();
-
-            // 유저 인력 갱신
-            $stmt = UserQuery::updateUserInfoWithUsedManpower($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
-
-            // 영토 탐사 데이터 추가
-            $stmt = ExplorationQuery::insertTerritory($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            // 영토 탐사 job 추가
-            $exploreId = $db->lastInsertId();
-            $data['explore_id'] = $exploreId;
-            $stmt = ExplorationQuery::insertTerritoryExplore($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-
-            return $exploreId;
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
+        $stmt = ExplorationQuery::insertTerritory($container);
+        if ($stmt->rowCount() === 0) {
+            (new CtxException())->insertFail();
         }
+
+        $db = DB::getInstance()->getDBConnection();
+        return $db->lastInsertId();
     }
 
-    /**
-     * @param array $data
-     * @throws CtxException
-     */
+    /*
     public static function resolveExploreTerritory(array $data)
     {
         // 기존 영토 탐사 정보 검색
@@ -235,5 +208,5 @@ class ExploratoinServices
             $db->rollBack();
             throw $e;
         }
-    }
+    }*/
 }

@@ -2,9 +2,7 @@
 
 namespace lsb\App\services;
 
-use lsb\App\controller\User;
 use lsb\App\models\UserDAO;
-use lsb\App\models\Utils;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use lsb\App\query\UserQuery;
@@ -21,12 +19,12 @@ class UserServices
     public static function getUser(int $userId)
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty(['userId' => $userId]);
-        $data = Utils::getQueryParameters($userContainer);
-        $stmt = UserQuery::selectUser($data);
+        $userContainer->userId = $userId;
+
+        $stmt = UserQuery::selectUser($userContainer);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return null;
         } else {
             return new UserDAO($res);
         }
@@ -41,12 +39,10 @@ class UserServices
     public static function getUserByHive(string $hiveId, int $hiveUid)
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty([
-            'hiveId' => $hiveId,
-            'hiveUid' => $hiveUid
-        ]);
-        $data = Utils::getQueryParameters($userContainer);
-        $stmt = UserQuery::selectUserByHive($data);
+        $userContainer->hiveId = $hiveId;
+        $userContainer->hiveUid = $hiveUid;
+
+        $stmt = UserQuery::selectUserPlatformByHive($userContainer);
         $res = $stmt->fetch();
         if ($res === false) {
             return null;
@@ -56,18 +52,18 @@ class UserServices
 
     /**
      * @param int $userId
-     * @return UserDAO
-     * @throws CtxException|Exception
+     * @return UserDAO|null
+     * @throws Exception
      */
     public static function getUserInfo(int $userId)
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty(['userId' => $userId]);
-        $data = Utils::getQueryParameters($userContainer);
-        $stmt = UserQuery::selectUserInfo($data);
+        $userContainer->userId = $userId;
+
+        $stmt = UserQuery::selectUserInfo($userContainer);
         $res = $stmt->fetch();
         if ($res === false) {
-            (new CtxException())->selectFail();
+            return null;
         }
         return new UserDAO($res);
     }
@@ -80,12 +76,10 @@ class UserServices
     public static function setUserLastVisit(int $userId, string $date)
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty([
-            'userId' => $userId,
-            'lastVisit' => $date
-        ]);
-        $data = Utils::getQueryParameters($userContainer);
-        $stmt = UserQuery::updateUserInfoByUserId($data);
+        $userContainer->userId = $userId;
+        $userContainer->lastVisit = $date;
+
+        $stmt = UserQuery::updateUserInfoWithLastVisit($userContainer);
         $cnt = $stmt->rowCount();
         if ($cnt === 0) {
             (new CtxException())->updateFail();
@@ -101,13 +95,11 @@ class UserServices
     public static function setUserName(int $userId, string $name)
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty([
-            'userId' => $userId,
-            'name' => $name
-        ]);
-        $data = Utils::getQueryParameters($userContainer);
+        $userContainer->userId = $userId;
+        $userContainer->name = $name;
+
         try {
-            $stmt = UserQuery::updateUserInfoByUserId($data);
+            $stmt = UserQuery::updateUserInfoWithName($userContainer);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->updateFail();
             }
@@ -131,13 +123,11 @@ class UserServices
     public static function setUserTerritory(int $userId, int $territoryId)
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty([
-            'userId' => $userId,
-            'territoryId' => $territoryId
-        ]);
-        $data = Utils::getQueryParameters($userContainer);
+        $userContainer->userId = $userId;
+        $userContainer->territoryId = $territoryId;
+
         try {
-            $stmt = UserQuery::updateUserInfoByUserId($data);
+            $stmt = UserQuery::updateUserInfoWithTerritory($userContainer);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->updateFail();
             }
@@ -161,32 +151,29 @@ class UserServices
     public static function registerNewAccount(string $hiveId, int $hiveUid): int
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty([
-            'hiveId' => $hiveId,
-            'hiveUid' => $hiveUid
-        ]);
+        $userContainer->hiveId = $hiveId;
+        $userContainer->hiveUid = $hiveUid;
+
         $db = DB::getInstance()->getDBConnection();
         try {
             $db->beginTransaction();
 
             // user_platform 테이블 레코드 추가
-            $data = Utils::getQueryParameters($userContainer);
-            $stmt = UserQuery::insertUserPlatform($data);
+            $stmt = UserQuery::insertUserPlatform($userContainer);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->insertFail('registerNewAccount1');
             }
             $userId = $db->lastInsertId();
-            $userContainer->updateProperty(['userId' => $userId]);
-            $data = Utils::getQueryParameters($userContainer);
+            $userContainer->userId = $userId;
 
             // user_info 테이블 레코드 추가
-            $stmt = UserQuery::insertUserInfo($data);
+            $stmt = UserQuery::insertUserInfo($userContainer);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->insertFail('registerNewAccount2');
             }
 
             // user_statistics 테이블 레코드 추가
-            $stmt = UserQuery::insertUserStatistics($data);
+            $stmt = UserQuery::insertUserStatistics($userContainer);
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->insertFail('registerNewAccount3');
             }
@@ -217,21 +204,19 @@ class UserServices
         int $luxuryResource,
         int $castleLevel,
         string $upgradeTime
-    )
-    {
+    ) {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty([
-            'userId' => $userId,
-            'tacticalResource' => $tacticalResource,
-            'foodResource' => $foodResource,
-            'luxuryResource' => $luxuryResource,
-            'castleLevel' => $castleLevel,
-            'castleToLevel' => $castleLevel + 1,
-            'upgradeTime' => $upgradeTime
-        ]);
-        $data = Utils::getQueryParameters($userContainer);
+        $userContainer->userId = $userId;
+        $userContainer->tacticalResource = $tacticalResource;
+        $userContainer->foodResource = $foodResource;
+        $userContainer->luxuryResource = $luxuryResource;
+        $userContainer->castleLevel = $castleLevel;
+        $userContainer->castleToLevel = $castleLevel + 1;
+        $userContainer->upgradeTime = $upgradeTime;
+        $userContainer->userId = $userId;
+
         // 유저 자원 소모시키기 및 업그레이드 갱신
-        $stmt = UserQuery::updateUserInfoByUserId($data);
+        $stmt = UserQuery::updateUserInfoWithUpgradeAndResource($userContainer);
         if ($stmt->rowCount() === 0) {
             (new CtxException())->updateFail();
         }
@@ -288,17 +273,31 @@ class UserServices
         int $tacticalResource,
         int $foodResource,
         int $luxuryResource
-    )
+    ) {
+        $userContainer = new UserDAO();
+        $userContainer->userId = $userId;
+        $userContainer->tacticalResource = $tacticalResource;
+        $userContainer->foodResource = $foodResource;
+        $userContainer->luxuryResource = $luxuryResource;
+
+        $stmt = UserQuery::updateUserInfoWithResource($userContainer);
+        if ($stmt->rowCount() === 0) {
+            (new CtxException())->updateFail('setUserTerritory');
+        }
+    }
+
+    /**
+     * @param int $userId
+     * @param int $manpowerUsed
+     * @throws CtxException
+     */
+    public static function modifyUserUsedManpower(int $userId, int $manpowerUsed)
     {
         $userContainer = new UserDAO();
-        $userContainer->updateProperty([
-            'userId' => $userId,
-            'tacticalResource' => $tacticalResource,
-            'foodResource' => $foodResource,
-            'luxuryResource' => $luxuryResource
-        ]);
-        $data = Utils::getQueryParameters($userContainer);
-        $stmt = UserQuery::updateUserInfoByUserId($data);
+        $userContainer->userId = $userId;
+        $userContainer->manpowerUsed = $manpowerUsed;
+
+        $stmt = UserQuery::updateUserInfoWithUsedManpower($userContainer);
         if ($stmt->rowCount() === 0) {
             (new CtxException())->updateFail('setUserTerritory');
         }

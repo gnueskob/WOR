@@ -144,7 +144,7 @@ CREATE TABLE user_statistics (
   * upgrade:              건물 업그레이드 수준
   * manpower:             건물에 투입된 인력
 */
-CREATE TABLE building_upgradeable (
+CREATE TABLE building (
   building_id     BIGINT        NOT NULL      AUTO_INCREMENT,
   user_id         BIGINT        NOT NULL,
   territory_id    BIGINT        NOT NULL,
@@ -160,23 +160,7 @@ CREATE TABLE building_upgradeable (
   last_update     DATETIME      NULL,
   PRIMARY KEY (building_id),
   INDEX idx_user_deployed (user_id, deploy_finish_time),
-  UNIQUE KEY uk_building_tile (user_id, tile_id)
-);
-
-CREATE TABLE building (
-  building_id     BIGINT        NOT NULL      AUTO_INCREMENT,
-  user_id         BIGINT        NOT NULL,
-  territory_id    BIGINT        NOT NULL,
-  tile_id         BIGINT        NOT NULL,
-  building_type   BIGINT        NOT NULL,
-
-  create_time     DATETIME   NULL,
-  deploy_time     DATETIME   NULL,
-  manpower        BIGINT        NOT NULL      DEFAULT 0,
-  last_update     DATETIME      NULL,
-  PRIMARY KEY (building_id),
-  INDEX idx_user_deployed (user_id, deploy_finish_time),
-  UNIQUE KEY uk_building_tile (user_id, tile_id)
+  UNIQUE KEY uk_building_tile (tile_id)
 );
 
 /** 유저 버프 정보
@@ -192,8 +176,8 @@ CREATE TABLE buf (
   user_id       BIGINT    NOT NULL,
   buf_type      BIGINT    NOT NULL,
   finish_time   DATETIME  NOT NULL,
-  last_update   DATETIME  NULL,
   PRIMARY KEY (buf_id),
+  UNIQUE KEY (user_id, buf_type),
   INDEX idx_user_buf (user_id, finish_time)
 );
 
@@ -211,38 +195,16 @@ CREATE TABLE weapon (
   weapon_id     BIGINT        NOT NULL      AUTO_INCREMENT,
   user_id       BIGINT        NOT NULL,
   weapon_type   BIGINT        NOT NULL,
-  upgrade       TINYINT       NOT NULL      DEFAULT 1,
-  upgrade_time  DATETIME      NULL,
+
   create_time   DATETIME      NULL,
+  upgrade_time  DATETIME      NULL,
+  level         TINYINT       NOT NULL      DEFAULT 1,
+  to_level      TINYINT       NOT NULL      DEFAULT 1,
   last_update   DATETIME      NULL,
   PRIMARY KEY (weapon_id),
   UNIQUE INDEX uk_user_weaopn (user_id, weapon_type),
   INDEX idx_user_weapon_created (user_id, create_time)
 );
-
-CREATE TABLE weapon_upgrade (
-  upgrade_id          BIGINT      NOT NULL,
-  weapon_id   BIGINT      NOT NULL,
-  user_id     BIGINT      NOT NULL,
-  from_level  BIGINT      NOT NULL,
-  to_level    BIGINT      NOT NULL,
-  upgrade_finish_time BIGINT      NOT NULL,
-
-  PRIMARY KEY (id),
-  UNIQUE INDEX idx_weapon (weapon_id),
-  INDEX idx_time (finish_time)
-);
-
-CREATE TABLE weapon_create (
-  create_id          BIGINT      NOT NULL,
-  weapon_id   BIGINT      NOT NULL,
-  user_id     BIGINT      NOT NULL,
-  create_finish_time BIGINT      NOT NULL,
-
-  PRIMARY KEY (id),
-  UNIQUE INDEX idx_weapon (weapon_id),
-  INDEX idx_time (finish_time)
-)
 
 /** 유저 영내 탐사 정보 테이블 구현
   * @desc: 유저가 자신의 영토를 탐사할 때의 정보

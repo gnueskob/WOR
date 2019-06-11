@@ -7,6 +7,7 @@ use lsb\App\query\BuildingQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use Exception;
+use lsb\Libs\Timezone;
 use PDOException;
 
 class BuildingServices
@@ -14,7 +15,7 @@ class BuildingServices
     /**
      * @param int $userId
      * @return BuildingDAO
-     * @throws CtxException|Exception
+     * @throws Exception
      */
     public static function getBuilding(int $userId)
     {
@@ -31,7 +32,7 @@ class BuildingServices
 
     /**
      * @param int $userId
-     * @return array|bool
+     * @return BuildingDAO[]|bool
      * @throws Exception
      */
     public static function getBuildingsByUser(int $userId)
@@ -259,4 +260,53 @@ class BuildingServices
             throw $e;
         }
     }*/
+
+    /*************************************************************/
+
+    /**
+     * @param int $userId
+     * @param array $armyManpower
+     * @return int|null
+     * @throws CtxException|Exception
+     */
+    public static function getArmyManpower(int $userId, array $armyManpower)
+    {
+        $manpowerList = [];
+        $buildingIds = [];
+        foreach ($armyManpower as $value) {
+            $manpowerList[$value['building_id']] = $value['manpower'];
+            $buildingIds[] = $value['building_id'];
+        }
+
+        $stmt = BuildingQuery::selectBuildingsById($buildingIds);
+        $res = $stmt->fetchAll();
+        if ($res === false) {
+            return null;
+        }
+        $buildings = [];
+        foreach ($res as $value) {
+            $buildings[] = new BuildingDAO($value);
+        }
+
+        $totalManpower = 0;
+        /* @var BuildingDAO[] $buildings */
+        foreach ($buildings as $building) {
+            if ($building->userId !== $userId) {
+                (new CtxException())->invaildUser();
+            }
+            if ($building->buildingType !== PLAN_BUILDING_ID_ARMY) {
+                (new CtxException())->invalidType();
+            }
+            if ($building->manpower < $manpowerList[$building->buildingId]) {
+                (new CtxException())->manpowerInsufficient();
+            }
+            if (is_null($building->deployTime) ||
+                $building->deployTime > Timezone::getNowUTC()) {
+                continue;
+            }
+            $totalManpower += $building->manpower;
+        }
+
+        return $totalManpower;
+    }
 }

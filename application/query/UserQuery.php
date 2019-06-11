@@ -45,7 +45,18 @@ class UserQuery
             FROM user_info
             WHERE user_id = :user_id;
         ";
-        $p = ['user_id' => $user->userId];
+        $p = [':user_id' => $user->userId];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function selectUserInfoByTerritory(UserDAO $user)
+    {
+        $q = "
+            SELECT *
+            FROM user_info
+            WHERE territory_id = :territory_id;
+        ";
+        $p = [':territory_id' => $user->territoryId];
         return DB::runQuery($q, $p);
     }
 

@@ -59,7 +59,7 @@ class Exploration extends Router implements ISubRouter
             $l2dist = abs($x - $centerX) + abs($y - $centerY);
             $takenTime = $unit['unit_time'] * $unit['tile_explore_time_coeff'] * $l2dist;
 
-            $exploreTime = (new Timezone())->addDate("{$takenTime} seconds");
+            $exploreTime = (new Timezone())->addDate("{$takenTime} seconds")->getTime();
             $exploreId = ExploratoinServices::exploreTile($userId, $tileId, $exploreTime);
 
             $tile = ExploratoinServices::getTile($exploreId);
@@ -129,7 +129,7 @@ class Exploration extends Router implements ISubRouter
             }
 
             $manpowerUsed = $user->manpowerUsed - $neededManpower;
-            $exploreTime = (new Timezone())->addDate("{$takenTime} seconds");
+            $exploreTime = (new Timezone())->addDate("{$takenTime} seconds")->getTime();
 
             $db = DB::getInstance()->getDBConnection();
             try {

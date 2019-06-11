@@ -48,7 +48,7 @@ class Buf extends Router implements ISubRouter
 
             // TODO: 충성도 적용
             $defaultFinishTime = $plan['default_finish_time'];
-            $finishTime = (new Timezone())->addDate("{$defaultFinishTime} seconds");
+            $finishTime = (new Timezone())->addDate("{$defaultFinishTime} seconds")->getTime();
 
             if ($plan['type'] === 0) {
                 // 전리품 버프

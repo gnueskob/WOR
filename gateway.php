@@ -28,9 +28,8 @@ $app->post('/plan', function () {
 $app->get('/phpinfo', function () {
     phpinfo();
 });
-$app->get('/test', function () {
-    $t = new \lsb\App\models\UserDAO([], true);
-    $t->update('userId', 1);
-    print_r($t->getQueryParameters(\lsb\App\models\UserDAO::$dbColumMap));
+$app->post('/test', function (\lsb\Libs\Context $ctx) {
+    $a = $ctx->getBody();
+    print_r($a['army_manpower']);
 });
 $app->run();

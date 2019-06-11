@@ -59,7 +59,7 @@ class Weapon extends Router implements ISubRouter
 
             $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME);
             $neededTime = $plan['create_unit_time'] * $unitTime;
-            $creatTime = (new Timezone())->addDate("{$neededTime} seconds");
+            $creatTime = (new Timezone())->addDate("{$neededTime} seconds")->getTime();
 
             $db = DB::getInstance()->getDBConnection();
             try {
@@ -136,7 +136,7 @@ class Weapon extends Router implements ISubRouter
 
             $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME);
             $neededTime = $plan['upgrade_unit_time'] * $unitTime;
-            $upgradeTime = (new Timezone())->addDate("{$neededTime} seconds");
+            $upgradeTime = (new Timezone())->addDate("{$neededTime} seconds")->getTime();
 
             $db = DB::getInstance()->getDBConnection();
             try {

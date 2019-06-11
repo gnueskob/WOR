@@ -41,6 +41,7 @@ class BuildingDAO extends DAO
 
     // hidden property
     public $currentLevel;
+    public $activated;
 
     /**
      * BuildingDAO constructor.

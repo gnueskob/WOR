@@ -33,6 +33,26 @@ class ExploratoinServices
 
     /**
      * @param int $userId
+     * @param int $tileId
+     * @return TileDAO|null
+     * @throws Exception
+     */
+    public static function getTileByUserAndTile(int $userId, int $tileId)
+    {
+        $container = new TileDAO();
+        $container->userId = $userId;
+        $container->tileId = $tileId;
+
+        $stmt = ExplorationQuery::selectTileByUserAndTile($container);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return null;
+        }
+        return new TileDAO($res);
+    }
+
+    /**
+     * @param int $userId
      * @return array
      * @throws Exception|Exception
      */
@@ -62,6 +82,26 @@ class ExploratoinServices
         $container->exploreId = $exploreId;
 
         $stmt = ExplorationQuery::selectTerritory($container);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return null;
+        }
+        return new TerritoryDAO($res);
+    }
+
+    /**
+     * @param int $userId
+     * @param int $territoryId
+     * @return TerritoryDAO|null
+     * @throws Exception
+     */
+    public static function getTerritoryByUserAndTerritory(int $userId, int $territoryId)
+    {
+        $container = new TerritoryDAO();
+        $container->userId = $userId;
+        $container->territoryId = $territoryId;
+
+        $stmt = ExplorationQuery::selectTerritoryByUserAndTerritory($container);
         $res = $stmt->fetch();
         if ($res === false) {
             return null;

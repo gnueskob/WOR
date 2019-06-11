@@ -159,7 +159,7 @@ CREATE TABLE building (
   manpower        BIGINT        NOT NULL      DEFAULT 0,
   last_update     DATETIME      NULL,
   PRIMARY KEY (building_id),
-  INDEX idx_user_deployed (user_id, deploy_finish_time),
+  INDEX idx_user_deployed (user_id, deploy_time),
   UNIQUE KEY uk_building_tile (tile_id)
 );
 
@@ -217,18 +217,9 @@ CREATE TABLE tile (
   explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
   user_id           BIGINT        NOT NULL,
   tile_id           BIGINT        NOT NULL,
-  explore_time       DATETIME      NOT NULL,
-  last_update       DATETIME      NULL,
+  explore_time      DATETIME      NOT NULL,
   PRIMARY KEY (explore_id),
   UNIQUE INDEX idx_user_explore (user_id, tile_id)
-);
-
-CREATE TABLE tile_explore (
-  explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
-  tile_id           BIGINT        NOT NULL,
-  explore_finish_time       DATETIME      NOT NULL,
-  PRIMARY KEY (explore_id),
-  UNIQUE KEY uk_tile (tile_id)
 );
 
 /** 유저 영외 탐사 정보 테이블 구현
@@ -242,18 +233,9 @@ CREATE TABLE territory (
   explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
   user_id           BIGINT        NOT NULL,
   territory_id      BIGINT        NOT NULL,
-  explore_time       DATETIME      NOT NULL,
-  last_update       DATETIME      NULL,
+  explore_time      DATETIME      NOT NULL,
   PRIMARY KEY (explore_id),
   UNIQUE INDEX idx_user_explore (user_id, territory_id)
-);
-
-CREATE TABLE tile_explore (
-  explore_id        BIGINT        NOT NULL    AUTO_INCREMENT,
-  territory_id           BIGINT        NOT NULL,
-  explore_finish_time       DATETIME      NOT NULL,
-  PRIMARY KEY (explore_id),
-  UNIQUE KEY uk_tile (territory_id)
 );
 
 /** 전쟁(출전) / 보스 레이드 출전 정보
@@ -277,15 +259,10 @@ CREATE TABLE war (
   manpower      BIGINT        NOT NULL,
   food_resource BIGINT        NOT NULL,
   finish_time   DATETIME      NOT NULL,
-  last_update   DATETIME      NOT NULL,
   PRIMARY KEY (war_id),
-  INDEX idx_user_war (user_id, finish_time),
-  INDEX idx_territory (territory_id, finish_time),
+  UNIQUE KEY (user_id),
+  UNIQUE KEY (territory_id)
 );
-
-CREATE TABLE war_end (
-
-)
 
 /** 레이드 정보
   * @des: 레이드 신청시 생성되는 레이드 정보

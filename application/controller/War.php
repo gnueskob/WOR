@@ -5,6 +5,7 @@ namespace lsb\App\controller;
 use lsb\App\models\BuildingDAO;
 use lsb\App\models\Utils;
 use lsb\App\services\BuildingServices;
+use lsb\App\services\ExploratoinServices;
 use lsb\App\services\UserServices;
 use lsb\App\services\WarServices;
 use lsb\Libs\Context;
@@ -26,10 +27,6 @@ class War extends Router implements ISubRouter
         $router->get('/info/:user_id', function (Context $ctx) {
             $data = $ctx->req->getParams();
             $userId = $data['user_id'];
-            $territoryId = $data['territory_id'];
-
-            WarServices::refreshWarByUser($userId);
-            WarServices::refreshWarByTerritory($territoryId);
 
             $war = WarServices::selectUserWar($userId);
             $ctx->addBody(['war' => Utils::toArray($war)]);
@@ -40,9 +37,13 @@ class War extends Router implements ISubRouter
             $data = $ctx->getBody();
             $userId = $data['user_id'];
             $territoryId = $data['territory_id'];
+            $armyManpower = $data['manpower'];
 
-            WarServices::refreshWarByUser($userId);
-            WarServices::refreshWarByTerritory($territoryId);
+            // 해당 영토 탐사 했는지 여부
+            $territory = ExploratoinServices::getTerritoryByUserAndTerritory($userId, $territoryId);
+            if (is_null($territory) || $territory->exploreTime > Timezone::getNowUTC()) {
+                (new CtxException())->notYetExplored();
+            }
 
             // 해당 영토 정보
             $territory = Plan::getData(PLAN_TERRITORY, $territoryId);
@@ -63,31 +64,15 @@ class War extends Router implements ISubRouter
 
             $unitTime = $unit[UNIT_TIME]['value'];
             $timeCoefficient = $unit[WAR_UNIT_TIME]['value'];
-            $takenTime = $unitTime * $timeCoefficient * $l2dist;
-
-            // 인력 소모 필요
-            $manpowerSpinlockKey = SpinLock::getKey(MANPOWER, $userId);
-            SpinLock::spinLock($manpowerSpinlockKey, 2);
-
-            // 군량 소모 필요
-            $resourceSpinlockKey = SpinLock::getKey(RESOURCE, $userId);
-            try {
-                SpinLock::spinLock($resourceSpinlockKey, 1);
-            } catch (Exception $e) {
-                SpinLock::spinUnlock($manpowerSpinlockKey);
-            }
-
-            $buildings = BuildingServices::getBuildingsByUser($userId);
+            $defaultWarPrepareTime = $unit[WAR_PREPARE_TIME]['value'];
+            $takenTime = $unitTime * ($defaultWarPrepareTime + $timeCoefficient * $l2dist);
+            $prepareTime = (new Timezone())->addDate("{$defaultWarPrepareTime} seconds")->getTime();
+            $finishTime = (new Timezone())->addDate("{$takenTime} seconds")->getTime();
 
             // 병영에 등록된 병력
-            $totalManpower = 0;
-            foreach ($buildings as $building) {
-                if ($building->buildingType !== PLAN_BUILDING_ID_ARMY ||
-                    is_null($building->deployTime) ||
-                    $building->deployTime > Timezone::getNowUTC()) {
-                    continue;
-                }
-                $totalManpower += $building->manpower;
+            $totalManpower = BuildingServices::getArmyManpower($userId, $armyManpower);
+            if ($totalManpower === 0) {
+                (new CtxException())->manpowerInsufficient();
             }
 
             // 총 필요한 군량
@@ -99,7 +84,8 @@ class War extends Router implements ISubRouter
                 (new CtxException())->resourceInsufficient();
             }
 
-            // TODO: 일단 전쟁 레코드 추가는 하는데... 완료 처리시 병력 어캐?
+            // 전쟁 출전 준비 시작시의 타겟 영토 건물 기준으로 계산
+            $targetDefense = UserServices::getTargetDefense($territoryId, $finishTime);
         });
     }
 }

@@ -10,6 +10,7 @@ class WarDAO extends DAO
         'territory_id' => 'territoryId',
         'attack' => 'attack',
         'manpower' => 'manpower',
+        'building_list' => 'buildingList',
         'food_resource' => 'foodResource',
         'finish_time' => 'finishTime'
     ];
@@ -19,6 +20,7 @@ class WarDAO extends DAO
     public $territoryId;
     public $attack;
     public $manpower;
+    public $buildingList;
     public $foodResource;
     public $finishTime;
 

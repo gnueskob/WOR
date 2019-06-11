@@ -140,8 +140,10 @@ class User extends Router implements ISubRouter
                 (new CtxException())->resourceInsufficient();
             }
 
-            // TODO: 완료 시간 기획 데이터로 변환
-            $upgradeTime = (new Timezone())->addDate('600 seconds')->getTime();
+            $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME);
+            $castleUpgradeUnitTime = Plan::getData(PLAN_BUILDING, PLAN_BUILDING_ID_CASTLE);
+            $neededTime = $castleUpgradeUnitTime * $unitTime['value'];
+            $upgradeTime = (new Timezone())->addDate("{$neededTime} seconds")->getTime();
 
             UserServices::upgradeUserCastle(
                 $userId,

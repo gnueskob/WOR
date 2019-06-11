@@ -239,6 +239,14 @@ class CtxException extends Exception
         $this->throwLogicException();
     }
 
+    /* @throws  CtxException */
+    public function invalidType(): void
+    {
+        $this->serverErrCode = 1016;
+        $this->serverMsg = 'type of body in request is invalid';
+        $this->throwLogicException();
+    }
+
     /**************************************
      ** Fatal Exceptions                 **
      **************************************/

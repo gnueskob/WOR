@@ -26,6 +26,12 @@ class WarServices
         return new WarDAO($res);
     }
 
+    public static function prepareWar(
+        int $userId,
+        int $territoryId,
+        int $manpower,
+        int $)
+
     /**
      * @param int $userId
      * @throws Exception

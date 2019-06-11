@@ -20,6 +20,21 @@ class ExplorationQuery
         return DB::runQuery($q, $p);
     }
 
+    public static function selectTileByUserAndTile(TileDAO $tile)
+    {
+        $q = "
+                SELECT *
+                FROM tile
+                WHERE user_id = :user_id
+                  AND tile_id = :tile_id;
+            ";
+        $p = [
+            ':user_id' => $tile->userId,
+            ':tile_id' => $tile->tileId
+        ];
+        return DB::runQuery($q, $p);
+    }
+
     public static function selectTilesByUser(TileDAO $tile)
     {
         $q = "
@@ -39,6 +54,21 @@ class ExplorationQuery
             WHERE explore_id = :explore_id;
         ";
         $p = [':explore_id' => $territory->exploreId];
+        return DB::runQuery($q, $p);
+    }
+
+    public static function selectTerritoryByUserAndTerritory(TerritoryDAO $territory)
+    {
+        $q = "
+            SELECT *
+            FROM territory 
+            WHERE user_id = :user_id
+              AND territory_id = :territory_id;
+        ";
+        $p = [
+            'user_id' => $territory->userId,
+            ':territory_id' => $territory->territoryId
+        ];
         return DB::runQuery($q, $p);
     }
 

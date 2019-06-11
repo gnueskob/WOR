@@ -7,6 +7,7 @@ use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use lsb\App\query\UserQuery;
 use Exception;
+use lsb\Libs\Plan;
 use PDOException;
 
 class UserServices
@@ -61,6 +62,24 @@ class UserServices
         $userContainer->userId = $userId;
 
         $stmt = UserQuery::selectUserInfo($userContainer);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return null;
+        }
+        return new UserDAO($res);
+    }
+
+    /**
+     * @param int $territoryId
+     * @return UserDAO|null
+     * @throws Exception
+     */
+    public static function getUserInfoByTerritory(int $territoryId)
+    {
+        $userContainer = new UserDAO();
+        $userContainer->territoryId = $territoryId;
+
+        $stmt = UserQuery::selectUserInfoByTerritory($userContainer);
         $res = $stmt->fetch();
         if ($res === false) {
             return null;
@@ -301,5 +320,36 @@ class UserServices
         if ($stmt->rowCount() === 0) {
             (new CtxException())->updateFail('setUserTerritory');
         }
+    }
+
+    /**************************************************************************/
+
+    /**
+     * @param int $territoryId
+     * @param string $warTime
+     * @return null
+     * @throws Exception
+     */
+    public static function getTargetDefense(int $territoryId, string $warTime)
+    {
+        $targetUser = UserServices::getUserInfoByTerritory($territoryId);
+
+        // 성 방어력
+        $planCastle = Plan::getData(PLAN_UPG_CASTLE, $targetUser->currentCastleLevel);
+        $castleDefense = $planCastle['defense'];
+
+        // 방어탑 방어력
+        $planTowers = Plan::getDataAll(PLAN_UPG_DEF_TOWER);
+        $towerDefense = 0;
+        $targetBuildings = BuildingServices::getBuildingsByUser($targetUser->userId);
+        foreach ($targetBuildings as $building) {
+            if ($building->buildingType !== PLAN_BUILDING_ID_TOWER ||
+                is_null($building->deployTime) ||
+                $building->deployTime > $warTime) {
+                continue;
+            }
+            $towerDefense += $planTowers[$building->currentLevel]['defense'];
+        }
+        return $castleDefense + $towerDefense;
     }
 }

@@ -21,14 +21,14 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
-    public static function selectBuildingByTile(BuildingDAO $building)
+    public static function selectBuildingsById(array $buildingIds)
     {
         $q = "
             SELECT *
             FROM building
-            WHERE tile_id = :tile_id;
+            WHERE building_id IN (:building_ids);
         ";
-        $p = [':tile_id' => $building->tileId];
+        $p = [':building_id' => implode(',', $buildingIds)];
         return DB::runQuery($q, $p);
     }
 

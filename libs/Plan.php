@@ -43,6 +43,7 @@ define('PLAN_RESOURCE_ID_SPICE', 14);
 define('PLAN_RESOURCE_ID_TEA', 15);
 
 // Building
+define('PLAN_BUILDING_ID_CASTLE', 0);
 define('PLAN_BUILDING_ID_MINE', 1);
 define('PLAN_BUILDING_ID_FARM', 2);
 define('PLAN_BUILDING_ID_TOWER', 3);
@@ -81,6 +82,7 @@ define('TERRITORY_W', 'territory_width_num');
 define('TILE_EXPLORE_UNIT_TIME', 'tile_explore_time_coeff');
 define('TERRITORY_EXPLORE_UNIT_TIME', 'territory_explore_time_coeff');
 define('TERRITORY_EXPLORE_MANPOWER', 'territory_explore_manpower');
+define('WAR_PREPARE_TIME', 'war_time');
 define('WAR_UNIT_TIME', 'war_time_coeff');
 define('WAR_UNIT_RESOURCE', 'war_resource_coeff');
 

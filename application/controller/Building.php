@@ -41,7 +41,7 @@ class Building extends Router implements ISubRouter
             $buildingType = $data['building_type'];
 
             // 해당 위치가 탐사되었는지 검사
-            $tile = ExploratoinServices::getTile($tileId);
+            $tile = ExploratoinServices::getTileByUserAndTile($userId, $tileId);
             if (is_null($tile) || $tile->exploreTime > Timezone::getNowUTC()) {
                 (new CtxException())->notYetExplored();
             }
@@ -67,7 +67,7 @@ class Building extends Router implements ISubRouter
 
             $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME);
             $neededTime = $plan['create_unit_time'] * $unitTime['value'];
-            $creatTime = (new Timezone())->addDate("{$neededTime} seconds");
+            $creatTime = (new Timezone())->addDate("{$neededTime} seconds")->getTime();
 
             $db = DB::getInstance()->getDBConnection();
             try {
@@ -166,7 +166,7 @@ class Building extends Router implements ISubRouter
 
             $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME);
             $neededTime = $plan['upgrade_unit_time'] * $unitTime['value'];
-            $upgradeTime = (new Timezone())->addDate("{$neededTime} seconds");
+            $upgradeTime = (new Timezone())->addDate("{$neededTime} seconds")->getTime();
 
             $db = DB::getInstance()->getDBConnection();
             try {
@@ -252,7 +252,7 @@ class Building extends Router implements ISubRouter
 
             $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME);
             $neededTime = $plan['deploy_unit_time'] * $unitTime['value'];
-            $deployTime = (new Timezone())->addDate("{$neededTime} seconds");
+            $deployTime = (new Timezone())->addDate("{$neededTime} seconds")->getTime();
 
             $db = DB::getInstance()->getDBConnection();
             try {

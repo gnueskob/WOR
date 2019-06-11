@@ -2,12 +2,14 @@
 
 namespace lsb\App\services;
 
+use lsb\Libs\Plan;
 use lsb\App\models\WeaponDAO;
 use lsb\App\query\UserQuery;
 use lsb\App\query\WeaponQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use Exception;
+use lsb\Libs\Timezone;
 use PDOException;
 
 class WeaponServices
@@ -32,8 +34,8 @@ class WeaponServices
 
     /**
      * @param int $userId
-     * @return array|bool
-     * @throws CtxException|Exception
+     * @return WeaponDAO[]|bool
+     * @throws Exception
      */
     public static function getWeaponsByUser(int $userId)
     {
@@ -169,4 +171,25 @@ class WeaponServices
             throw $e;
         }
     }*/
+
+    /********************************************************************/
+
+    /**
+     * @param int $userId
+     * @return float|int
+     * @throws Exception
+     */
+    public static function getAttack(int $userId)
+    {
+        $weapons = self::getWeaponsByUser($userId);
+        $planWeapon = Plan::getDataAll(PLAN_WEAPON);
+        $attack = 0;
+        foreach ($weapons as $weapon) {
+            if ($weapon->createTime < Timezone::getNowUTC()) {
+                continue;
+            }
+            $attack += $planWeapon[$weapon->weaponType] * $weapon->currentLevel;
+        }
+        return $attack;
+    }
 }

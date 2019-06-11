@@ -4,10 +4,12 @@ namespace lsb\App\controller;
 
 use lsb\App\models\BuildingDAO;
 use lsb\App\models\Utils;
+use lsb\App\models\WarDAO;
 use lsb\App\services\BuildingServices;
 use lsb\App\services\ExploratoinServices;
 use lsb\App\services\UserServices;
 use lsb\App\services\WarServices;
+use lsb\App\services\WeaponServices;
 use lsb\Libs\Context;
 use lsb\Libs\CtxException;
 use lsb\Libs\ISubRouter;
@@ -70,7 +72,7 @@ class War extends Router implements ISubRouter
             $finishTime = (new Timezone())->addDate("{$takenTime} seconds")->getTime();
 
             // 병영에 등록된 병력
-            $totalManpower = BuildingServices::getArmyManpower($userId, $armyManpower);
+            list($totalManpower, $totalAttack) = BuildingServices::getArmyManpower($userId, $armyManpower);
             if ($totalManpower === 0) {
                 (new CtxException())->manpowerInsufficient();
             }
@@ -86,6 +88,25 @@ class War extends Router implements ISubRouter
 
             // 전쟁 출전 준비 시작시의 타겟 영토 건물 기준으로 계산
             $targetDefense = UserServices::getTargetDefense($territoryId, $finishTime);
+
+            $weaponAttack = WeaponServices::getAttack($userId);
+
+
+            $warContainer = new WarDAO();
+            $warContainer->userId = $userId;
+            $warContainer->territoryId = $territoryId;
+            $warContainer->attack = $totalAttack + $weaponAttack;
+            $warContainer->manpower = $totalManpower;
+            $warContainer->buildingList = json_decode($armyManpower);
+            $warContainer->foodResource = $neededFoodResource;
+            $warContainer->targetDefense = $targetDefense;
+            $warContainer->prepareTime = $prepareTime;
+            $warContainer->finishTime = $finishTime;
+            WarServices::prepareWar($warContainer);
+
+            $war = WarServices::selectUserWar($userId);
+            $ctx->addBody(['war' => Utils::toArray($war)]);
+            $ctx->send();
         });
     }
 }

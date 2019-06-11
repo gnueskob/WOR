@@ -21,6 +21,38 @@ class WarQuery
         return DB::runQuery($q, $p);
     }
 
+    public static function insertWar(WarDAO $war)
+    {
+        $q = "
+            INSERT INTO war
+            VALUE (
+                :war_id,
+                :user_id,
+                :territory_id,
+                :attack,
+                :manpower,
+                :building_list,
+                :food_resource,
+                :target_defense,
+                :prepare_time,
+                :finish_time
+            );
+        ";
+        $p = [
+            ':war_id' => null,
+            ':user_id' => $war->userId,
+            ':territory_id' => $war->territoryId,
+            ':attack' => $war->attack,
+            ':manpower' => $war->manpower,
+            ':building_list' => $war->buildingList,
+            ':food_resource' => $war->foodResource,
+            ':target_defense' => $war->targetDefense,
+            ':prepare_time' => $war->prepareTime,
+            ':finish_time' => $war->finishTime
+        ];
+        return DB::runQuery($q, $p);
+    }
+
     /**
      * @param WarDAO $war
      * @return PDOStatement

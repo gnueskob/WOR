@@ -112,6 +112,7 @@ class User extends Router implements ISubRouter
             $data = $ctx->getBody();
 
             $userId = $data['user_id'];
+            // 여러 단말기로 API 여러번 날리는 경우 방지
             // 자원 확인, 소모 사이에 외부에서의 자원량 갱신이 없어야함
             $spinlockKey = SpinLock::getKey(RESOURCE, $userId);
             SpinLock::spinLock($spinlockKey, 1);

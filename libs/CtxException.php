@@ -247,6 +247,14 @@ class CtxException extends Exception
         $this->throwLogicException();
     }
 
+    /* @throws  CtxException */
+    public function alreadyWarExists(): void
+    {
+        $this->serverErrCode = 1017;
+        $this->serverMsg = 'war is already exists';
+        $this->throwLogicException();
+    }
+
     /**************************************
      ** Fatal Exceptions                 **
      **************************************/

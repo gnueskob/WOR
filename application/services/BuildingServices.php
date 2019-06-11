@@ -266,7 +266,7 @@ class BuildingServices
     /**
      * @param int $userId
      * @param array $armyManpower
-     * @return int|null
+     * @return array|null
      * @throws CtxException|Exception
      */
     public static function getArmyManpower(int $userId, array $armyManpower)
@@ -289,6 +289,7 @@ class BuildingServices
         }
 
         $totalManpower = 0;
+        $totalAttack = 0;
         /* @var BuildingDAO[] $buildings */
         foreach ($buildings as $building) {
             if ($building->userId !== $userId) {
@@ -304,9 +305,10 @@ class BuildingServices
                 $building->deployTime > Timezone::getNowUTC()) {
                 continue;
             }
+            $totalAttack += $manpowerList[$building->buildingId] * $building->currentLevel;
             $totalManpower += $building->manpower;
         }
 
-        return $totalManpower;
+        return [$totalManpower, $totalAttack];
     }
 }

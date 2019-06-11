@@ -12,6 +12,8 @@ class WarDAO extends DAO
         'manpower' => 'manpower',
         'building_list' => 'buildingList',
         'food_resource' => 'foodResource',
+        'target_defense' => 'targetDefense',
+        'prepare_time' => 'prepareTime',
         'finish_time' => 'finishTime'
     ];
 
@@ -22,6 +24,8 @@ class WarDAO extends DAO
     public $manpower;
     public $buildingList;
     public $foodResource;
+    public $targetDefense;
+    public $prepareTime;
     public $finishTime;
 
     public function __construct(array $data = [])

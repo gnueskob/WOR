@@ -10,6 +10,17 @@ use Exception;
 
 class WarQuery
 {
+    public static function selectWar(WarDAO $war)
+    {
+        $q = "
+            SELECT *
+            FROM war
+            WHERE war_id = :war_id;
+        ";
+        $p = [':war_id' => $war->warId];
+        return DB::runQuery($q, $p);
+    }
+
     public static function selectWarByUser(WarDAO $war)
     {
         $q = "

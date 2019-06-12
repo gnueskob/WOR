@@ -4,7 +4,7 @@ namespace lsb\App\controller;
 
 use Exception;
 use lsb\App\models\Utils;
-use lsb\App\services\BufServices;
+use lsb\App\services\BuffServices;
 use lsb\App\services\UserServices;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
@@ -16,7 +16,7 @@ use lsb\Libs\SpinLock;
 use lsb\Libs\Timezone;
 use PDOException;
 
-class Buf extends Router implements ISubRouter
+class Buff extends Router implements ISubRouter
 {
     public function make()
     {
@@ -28,10 +28,10 @@ class Buf extends Router implements ISubRouter
             $userId = $data['user_id'];
 
             // 버프 정보 불러오기 전 만료된 버프 삭제
-            BufServices::refreshBuf($userId);
+            BuffServices::refreshBuff($userId);
 
-            $bufs = BufServices::getBufsByUser($userId);
-            $ctx->addBody(['bufs' => Utils::toArrayAll($bufs)]);
+            $buffs = BuffServices::getBuffsByUser($userId);
+            $ctx->addBody(['buffs' => Utils::toArrayAll($buffs)]);
             $ctx->send();
         });
 
@@ -39,12 +39,12 @@ class Buf extends Router implements ISubRouter
         $router->post('/add/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $userId = $data['user_id'];
-            $bufType = $data['buf_type'];
+            $buffType = $data['buff_type'];
 
             // 버프 추가 전 만료 버프 삭제
-            BufServices::refreshBuf($userId);
+            BuffServices::refreshBuff($userId);
 
-            $plan = Plan::getData(PLAN_BUF, $bufType);
+            $plan = Plan::getData(PLAN_BUFF, $buffType);
 
             // TODO: 충성도 적용
             $defaultFinishTime = $plan['default_finish_time'];
@@ -52,7 +52,7 @@ class Buf extends Router implements ISubRouter
 
             if ($plan['type'] === 0) {
                 // 전리품 버프
-                $bufId = BufServices::makeBuf($userId, $bufType, $finishTime);
+                $buffId = BuffServices::makeBuff($userId, $buffType, $finishTime);
             } else {
                 // 자원 소모 버프
 
@@ -94,7 +94,7 @@ class Buf extends Router implements ISubRouter
                         $luxuryResource
                     );
 
-                    $bufId = BufServices::makeBuf($userId, $bufType, $finishTime);
+                    $buffId = BuffServices::makebuff($userId, $buffType, $finishTime);
 
                     if ($db->commit() === false) {
                         (new CtxException())->transactionFail();
@@ -107,9 +107,9 @@ class Buf extends Router implements ISubRouter
                 SpinLock::spinUnlock($spinlockKey);
             }
 
-            $buf = BufServices::getBuf($bufId);
-            Utils::checkNull($buf);
-            $ctx->addBody(['buf' => Utils::toArray($buf)]);
+            $buff = BuffServices::getbuff($buffId);
+            Utils::checkNull($buff);
+            $ctx->addBody(['buff' => Utils::toArray($buff)]);
             $ctx->send();
         });
     }

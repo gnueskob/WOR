@@ -8,6 +8,7 @@ use lsb\Libs\DB;
 use lsb\App\query\UserQuery;
 use Exception;
 use lsb\Libs\Plan;
+use lsb\Libs\Timezone;
 use PDOException;
 
 class UserServices
@@ -15,7 +16,7 @@ class UserServices
     /**
      * @param int $userId
      * @return UserDAO
-     * @throws CtxException|Exception
+     * @throws Exception
      */
     public static function getUser(int $userId)
     {
@@ -24,11 +25,8 @@ class UserServices
 
         $stmt = UserQuery::selectUser($userContainer);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        } else {
-            return new UserDAO($res);
-        }
+        $res = $res === false ? [] : $res;
+        return new UserDAO($res);
     }
 
     /**
@@ -45,9 +43,7 @@ class UserServices
 
         $stmt = UserQuery::selectUserPlatformByHive($userContainer);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new UserDAO($res);
     }
 
@@ -63,9 +59,7 @@ class UserServices
 
         $stmt = UserQuery::selectUserInfo($userContainer);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new UserDAO($res);
     }
 
@@ -81,9 +75,7 @@ class UserServices
 
         $stmt = UserQuery::selectUserInfoByTerritory($userContainer);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new UserDAO($res);
     }
 
@@ -208,31 +200,28 @@ class UserServices
     }
 
     /**
-     * @param int $userId
-     * @param int $tacticalResource
-     * @param int $foodResource
-     * @param int $luxuryResource
-     * @param int $castleLevel
+     * @param UserDAO $user
+     * @param int $neededTacticalResource
+     * @param int $neededFoodResource
+     * @param int $neededLuxuryResource
      * @param string $upgradeTime
-     * @throws CtxException|Exception
+     * @throws CtxException
      */
     public static function upgradeUserCastle(
-        int $userId,
-        int $tacticalResource,
-        int $foodResource,
-        int $luxuryResource,
-        int $castleLevel,
+        UserDAO $user,
+        int $neededTacticalResource,
+        int $neededFoodResource,
+        int $neededLuxuryResource,
         string $upgradeTime
     ) {
         $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
-        $userContainer->tacticalResource = $tacticalResource;
-        $userContainer->foodResource = $foodResource;
-        $userContainer->luxuryResource = $luxuryResource;
-        $userContainer->castleLevel = $castleLevel;
-        $userContainer->castleToLevel = $castleLevel + 1;
+        $userContainer->userId = $user->userId;
+        $userContainer->tacticalResource = $user->tacticalResource - $neededTacticalResource;
+        $userContainer->foodResource = $user->foodResource - $neededFoodResource;
+        $userContainer->luxuryResource = $user->luxuryResource - $neededLuxuryResource;
+        $userContainer->castleLevel = $user->currentCastleLevel;
+        $userContainer->castleToLevel = $user->currentCastleLevel + 1;
         $userContainer->upgradeTime = $upgradeTime;
-        $userContainer->userId = $userId;
 
         // 유저 자원 소모시키기 및 업그레이드 갱신
         $stmt = UserQuery::updateUserInfoWithUpgradeAndResource($userContainer);
@@ -281,27 +270,27 @@ class UserServices
     }*/
 
     /**
-     * @param int $userId
-     * @param int $tacticalResource
-     * @param int $foodResource
-     * @param int $luxuryResource
-     * @throws CtxException|Exception
+     * @param UserDAO $user
+     * @param int $neededtacticalResource
+     * @param int $neededFoodResource
+     * @param int $neededLuxuryResource
+     * @throws CtxException
      */
     public static function modifyUserResource(
-        int $userId,
-        int $tacticalResource,
-        int $foodResource,
-        int $luxuryResource
+        UserDAO $user,
+        int $neededtacticalResource,
+        int $neededFoodResource,
+        int $neededLuxuryResource
     ) {
         $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
-        $userContainer->tacticalResource = $tacticalResource;
-        $userContainer->foodResource = $foodResource;
-        $userContainer->luxuryResource = $luxuryResource;
+        $userContainer->userId = $user->userId;
+        $userContainer->tacticalResource = $user->tacticalResource - $neededtacticalResource;
+        $userContainer->foodResource = $user->foodResource - $neededFoodResource;
+        $userContainer->luxuryResource = $user->luxuryResource - $neededLuxuryResource;
 
         $stmt = UserQuery::updateUserInfoWithResource($userContainer);
         if ($stmt->rowCount() === 0) {
-            (new CtxException())->updateFail('setUserTerritory');
+            (new CtxException())->updateFail();
         }
     }
 
@@ -323,6 +312,12 @@ class UserServices
     }
 
     /**************************************************************************/
+
+    public static function getLocation(int $territoryId)
+    {
+        $territory = Plan::getData(PLAN_TERRITORY, $territoryId);
+        return [$territory['location_x'], $territory['location_y']];
+    }
 
     /**
      * @param int $territoryId

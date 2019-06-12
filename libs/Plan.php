@@ -15,8 +15,8 @@ define('PLAN_RESOURCE', 'resource');
 define('PLAN_BUILDING', 'building');
 define('PLAN_BUILDING_NEED_RESOURCE', 'index_building_resource');
 define('PLAN_BOSS', 'boss');
-define('PLAN_BUF', 'buf');
-define('PLAN_BOSS_BUF', 'index_boss_buf');
+define('PLAN_BUFF', 'buff');
+define('PLAN_BOSS_BUF', 'index_boss_buff');
 define('PLAN_UPG_CASTLE', 'upgrade_castle');
 define('PLAN_UPG_DEF_TOWER', 'upgrade_defense_tower');
 define('PLAN_UPG_ARMY', 'upgrade_army');
@@ -63,7 +63,7 @@ define('PLAN_TROPHY_ID_PORRIDGE', 1);
 define('PLAN_TROPHY_ID_SILK', 2);
 define('PLAN_TROPHY_ID_BOW', 3);
 
-// Buf
+// Buff
 define('PLAN_BUF_ID_LOYALTY', 1);
 define('PLAN_BUF_ID_TABOO', 2);
 define('PLAN_BUF_ID_FLOWER', 3);

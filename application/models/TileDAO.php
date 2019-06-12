@@ -2,6 +2,9 @@
 
 namespace lsb\App\models;
 
+use lsb\Libs\Timezone;
+use Exception;
+
 class TileDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
@@ -22,5 +25,14 @@ class TileDAO extends DAO
             return;
         }
         parent::__construct($data, self::$dbColumToPropertyMap);
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isExplored()
+    {
+        return isset($this->exploreTime) && $this->exploreTime < Timezone::getNowUTC();
     }
 }

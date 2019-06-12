@@ -2,7 +2,8 @@
 
 namespace lsb\App\controller;
 
-use lsb\App\models\Utils;
+use lsb\Utils\Lock;
+use lsb\Utils\Utils;
 use lsb\App\services\UserServices;
 use lsb\Libs\CtxException;
 use lsb\Libs\ISubRouter;
@@ -26,17 +27,16 @@ class User extends Router implements ISubRouter
             $hiveId = $data['hive_id'];
             $hiveUid = $data['hive_uid'];
             $user = UserServices::getUserByHive($hiveId, $hiveUid);
-            if (is_null($user)) {
-                (new CtxException())->invaildUser();
-            }
+            CtxException::invaildUser($user->isEmpty());
 
             // 로그인 성공 시 마지막 방문일자 갱신
             UserServices::setUserLastVisit($user->userId, Timezone::getNowUTC());
 
-            $user = UserServices::getUser($user->userId);
-            Utils::checkNull($user);
-            $ctx->addBody(['user' => Utils::toArray($user)]);
-            $ctx->addBody(['token' => "token_temp"]);
+            $userArr = UserServices::getUser($user->userId)->toArray();
+            $ctx->addBody([
+                'user' => $userArr,
+                'token' => 'token_temp'
+            ]);
             $ctx->send();
         });
 
@@ -48,17 +48,16 @@ class User extends Router implements ISubRouter
             $hiveId = $data['hive_id'];
             $hiveUid = $data['hive_uid'];
             $user = UserServices::getUserByHive($hiveId, $hiveUid);
-            if (isset($user)) {
-                (new CtxException())->alreadyRegistered();
-            }
+            CtxException::alreadyRegistered(!$user->isEmpty());
 
             // 없는 정보일 시 새로운 계정 생성
             $userId = UserServices::registerNewAccount($hiveId, $hiveUid);
 
-            $user = UserServices::getUser($userId);
-            Utils::checkNull($user);
-            $ctx->addBody(['user' => Utils::toArray($user)]);
-            $ctx->addBody(['token' => 'token_temp']);
+            $userArr = UserServices::getUser($userId)->toArray();
+            $ctx->addBody([
+                'user' => $userArr,
+                'token' => 'token_temp'
+            ]);
             $ctx->send();
         });
 
@@ -70,12 +69,10 @@ class User extends Router implements ISubRouter
             $name = $data['name'];
 
             $isSuccess = UserServices::setUserName($userId, $name);
-            if ($isSuccess === false) {
-                (new CtxException())->alreadyUsedName();
-            }
-            $user = UserServices::getUser($userId);
-            Utils::checkNull($user);
-            $ctx->addBody(['user' => Utils::toArray($user)]);
+            CtxException::alreadyUsedName(!$isSuccess);
+
+            $userArr = UserServices::getUser($userId)->toArray();
+            $ctx->addBody(['user' => $userArr]);
             $ctx->send();
         });
 
@@ -87,13 +84,10 @@ class User extends Router implements ISubRouter
             $territoryId = $data['territory_id'];
 
             $isSuccess = UserServices::setUserTerritory($userId, $territoryId);
-            if ($isSuccess === false) {
-                (new CtxException())->alreadyUsedTerritory();
-            }
+            CtxException::alreadyUsedTerritory(!$isSuccess);
 
-            $user = UserServices::getUser($userId);
-            Utils::checkNull($user);
-            $ctx->addBody(['user' => Utils::toArray($user)]);
+            $userArr = UserServices::getUser($userId)->toArray();
+            $ctx->addBody(['user' => $userArr]);
             $ctx->send();
         });
 
@@ -101,77 +95,67 @@ class User extends Router implements ISubRouter
         $router->get('/info/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $userId = $data['user_id'];
-            $user = UserServices::getUser($userId);
-            Utils::checkNull($user);
-            $ctx->addBody(['user' => Utils::toArray($user)]);
+            $userArr = UserServices::getUser($userId)->toArray();
+            $ctx->addBody(['user' => $userArr]);
             $ctx->send();
         });
 
         // 성 업그레이드 요청
-        $router->post('/upgrade/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
-
-            $userId = $data['user_id'];
+        $router->post(
+            '/upgrade/:user_id',
             // 여러 단말기로 API 여러번 날리는 경우 방지
             // 자원 확인, 소모 사이에 외부에서의 자원량 갱신이 없어야함
-            $spinlockKey = SpinLock::getKey(RESOURCE, $userId);
-            SpinLock::spinLock($spinlockKey, 1);
+            Lock::lock(RESOURCE),
+            function (Context $ctx) {
+                $data = $ctx->getBody();
+                $userId = $data['user_id'];
 
-            // 유저 자원 정보 확인
-            $user = UserServices::getUserInfo($userId);
-            Utils::checkNull($user);
+                // 유저 자원 정보 확인
+                $user = UserServices::getUserInfo($userId);
+                CtxException::invaildUser($user->isEmpty());
 
-            // 이미 업그레이드 진행중 인지 검사
-            if ($user->upgradeTime > Timezone::getNowUTC()) {
-                SpinLock::spinUnlock($spinlockKey);
-                (new CtxException())->notCompletedYet();
+                // 이미 업그레이드 진행중 인지 검사
+                CtxException::notCompletedYet($user->isUpgrading());
+
+                // 업그레이드에 필요한 자원
+                $plan = Plan::getData(PLAN_UPG_CASTLE, $user->currentCastleLevel);
+                $neededTactical = $plan['need_tactical_resource'];
+                $neededFood = $plan['need_food_resource'];
+                $neededLuxury = $plan['need_luxury_resource'];
+
+                // 필요한 재료를 가지고 있는 지 검사
+                $hasResource = $user->hasSufficientResource($neededTactical, $neededFood, $neededLuxury);
+                CtxException::resourceInsufficient(!$hasResource);
+
+                // 업그레이드에 필요한 시간
+                $castleUpgradeUnitTime = Plan::getData(PLAN_BUILDING, PLAN_BUILDING_ID_CASTLE)['upgrade_unit_time'];
+                $upgradeTime = Timezone::getCompleteTime($castleUpgradeUnitTime);
+
+                // 유저 성 업그레이드
+                UserServices::upgradeUserCastle(
+                    $user,
+                    $neededTactical,
+                    $neededFood,
+                    $neededLuxury,
+                    $upgradeTime
+                );
+
+                $userArr = UserServices::getUser($userId)->toArray();
+                $ctx->addBody(['user' => $userArr]);
+                $ctx->send();
             }
-
-            $currentCastleLevel = $user->castleLevel;
-            $plan = Plan::getData(PLAN_UPG_CASTLE, $currentCastleLevel);
-
-            // 업그레이드 후 남는 자원
-            $tacticalResource = $user->tacticalResource - $plan['need_tactical_resource'];
-            $foodResource = $user->foodResource - $plan['need_food_resource'];
-            $luxuryResource = $user->luxuryResource - $plan['need_luxury_resource'];
-
-            // 필요한 재료를 가지고 있는 지 검사
-            if ($tacticalResource < 0 || $foodResource < 0 || $luxuryResource < 0) {
-                SpinLock::spinUnlock($spinlockKey);
-                (new CtxException())->resourceInsufficient();
-            }
-
-            $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME);
-            $castleUpgradeUnitTime = Plan::getData(PLAN_BUILDING, PLAN_BUILDING_ID_CASTLE);
-            $neededTime = $castleUpgradeUnitTime * $unitTime['value'];
-            $upgradeTime = (new Timezone())->addDate("{$neededTime} seconds")->getTime();
-
-            UserServices::upgradeUserCastle(
-                $userId,
-                $tacticalResource,
-                $foodResource,
-                $luxuryResource,
-                $currentCastleLevel,
-                $upgradeTime
-            );
-            SpinLock::spinUnlock($spinlockKey);
-
-            $user = UserServices::getUser($userId);
-            Utils::checkNull($user);
-            $ctx->addBody(['user' => Utils::toArray($user)]);
-            $ctx->send();
-        });
+        );
 
         // 성 업그레이드 완료 확인
         $router->get('/upgrade/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $userId = $data['user_id'];
             $user = UserServices::getUser($userId);
-            Utils::checkNull($user);
-            if ($user->upgradeTime > Timezone::getNowUTC()) {
-                (new CtxException())->notCompletedYet();
-            }
-            $ctx->addBody(['user' => Utils::toArray($user)]);
+
+            CtxException::invaildUser($user->isEmpty());
+            CtxException::notCompletedYet(!$user->isUpgraded());
+
+            $ctx->addBody(['user' => $user->toArray()]);
             $ctx->send();
         });
     }

@@ -2,18 +2,18 @@
 
 namespace lsb\App\models;
 
-class BufDAO extends DAO
+class BuffDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
-        'buf_id' => 'weaponId',
+        'buff_id' => 'weaponId',
         'user_id' => 'userId',
-        'buf_type' => 'bufType',
+        'buff_type' => 'buffType',
         'finish_time' => 'finishTime'
     ];
 
-    public $bufId;
+    public $buffId;
     public $userId;
-    public $bufType;
+    public $buffType;
     public $finishTime;
 
     public function __construct(array $data = [])

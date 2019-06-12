@@ -2,32 +2,32 @@
 
 namespace lsb\App\services;
 
-use lsb\App\models\BufDAO;
-use lsb\App\query\BufQuery;
+use lsb\App\models\BuffDAO;
+use lsb\App\query\BuffQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\Timezone;
 use lsb\Libs\DB;
 use Exception;
 use PDOException;
 
-class BufServices
+class BuffServices
 {
     /**
-     * @param int $bufId
-     * @return BufDAO
-     * @throws CtxException|Exception
+     * @param int $buffId
+     * @return BuffDAO
+     * @throws Exception
      */
-    public static function getBuf(int $bufId)
+    public static function getBuff(int $buffId)
     {
-        $container = new BufDAO();
-        $container->bufId = $bufId;
+        $container = new BuffDAO();
+        $container->buffId = $buffId;
 
-        $stmt = BufQuery::selectBufByUser($container);
+        $stmt = BuffQuery::selectBuffByUser($container);
         $res = $stmt->fetch();
         if ($res === false) {
             return null;
         }
-        return new BufDAO($res);
+        return new BuffDAO($res);
     }
 
     /**
@@ -35,38 +35,38 @@ class BufServices
      * @return array
      * @throws Exception|Exception
      */
-    public static function getBufsByUser(int $userId)
+    public static function getBuffsByUser(int $userId)
     {
-        $container = new BufDAO();
+        $container = new BuffDAO();
         $container->userId = $userId;
 
-        $stmt = BufQuery::selectBufByUser($container);
+        $stmt = BuffQuery::selectBuffByUser($container);
         $res = $stmt->fetchAll();
         if ($res === false) {
             return [];
         }
         foreach ($res as $key => $value) {
-            $res[$key] = new BufDAO($value);
+            $res[$key] = new BuffDAO($value);
         }
         return $res;
     }
 
     /**
      * @param int $userId
-     * @param int $bufType
+     * @param int $buffType
      * @param string $date
      * @return string
      * @throws CtxException|Exception
      */
-    public static function makeBuf(int $userId, int $bufType, string $date)
+    public static function makeBuff(int $userId, int $buffType, string $date)
     {
-        $container = new BufDAO();
+        $container = new BuffDAO();
         $container->userId = $userId;
-        $container->bufType = $bufType;
+        $container->buffType = $buffType;
         $container->finishTime = $date;
 
         try {
-            $stmt = BufQuery::insertBuf($container);
+            $stmt = BuffQuery::insertBuff($container);
 
             if ($stmt->rowCount() === 0) {
                 (new CtxException())->insertFail();
@@ -77,7 +77,7 @@ class BufServices
         } catch (PDOException $e) {
             // Unique key 중복 제한으로 걸릴 경우 따로 처리
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                (new CtxException())->alreadyExistsBuf();
+                (new CtxException())->alreadyExistsBuff();
             } else {
                 throw $e;
             }
@@ -88,11 +88,11 @@ class BufServices
      * @param int $userId
      * @throws Exception
      */
-    public static function refreshBuf(int $userId)
+    public static function refreshBuff(int $userId)
     {
-        $container = new BufDAO();
+        $container = new BuffDAO();
         $container->userId = $userId;
 
-        BufQuery::deleteBufByUser($container);
+        BuffQuery::deleteBuffByUser($container);
     }
 }

@@ -40,8 +40,8 @@ class BuildingDAO extends DAO
     public $lastUpdate;
 
     // hidden property
-    public $currentLevel;
-    public $activated;
+    public $currentLevel = 1;
+    public $activated = false;
 
     /**
      * BuildingDAO constructor.
@@ -50,16 +50,16 @@ class BuildingDAO extends DAO
      */
     public function __construct(array $data = [])
     {
-        if (count($data) === 0) {
-            return;
-        }
-
         parent::__construct($data, self::$dbColumToPropertyMap);
         if (isset($this->upgradeTime) &&
             $this->upgradeTime <= Timezone::getNowUTC()) {
             $this->currentLevel = $this->toLevel;
         } else {
             $this->currentLevel = $this->level;
+        }
+        if (isset($this->deployTime) &&
+            $this->deployTime < Timezone::getNowUTC()) {
+            $this->activated = true;
         }
     }
 
@@ -76,4 +76,58 @@ class BuildingDAO extends DAO
         }
         return self::$propertyToDBColumnMap;
     }*/
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isUpgrading()
+    {
+        return isset($this->upgradeTime) && $this->upgradeTime > Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isUpgraded()
+    {
+        return isset($this->upgradeTime) && $this->upgradeTime <= Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isDeploying()
+    {
+        return isset($this->deployTime) && $this->deployTime > Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isDeployed()
+    {
+        return isset($this->deployTime) && $this->deployTime <= Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isCreating()
+    {
+        return isset($this->createTime) && $this->createTime > Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isCreated()
+    {
+        return isset($this->createTime) && $this->createTime <= Timezone::getNowUTC();
+    }
 }

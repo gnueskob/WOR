@@ -12,7 +12,7 @@ SELECT 'CREATING DATABASE STRUCTURE' as 'INFO';
 DROP TABLE IF EXISTS user,
                      building,
                      resource,
-                     buf,
+                     buff,
                      weapon,
                      exploration_in_territory,
                      exploration_out_of_territory,
@@ -165,20 +165,20 @@ CREATE TABLE building (
 
 /** 유저 버프 정보
   * @desc: 게임 내 버프 정보
-  * buf_pk_id:        버프 id (AUTO_INC) [PK]
+  * buff_pk_id:        버프 id (AUTO_INC) [PK]
   * user_id:          버프 사용 유저 id
   * raid_id:          레이드를 통해 얻은 버프일 경우 레이드 id
-  * buf_id:           버프 타입 (기획)
+  * buff_id:           버프 타입 (기획)
   * finish_time:      버프 종료 시간
 */
-CREATE TABLE buf (
-  buf_id        BIGINT    NOT NULL      AUTO_INCREMENT,
+CREATE TABLE buff (
+  buff_id        BIGINT    NOT NULL      AUTO_INCREMENT,
   user_id       BIGINT    NOT NULL,
-  buf_type      BIGINT    NOT NULL,
+  buff_type      BIGINT    NOT NULL,
   finish_time   DATETIME  NOT NULL,
-  PRIMARY KEY (buf_id),
-  UNIQUE KEY (user_id, buf_type),
-  INDEX idx_user_buf (user_id, finish_time)
+  PRIMARY KEY (buff_id),
+  UNIQUE KEY (user_id, buff_type),
+  INDEX idx_user_buff (user_id, finish_time)
 );
 
 /** 유저 무기 정보 테이블
@@ -257,7 +257,10 @@ CREATE TABLE war (
   territory_id  BIGINT        NOT NULL,
   attack        BIGINT        NOT NULL,
   manpower      BIGINT        NOT NULL,
+  building_list TEXT          NOT NULL,
   food_resource BIGINT        NOT NULL,
+  target_defense  BIGINT      NOT NULL,
+  prepare_time  DATETIME      NOT NULL,
   finish_time   DATETIME      NOT NULL,
   PRIMARY KEY (war_id),
   UNIQUE KEY (user_id),

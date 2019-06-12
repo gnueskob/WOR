@@ -24,9 +24,7 @@ class BuildingServices
 
         $stmt = BuildingQuery::selectBuilding($buildingContainer);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new BuildingDAO($res);
     }
 
@@ -57,7 +55,7 @@ class BuildingServices
      * @param $territoryId
      * @param $buildingType
      * @param $creatTime
-     * @return string
+     * @return int
      * @throws CtxException|Exception
      */
     public static function createBuilding(
@@ -81,11 +79,11 @@ class BuildingServices
                 (new CtxException())->insertFail();
             }
             $db = DB::getInstance()->getDBConnection();
-            return $db->lastInsertId();
+            return (int) $db->lastInsertId();
         } catch (PDOException $e) {
             // Unique key 중복 제한으로 걸릴 경우 따로 처리
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                (new CtxException())->alreadyUsedTile();
+                return -1;
             } else {
                 throw $e;
             }

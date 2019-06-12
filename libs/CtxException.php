@@ -15,7 +15,8 @@ class CtxException extends Exception
         string $message = '',
         $code = 404,
         Exception $previous = null
-    ) {
+    )
+    {
         parent::__construct($message, $code, $previous);
         $this->serverErrCode = $serverErrCode;
         $this->serverMsg = $serverMsg;
@@ -32,10 +33,10 @@ class CtxException extends Exception
     }
 
     /**
-     * @param   int     $code
-     * @param   string  $msg
+     * @param int $code
+     * @param string $msg
      * @throws  CtxException
-    */
+     */
     private function throwException(int $code, string $msg): void
     {
         $this->serverErrCode = $code;
@@ -111,184 +112,258 @@ class CtxException extends Exception
     /**************************************
      ** Only Logic Exceptions            **
      **************************************/
-    /* @throws  CtxException */
-    public function invaildUser(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invaildUser(bool $flag = true): void
     {
-        $this->serverErrCode = 1000;
-        $this->serverMsg = 'invalid user';
-        $this->throwLogicException();
+        $serverErrCode = 1000;
+        $serverMsg = 'invalid user';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function registerFail(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function registerFail(bool $flag = true): void
     {
-        $this->serverErrCode = 1001;
-        $this->serverMsg = 'register failed';
-        $this->throwLogicException();
+        $serverErrCode = 1001;
+        $serverMsg = 'register failed';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function alreadyRegistered(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyRegistered(bool $flag = true): void
     {
-        $this->serverErrCode = 1002;
-        $this->serverMsg = 'user is already registered';
-        $this->throwLogicException();
+        $serverErrCode = 1002;
+        $serverMsg = 'user is already registered';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function alreadyUsedName(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyUsedName(bool $flag = true): void
     {
-        $this->serverErrCode = 1003;
-        $this->serverMsg = 'input name is already in use';
-        $this->throwLogicException();
+        $serverErrCode = 1003;
+        $serverMsg = 'input name is already in use';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function alreadyUsedTerritory(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyUsedTerritory(bool $flag = true): void
     {
-        $this->serverErrCode = 1004;
-        $this->serverMsg = 'input territory is already in use';
-        $this->throwLogicException();
+        $serverErrCode = 1004;
+        $serverMsg = 'input territory is already in use';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function resourceInsufficient(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function resourceInsufficient(bool $flag = true): void
     {
-        $this->serverErrCode = 1005;
-        $this->serverMsg = 'resource Insufficient fail';
-        $this->throwLogicException();
+        $serverErrCode = 1005;
+        $serverMsg = 'resource Insufficient fail';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function invalidBuildingType(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidBuildingType(bool $flag = true): void
     {
-        $this->serverErrCode = 1006;
-        $this->serverMsg = 'invalid building type';
-        $this->throwLogicException();
+        $serverErrCode = 1006;
+        $serverMsg = 'invalid building type';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function notYetCreatedBuilding(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notYetCreatedBuilding(bool $flag = true): void
     {
-        $this->serverErrCode = 1007;
-        $this->serverMsg = 'building is not created yet';
-        $this->throwLogicException();
+        $serverErrCode = 1007;
+        $serverMsg = 'building is not created yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function exceedManpowerBuilding(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function exceedManpowerBuilding(bool $flag = true): void
     {
-        $this->serverErrCode = 1008;
-        $this->serverMsg = 'manpower what you deploy is greater than max value';
-        $this->throwLogicException();
+        $serverErrCode = 1008;
+        $serverMsg = 'manpower what you deploy is greater than max value';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function manpowerInsufficient(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function manpowerInsufficient(bool $flag = true): void
     {
-        $this->serverErrCode = 1009;
-        $this->serverMsg = 'manpower Insufficient fail';
-        $this->throwLogicException();
+        $serverErrCode = 1009;
+        $serverMsg = 'manpower Insufficient fail';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function notUsedTile(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notUsedTile(bool $flag = true): void
     {
-        $this->serverErrCode = 1010;
-        $this->serverMsg = 'tile is not available';
-        $this->throwLogicException();
+        $serverErrCode = 1010;
+        $serverMsg = 'tile is not available';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function notUsedTerritory(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notUsedTerritory(bool $flag = true): void
     {
-        $this->serverErrCode = 1011;
-        $this->serverMsg = 'territory is not available';
-        $this->throwLogicException();
+        $serverErrCode = 1011;
+        $serverMsg = 'territory is not available';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function notCompletedYet(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notCompletedYet(bool $flag = true): void
     {
-        $this->serverErrCode = 1012;
-        $this->serverMsg = 'job is not completed yet';
-        $this->throwLogicException();
+        $serverErrCode = 1012;
+        $serverMsg = 'job is not completed yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function alreadyUsedTile(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyUsedTile(bool $flag = true): void
     {
-        $this->serverErrCode = 1013;
-        $this->serverMsg = 'tile is already used another building';
-        $this->throwLogicException();
+        $serverErrCode = 1013;
+        $serverMsg = 'tile is already used another building';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function alreadyExistsBuf(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyExistsBuff(bool $flag = true): void
     {
-        $this->serverErrCode = 1014;
-        $this->serverMsg = 'buf is already in use';
-        $this->throwLogicException();
+        $serverErrCode = 1014;
+        $serverMsg = 'buff is already in use';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function notYetExplored(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notYetExplored(bool $flag = true): void
     {
-        $this->serverErrCode = 1015;
-        $this->serverMsg = 'location is not explored yet';
-        $this->throwLogicException();
+        $serverErrCode = 1015;
+        $serverMsg = 'location is not explored yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function invalidType(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidType(bool $flag = true): void
     {
-        $this->serverErrCode = 1016;
-        $this->serverMsg = 'type of body in request is invalid';
-        $this->throwLogicException();
+        $serverErrCode = 1016;
+        $serverMsg = 'type of body in request is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
-    /* @throws  CtxException */
-    public function alreadyWarExists(): void
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyWarExists(bool $flag = true): void
     {
-        $this->serverErrCode = 1017;
-        $this->serverMsg = 'war is already exists';
-        $this->throwLogicException();
+        $serverErrCode = 1017;
+        $serverMsg = 'war is already exists';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidId(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
     /**************************************
      ** Fatal Exceptions                 **
      **************************************/
-    /* @throws  CtxException */
-    public function throwLogicException(): void
+    /**
+     * @param int $scode
+     * @param string $smsg
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function throwLogicException(int $scode, string $smsg, bool $flag = true): void
     {
-        $this->throwException(200, "Logic error");
+        if (false === $flag) {
+            return;
+        }
+        $function = debug_backtrace()[1]['function'];
+        throw new CtxException($scode, $smsg, "Logic Error at {$function}", 200);
     }
 
-    /* @throws  CtxException */
+    /**      * @param bool $flag * @throws CtxException */
     public function throwDBLogicException(): void
     {
         $this->throwException(201, "DB Logic error");
     }
 
-    /* @throws  CtxException */
+    /**      * @param bool $flag * @throws CtxException */
     public function throwUnauthenticatedException(): void
     {
         $this->throwException(401, "Unauthenticated");
     }
 
-    /* @throws  CtxException */
+    /**      * @param bool $flag * @throws CtxException */
     public function throwNotFoundException(): void
     {
         $this->throwException(404, "Not Found");
     }
 
-    /* @throws  CtxException */
+    /**      * @param bool $flag * @throws CtxException */
     public function throwInvalidMethodException(): void
     {
         $this->throwException(405, "Method Not Allowed");
     }
 
-    /* @throws  CtxException */
+    /**      * @param bool $flag * @throws CtxException */
     public function throwInternalServerException(): void
     {
         $this->throwException(500, "Internal Server Error");

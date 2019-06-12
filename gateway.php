@@ -28,8 +28,6 @@ $app->post('/plan', function () {
 $app->get('/phpinfo', function () {
     phpinfo();
 });
-$app->post('/test', function (\lsb\Libs\Context $ctx) {
-    $a = $ctx->getBody();
-    print_r($a['army_manpower']);
+$app->get('/test', function (\lsb\Libs\Context $ctx) {
 });
 $app->run();

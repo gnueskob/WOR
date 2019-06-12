@@ -90,10 +90,6 @@ class UserDAO extends DAO
      */
     public function __construct(array $data = [])
     {
-        if (count($data) === 0) {
-            return;
-        }
-
         parent::__construct($data, self::$dbColumToPropertyMap);
         if (isset($this->upgradeTime) &&
             $this->upgradeTime <= Timezone::getNowUTC()) {
@@ -105,6 +101,31 @@ class UserDAO extends DAO
             isset($this->manpowerUsed)) {
             $this->manpowerAvailable = $this->manpower - $this->manpowerUsed;
         }
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isUpgrading()
+    {
+        return isset($this->upgradeTime) && $this->upgradeTime > Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isUpgraded()
+    {
+        return isset($this->upgradeTime) && $this->upgradeTime <= Timezone::getNowUTC();
+    }
+
+    public function hasSufficientResource(int $tatical, int $food, int $luxury)
+    {
+        return $this->tacticalResource >= $tatical &&
+                $this->foodResource >= $food &&
+                $this->luxuryResource >= $luxury;
     }
 
     /*

@@ -13,6 +13,7 @@ define('DUPLICATE_ERRORCODE', '23000');
 class DB extends Singleton
 {
     private $db = null;
+    private $transactionMode = false;
 
     protected function __construct()
     {
@@ -106,6 +107,7 @@ class DB extends Singleton
         return self::getInstance()->query($q, $p);
     }
 
+    /*
     public static function trimColumn(array $data)
     {
         foreach ($data as $key => $value) {
@@ -114,7 +116,7 @@ class DB extends Singleton
             }
         }
         return $data;
-    }
+    }*/
 
     public static function getSelectResult(string $query, array $param, bool $all = false)
     {
@@ -127,6 +129,7 @@ class DB extends Singleton
         }
     }
 
+    /*
     public static function getResultRowCount(string $query, array $param)
     {
         $dbMngr = self::getInstance();
@@ -138,5 +141,26 @@ class DB extends Singleton
     {
         $dbMngr = self::getInstance();
         return $dbMngr->query($query, $param);
+    }*/
+
+    public static function beginTransaction()
+    {
+        self::getInstance()->getDBConnection()->beginTransaction();
+        self::getInstance()->transactionMode = true;
+    }
+
+    /* @throws CtxException */
+    public static function endTransaction()
+    {
+        $res = self::getInstance()->getDBConnection()->commit();
+        if ($res === false) {
+            (new CtxException())->transactionFail();
+        }
+        self::getInstance()->transactionMode = false;
+    }
+
+    public static function getTransactionMode()
+    {
+        return self::getInstance()->transactionMode;
     }
 }

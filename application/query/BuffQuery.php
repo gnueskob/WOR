@@ -2,74 +2,74 @@
 
 namespace lsb\App\query;
 
-use lsb\App\models\BufDAO;
+use lsb\App\models\BuffDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use PDOStatement;
 use Exception;
 
-class BufQuery
+class BuffQuery
 {
-    public static function selectBufByUser(BufDAO $buf)
+    public static function selectBuffByUser(BuffDAO $buff)
     {
         $q = "
             SELECT *
-            FROM buf
+            FROM buff
             WHERE user_id = :user_id;
         ";
-        $p = [':user_id' => $buf->userId];
+        $p = [':user_id' => $buff->userId];
         return DB::runQuery($q, $p);
     }
 
-    public static function selectBufByUserAndType(BufDAO $buf)
+    public static function selectBuffByUserAndType(BuffDAO $buff)
     {
         $q = "
             SELECT *
-            FROM buf
+            FROM buff
             WHERE user_id = :user_id
-              AND buf_type = :buf_type;
+              AND buff_type = :buff_type;
         ";
         $p = [
-            ':user_id' => $buf->userId,
-            ':buf_type' => $buf->bufType
+            ':user_id' => $buff->userId,
+            ':buff_type' => $buff->buffType
         ];
         return DB::runQuery($q, $p);
     }
 
-    public static function insertBuf(BufDAO $buf)
+    public static function insertBuff(BuffDAO $buff)
     {
         $q = "
-            INSERT INTO buf
+            INSERT INTO buff
             VALUE (
-                    :buf_id,
+                    :buff_id,
                     :user_id,
-                    :buf_type,
+                    :buff_type,
                     :finish_time
             );
         ";
         $p = [
-            ':buf_id' => null,
-            ':user_id' => $buf->userId,
-            ':buf_type' => $buf->bufType,
-            ':finish_time' => $buf->finishTime
+            ':buff_id' => null,
+            ':user_id' => $buff->userId,
+            ':buff_type' => $buff->buffType,
+            ':finish_time' => $buff->finishTime
         ];
         return DB::runQuery($q, $p);
     }
 
     /**
-     * @param BufDAO $buf
+     * @param BuffDAO $buff
      * @return PDOStatement
      * @throws Exception
      */
-    public static function deleteBufByUser(BufDAO $buf)
+    public static function deleteBuffByUser(BuffDAO $buff)
     {
         $q = "
-            DELETE FROM buf
+            DELETE FROM buff
             WHERE user_id = :user_id
               AND finish_time < :finish_time;
         ";
         $p = [
-            ':user_id' => $buf->userId,
+            ':user_id' => $buff->userId,
             ':finish_time' => Timezone::getNowUTC()
         ];
         return DB::runQuery($q, $p);

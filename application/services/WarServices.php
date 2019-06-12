@@ -12,11 +12,29 @@ use PDOException;
 class WarServices
 {
     /**
+     * @param int $warId
+     * @return WarDAO|null
+     * @throws Exception
+     */
+    public static function getWar(int $warId)
+    {
+        $container = new WarDAO();
+        $container->warId = $warId;
+
+        $stmt = WarQuery::selectWar($container);
+        $res = $stmt->fetch();
+        if ($res === false) {
+            return null;
+        }
+        return new WarDAO($res);
+    }
+
+    /**
      * @param int $userId
      * @return WarDAO|null
      * @throws Exception
      */
-    public static function selectUserWar(int $userId)
+    public static function getWarByUser(int $userId)
     {
         $container = new WarDAO();
         $container->userId = $userId;

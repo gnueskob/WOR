@@ -3,9 +3,12 @@
 namespace lsb\App\models;
 
 use Exception;
+use lsb\Libs\CtxException;
+use lsb\Utils\Utils;
 
 abstract class DAO
 {
+    private $empty = false;
     /*
     private $updatedProperty = [];
 
@@ -19,8 +22,12 @@ abstract class DAO
      * @param array $dbColumToPropertyMap
      * @throws Exception
      */
-    public function __construct(array $data, array $dbColumToPropertyMap)
+    public function __construct(array $data = [], array $dbColumToPropertyMap = [])
     {
+        if (count($data) === 0) {
+            $this->empty = true;
+            return;
+        }
 
         foreach ($data as $key => $value) {
             if (is_int($key)) {
@@ -51,6 +58,37 @@ abstract class DAO
     public function __get($name)
     {
         throw new Exception("No property exists in DAO", 500);
+    }
+
+    /**
+     * @return array
+     * @throws CtxException
+     */
+    public function toArray()
+    {
+        if ($this->isEmpty()) {
+            (new CtxException())->selectFail();
+        }
+        $properties = get_object_vars($this);
+        $res = [];
+        foreach ($properties as $key => $value) {
+            $resKey = Utils::makeSnakeCase($key);
+            $res[$resKey] = $value;
+        }
+        return $res;
+    }
+
+    public function isEmpty()
+    {
+        return $this->empty;
+    }
+
+    /* @throws CtxException */
+    public function throwCtxExceptionIfEmpty()
+    {
+        if ($this->isEmpty()) {
+            (new CtxException())->selectFail();
+        }
     }
 
     /*

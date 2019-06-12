@@ -82,7 +82,8 @@ class UserServices
     /**
      * @param int $userId
      * @param string $date
-     * @throws CtxException|Exception
+     * @return bool
+     * @throws CtxException
      */
     public static function setUserLastVisit(int $userId, string $date)
     {
@@ -91,10 +92,8 @@ class UserServices
         $userContainer->lastVisit = $date;
 
         $stmt = UserQuery::updateUserInfoWithLastVisit($userContainer);
-        $cnt = $stmt->rowCount();
-        if ($cnt === 0) {
-            (new CtxException())->updateFail();
-        }
+        CtxException::updateFail($stmt->rowCount() === 0);
+        return true;
     }
 
     /**
@@ -111,9 +110,7 @@ class UserServices
 
         try {
             $stmt = UserQuery::updateUserInfoWithName($userContainer);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
+            CtxException::updateFail($stmt->rowCount() === 0);
             return true;
         } catch (PDOException $e) {
             // Unique key 중복 제한으로 걸릴 경우 따로 처리
@@ -139,9 +136,7 @@ class UserServices
 
         try {
             $stmt = UserQuery::updateUserInfoWithTerritory($userContainer);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
+            CtxException::updateFail($stmt->rowCount() === 0);
             return true;
         } catch (PDOException $e) {
             // Unique key 중복 제한은 따로 처리
@@ -157,7 +152,7 @@ class UserServices
      * @param string $hiveId
      * @param int $hiveUid
      * @return int
-     * @throws CtxException
+     * @throws CtxException|Exception
      */
     public static function registerNewAccount(string $hiveId, int $hiveUid): int
     {
@@ -165,37 +160,23 @@ class UserServices
         $userContainer->hiveId = $hiveId;
         $userContainer->hiveUid = $hiveUid;
 
-        $db = DB::getInstance()->getDBConnection();
-        try {
-            $db->beginTransaction();
+        DB::beginTransaction();
+        // user_platform 테이블 레코드 추가
+        $stmt = UserQuery::insertUserPlatform($userContainer);
+        CtxException::insertFail($stmt->rowCount() === 0);
 
-            // user_platform 테이블 레코드 추가
-            $stmt = UserQuery::insertUserPlatform($userContainer);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('registerNewAccount1');
-            }
-            $userId = $db->lastInsertId();
-            $userContainer->userId = $userId;
+        $userId = DB::getLastInsertId();
+        $userContainer->userId = $userId;
 
-            // user_info 테이블 레코드 추가
-            $stmt = UserQuery::insertUserInfo($userContainer);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('registerNewAccount2');
-            }
+        // user_info 테이블 레코드 추가
+        $stmt = UserQuery::insertUserInfo($userContainer);
+        CtxException::insertFail($stmt->rowCount() === 0);
 
-            // user_statistics 테이블 레코드 추가
-            $stmt = UserQuery::insertUserStatistics($userContainer);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail('registerNewAccount3');
-            }
+        // user_statistics 테이블 레코드 추가
+        $stmt = UserQuery::insertUserStatistics($userContainer);
+        CtxException::insertFail($stmt->rowCount() === 0);
+        DB::endTransaction();
 
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
-        }
         return $userId;
     }
 
@@ -205,6 +186,7 @@ class UserServices
      * @param int $neededFoodResource
      * @param int $neededLuxuryResource
      * @param string $upgradeTime
+     * @return bool
      * @throws CtxException
      */
     public static function upgradeUserCastle(
@@ -213,7 +195,8 @@ class UserServices
         int $neededFoodResource,
         int $neededLuxuryResource,
         string $upgradeTime
-    ) {
+    )
+    {
         $userContainer = new UserDAO();
         $userContainer->userId = $user->userId;
         $userContainer->tacticalResource = $user->tacticalResource - $neededTacticalResource;
@@ -225,9 +208,9 @@ class UserServices
 
         // 유저 자원 소모시키기 및 업그레이드 갱신
         $stmt = UserQuery::updateUserInfoWithUpgradeAndResource($userContainer);
-        if ($stmt->rowCount() === 0) {
-            (new CtxException())->updateFail();
-        }
+        CtxException::updateFail($stmt->rowCount() === 0);
+
+        return true;
     }
 
     /* not used
@@ -271,32 +254,30 @@ class UserServices
 
     /**
      * @param UserDAO $user
-     * @param int $neededtacticalResource
-     * @param int $neededFoodResource
-     * @param int $neededLuxuryResource
+     * @param int $tactical
+     * @param int $food
+     * @param int $luxury
+     * @return bool
      * @throws CtxException
      */
-    public static function modifyUserResource(
-        UserDAO $user,
-        int $neededtacticalResource,
-        int $neededFoodResource,
-        int $neededLuxuryResource
-    ) {
+    public static function modifyUserResource(UserDAO $user, int $tactical, int $food, int $luxury)
+    {
         $userContainer = new UserDAO();
         $userContainer->userId = $user->userId;
-        $userContainer->tacticalResource = $user->tacticalResource - $neededtacticalResource;
-        $userContainer->foodResource = $user->foodResource - $neededFoodResource;
-        $userContainer->luxuryResource = $user->luxuryResource - $neededLuxuryResource;
+        $userContainer->tacticalResource = $user->tacticalResource + $tactical;
+        $userContainer->foodResource = $user->foodResource + $food;
+        $userContainer->luxuryResource = $user->luxuryResource + $luxury;
 
         $stmt = UserQuery::updateUserInfoWithResource($userContainer);
-        if ($stmt->rowCount() === 0) {
-            (new CtxException())->updateFail();
-        }
+        CtxException::updateFail($stmt->rowCount() === 0);
+
+        return true;
     }
 
     /**
      * @param int $userId
      * @param int $manpowerUsed
+     * @return bool
      * @throws CtxException
      */
     public static function modifyUserUsedManpower(int $userId, int $manpowerUsed)
@@ -306,9 +287,9 @@ class UserServices
         $userContainer->manpowerUsed = $manpowerUsed;
 
         $stmt = UserQuery::updateUserInfoWithUsedManpower($userContainer);
-        if ($stmt->rowCount() === 0) {
-            (new CtxException())->updateFail('setUserTerritory');
-        }
+        CtxException::updateFail($stmt->rowCount() === 0);
+
+        return true;
     }
 
     /**************************************************************************/

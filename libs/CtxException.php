@@ -13,7 +13,7 @@ class CtxException extends Exception
         int $serverErrCode = 0,
         string $serverMsg = '',
         string $message = '',
-        $code = 404,
+        int $code = 404,
         Exception $previous = null
     )
     {
@@ -50,63 +50,58 @@ class CtxException extends Exception
      ** DB Logical Exceptions            **
      **************************************/
     /**
-     * @param string $tag
+     * @param bool $flag
      * @throws CtxException
      */
-    public function selectFail(string $tag = ''): void
+    public static function selectFail(bool $flag = true): void
     {
-        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
-        $this->serverErrCode = 10000;
-        $this->serverMsg = "select fail :{$tag}";
-        $this->throwDBLogicException();
+        $serverErrCode = 10000;
+        $serverMsg = "select fail";
+        self::throwDBLogicException($serverErrCode, $serverMsg, $flag);
     }
 
     /**
-     * @param string $tag
+     * @param bool $flag
      * @throws CtxException
      */
-    public function insertFail(string $tag = ''): void
+    public static function insertFail(bool $flag = true): void
     {
-        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
-        $this->serverErrCode = 10001;
-        $this->serverMsg = "insert fail :{$tag}";
-        $this->throwDBLogicException();
+        $serverErrCode = 10001;
+        $serverMsg = "insert fail";
+        self::throwDBLogicException($serverErrCode, $serverMsg, $flag);
     }
 
     /**
-     * @param string $tag
+     * @param bool $flag
      * @throws CtxException
      */
-    public function updateFail(string $tag = ''): void
+    public static function updateFail(bool $flag = true): void
     {
-        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
-        $this->serverErrCode = 10002;
-        $this->serverMsg = "update fail :{$tag}";
-        $this->throwDBLogicException();
+        $serverErrCode = 10002;
+        $serverMsg = "update fail";
+        self::throwDBLogicException($serverErrCode, $serverMsg, $flag);
     }
 
     /**
-     * @param string $tag
+     * @param bool $flag
      * @throws CtxException
      */
-    public function deleteFail(string $tag = ''): void
+    public static function deleteFail(bool $flag = true): void
     {
-        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
-        $this->serverErrCode = 10003;
-        $this->serverMsg = "delete fail :{$tag}";
-        $this->throwDBLogicException();
+        $serverErrCode = 10003;
+        $serverMsg = "delete fail";
+        self::throwDBLogicException($serverErrCode, $serverMsg, $flag);
     }
 
     /**
-     * @param string $tag
+     * @param bool $flag
      * @throws CtxException
      */
-    public function transactionFail(string $tag = ''): void
+    public static function transactionFail(bool $flag = true): void
     {
-        $tag = $tag === '' ? debug_backtrace()[1]['function'] : $tag;
-        $this->serverErrCode = 10004;
-        $this->serverMsg = "transaction fail :{$tag}";
-        $this->throwDBLogicException();
+        $serverErrCode = 10004;
+        $serverMsg = "transaction fail";
+        self::throwDBLogicException($serverErrCode, $serverMsg, $flag);
     }
 
     /**************************************
@@ -330,40 +325,49 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
-    public static function throwLogicException(int $scode, string $smsg, bool $flag = true): void
+    private static function throwLogicException(int $scode, string $smsg, bool $flag): void
     {
         if (false === $flag) {
             return;
         }
-        $function = debug_backtrace()[1]['function'];
-        throw new CtxException($scode, $smsg, "Logic Error at {$function}", 200);
+        $function = debug_backtrace()[2]['function'];
+        throw new CtxException($scode, $smsg, "Logic Error at {$function}", 250);
     }
 
-    /**      * @param bool $flag * @throws CtxException */
-    public function throwDBLogicException(): void
+    /**
+     * @param int $scode
+     * @param string $qry
+     * @param bool $flag
+     * @throws CtxException
+     */
+    private static function throwDBLogicException(int $scode, string $qry, bool $flag): void
     {
-        $this->throwException(201, "DB Logic error");
+        if (false === $flag) {
+            return;
+        }
+        $function = debug_backtrace()[2]['function'];
+        throw new CtxException($scode,"DB Login Error: {$qry} in {$function}", "DB Logic Error", 251);
     }
 
-    /**      * @param bool $flag * @throws CtxException */
+    /* @throws CtxException */
     public function throwUnauthenticatedException(): void
     {
         $this->throwException(401, "Unauthenticated");
     }
 
-    /**      * @param bool $flag * @throws CtxException */
+    /* @throws CtxException */
     public function throwNotFoundException(): void
     {
         $this->throwException(404, "Not Found");
     }
 
-    /**      * @param bool $flag * @throws CtxException */
+    /* @throws CtxException */
     public function throwInvalidMethodException(): void
     {
         $this->throwException(405, "Method Not Allowed");
     }
 
-    /**      * @param bool $flag * @throws CtxException */
+    /* @throws CtxException */
     public function throwInternalServerException(): void
     {
         $this->throwException(500, "Internal Server Error");

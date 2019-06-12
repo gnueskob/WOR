@@ -163,4 +163,9 @@ class DB extends Singleton
     {
         return self::getInstance()->transactionMode;
     }
+
+    public static function getLastInsertId()
+    {
+        return self::getInstance()->getDBConnection()->lastInsertId();
+    }
 }

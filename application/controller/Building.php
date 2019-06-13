@@ -3,6 +3,7 @@
 namespace lsb\App\controller;
 
 use Exception;
+use lsb\App\models\BuildingDAO;
 use lsb\Utils\Lock;
 use lsb\Utils\Utils;
 use lsb\App\services\BuildingServices;
@@ -35,7 +36,7 @@ class Building extends Router implements ISubRouter
         $router->post(
             '/add/:user_id',
             // 자원을 확인하고 소모시키는 중간 부분에서 자원량이 갱신되면 안됨
-            Lock::lock(RESOURCE),
+            Lock::lockUser(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getBody();
                 $userId = $data['userId'];
@@ -45,7 +46,8 @@ class Building extends Router implements ISubRouter
 
                 // 해당 위치가 탐사되었는지 검사
                 $tile = ExploratoinServices::getTileByUserAndTile($userId, $tileId);
-                CtxException::notYetExplored(!$tile->isExplored());
+                CtxException::notExploredYet($tile->isEmpty());
+                CtxException::notExploredYet(!$tile->isExplored());
 
                 // 건물 생성에 필요한 자원
                 $plan = Plan::getData(PLAN_BUILDING, $buildingType);
@@ -56,7 +58,7 @@ class Building extends Router implements ISubRouter
 
                 // 현재 유저 자원 정보
                 $user = UserServices::getUserInfo($userId);
-                CtxException::invaildUser($user->isEmpty());
+                CtxException::invalidId($user->isEmpty());
 
                 // 필요한 재료를 가지고 있는 지 검사
                 $hasResource = $user->hasSufficientResource($neededTactical, $neededFood, $neededLuxury);
@@ -65,23 +67,22 @@ class Building extends Router implements ISubRouter
                 // 건설 완료 시간
                 $creatTime = Timezone::getCompleteTime($createUnitTime);
 
+                $buildingContainer = new BuildingDAO();
+                $buildingContainer->userId = $userId;
+                $buildingContainer->tileId = $tileId;
+                $buildingContainer->territoryId = $territoryId;
+                $buildingContainer->buildingType = $buildingType;
+                $buildingContainer->createTime = $creatTime;
+
                 DB::beginTransaction();
-                $buildingId = BuildingServices::createBuilding(
-                    $userId,
-                    $tileId,
-                    $territoryId,
-                    $buildingType,
-                    $creatTime
-                );
+                $buildingId = BuildingServices::createBuilding($buildingContainer);
                 // 이미 사용 중인 타일
                 CtxException::alreadyUsedTile($buildingId === -1);
 
-                UserServices::modifyUserResource(
-                    $user,
-                    $neededTactical,
-                    $neededFood,
-                    $neededLuxury
-                );
+                UserServices
+                    ::watchUserId($userId)
+                    ::modifyUserResource(-$neededTactical, -$neededFood, -$neededLuxury)
+                    ::apply();
                 DB::endTransaction();
 
                 $buildingArr = BuildingServices::getBuilding($buildingId)->toArray();
@@ -97,7 +98,7 @@ class Building extends Router implements ISubRouter
             $building = BuildingServices::getBuilding($buildingId);
 
             CtxException::invalidId($building->isEmpty());
-            CtxException::notCompletedYet(!$building->isCreated());
+            CtxException::notCreatedYet(!$building->isCreated());
 
             $ctx->addBody(['building' => $building->toArray()]);
             $ctx->send();
@@ -106,7 +107,7 @@ class Building extends Router implements ISubRouter
         // 특정 빌딩 업그레이드 요청
         $router->post(
             '/upgrade/:building_id',
-            Lock::lock(RESOURCE),
+            Lock::lockUser(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getBody();
                 $userId = $data['user_id'];
@@ -117,10 +118,10 @@ class Building extends Router implements ISubRouter
                 CtxException::invalidId($building->isEmpty());
 
                 // 건물이 생성 되었는지 검사
-                CtxException::notCompletedYet($building->isCreated());
+                CtxException::notCreatedYet($building->isCreated());
 
                 // 이미 업그레이드 중 인가?
-                CtxException::notCompletedYet($building->isUpgrading());
+                CtxException::notCompletedPreviousJobYet($building->isUpgrading());
 
                 // 빌딩 건물 유형에 따라 업그레이드 기획 정보
                 switch ($building['building_type']) {
@@ -152,14 +153,14 @@ class Building extends Router implements ISubRouter
                 $upgradeTime = Timezone::getCompleteTime($upgradeUnitTime);
 
                 DB::beginTransaction();
-                BuildingServices::upgradeBuilding($buildingId, $building->currentLevel, $upgradeTime);
-
-                UserServices::modifyUserResource(
-                    $user,
-                    $neededTactical,
-                    $neededFood,
-                    $neededLuxury
-                );
+                BuildingServices
+                    ::watchBuildingId($buildingId)
+                    ::upgradeBuilding($building->currentLevel, $upgradeTime)
+                    ::apply(true);
+                UserServices
+                    ::watchUserId($userId)
+                    ::modifyUserResource(-$neededTactical, -$neededFood, -$neededLuxury)
+                    ::apply();
                 DB::endTransaction();
 
                 $buildingArr = BuildingServices::getBuilding($buildingId)->toArray();
@@ -175,7 +176,7 @@ class Building extends Router implements ISubRouter
             $building = BuildingServices::getBuilding($buildingId);
 
             CtxException::invalidId($building->isEmpty());
-            CtxException::notCompletedYet(!$building->isUpgraded());
+            CtxException::notUpgradedYet(!$building->isUpgraded());
 
             $ctx->addBody(['building' => $building->toArray()]);
             $ctx->send();
@@ -185,7 +186,7 @@ class Building extends Router implements ISubRouter
         $router->post(
             '/deploy/:building_id',
             // 인력 확인, 소모 사이에 외부에서의 인력 갱신이 있으면 안됨
-            Lock::lock(MANPOWER),
+            Lock::lockUser(MANPOWER),
             function (Context $ctx) {
                 $data = $ctx->getBody();
                 $userId = $data['user_id'];
@@ -203,33 +204,38 @@ class Building extends Router implements ISubRouter
                 CtxException::invalidId($building->isEmpty());
 
                 // 건물이 생성 되었는가?
-                CtxException::notCompletedYet($building->isCreated());
+                CtxException::notCreatedYet($building->isCreated());
 
                 // 이미 인구 배치 중 인가?
-                CtxException::notCompletedYet($building->isDeploying());
+                CtxException::notCompletedPreviousJobYet($building->isDeploying());
 
-                // 투입 인력이 최대값을 초과하는지
+                // 투입 인력이 건물 배치 인력 최대값을 초과하는지
                 $isOver = $building->manpower + $manpowerSet > $maxManpower;
                 CtxException::exceedManpowerBuilding($isOver);
 
                 // 현재 유저 정보
                 $user = UserServices::getUserInfo($userId);
+                CtxException::invalidId($user->isEmpty());
 
                 // 투입 인력만큼의 가용 인력을 보유 중 인지 확인
-                $hasManpower = $user->manpowerAvailable < $manpowerSet;
-                CtxException::manpowerInsufficient($hasManpower);
-
-                $manpowerUsed = $user->manpowerUsed - $manpowerSet;
+                $hasManpower = $user->manpowerAvailable >= $manpowerSet;
+                CtxException::manpowerInsufficient(!$hasManpower);
 
                 $unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME)['value'];
                 $neededTime = $deployUnitTime * $unitTime;
                 $deployTime = Timezone::getCompleteTime($neededTime);
 
                 DB::beginTransaction();
-                // TODO: 서비스 파라미터 어떻게?
-                BuildingServices::deployBuilding($buildingId, $manpowerSet, $deployTime);
-
-                UserServices::modifyUserUsedManpower($userId, $manpowerUsed);
+                // 건물에 인구 배치
+                BuildingServices
+                    ::watchBuildingId($buildingId)
+                    ::deployBuilding($manpowerSet, $deployTime)
+                    ::apply(true);
+                // 유저 사용 인력 추가
+                UserServices
+                    ::watchUserId($userId)
+                    ::modifyUserManpower(0, +$manpowerSet, 0)
+                    ::apply();
                 DB::endTransaction();
 
                 $buildingArr = BuildingServices::getBuilding($buildingId)->toArray();
@@ -245,7 +251,7 @@ class Building extends Router implements ISubRouter
             $building = BuildingServices::getBuilding($buildingId);
 
             CtxException::invalidId($building->isEmpty());
-            CtxException::notCompletedYet(!$building->isDeployed());
+            CtxException::notDeployedYet(!$building->isDeployed());
 
             $ctx->addBody(['building' => $building->toArray()]);
             $ctx->send();

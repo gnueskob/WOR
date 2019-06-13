@@ -166,6 +166,6 @@ class DB extends Singleton
 
     public static function getLastInsertId()
     {
-        return self::getInstance()->getDBConnection()->lastInsertId();
+        return (int) self::getInstance()->getDBConnection()->lastInsertId();
     }
 }

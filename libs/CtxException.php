@@ -15,8 +15,7 @@ class CtxException extends Exception
         string $message = '',
         int $code = 404,
         Exception $previous = null
-    )
-    {
+    ) {
         parent::__construct($message, $code, $previous);
         $this->serverErrCode = $serverErrCode;
         $this->serverMsg = $serverMsg;
@@ -111,7 +110,7 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
-    public static function invaildUser(bool $flag = true): void
+    public static function invalidUser(bool $flag = true): void
     {
         $serverErrCode = 1000;
         $serverMsg = 'invalid user';
@@ -199,6 +198,18 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
+    public static function notFinishedYet(bool $flag = true): void
+    {
+        $serverErrCode = 1007;
+        $serverMsg = 'war is not finished yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
     public static function exceedManpowerBuilding(bool $flag = true): void
     {
         $serverErrCode = 1008;
@@ -243,10 +254,43 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
-    public static function notCompletedYet(bool $flag = true): void
+    public static function notCreatedYet(bool $flag = true): void
     {
         $serverErrCode = 1012;
-        $serverMsg = 'job is not completed yet';
+        $serverMsg = 'not created yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notUpgradedYet(bool $flag = true): void
+    {
+        $serverErrCode = 1012;
+        $serverMsg = 'not upgraded yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notDeployedYet(bool $flag = true): void
+    {
+        $serverErrCode = 1012;
+        $serverMsg = 'not deployed yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notCompletedPreviousJobYet(bool $flag = true): void
+    {
+        $serverErrCode = 1012;
+        $serverMsg = 'job is not done yet';
         self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
@@ -276,7 +320,7 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
-    public static function notYetExplored(bool $flag = true): void
+    public static function notExploredYet(bool $flag = true): void
     {
         $serverErrCode = 1015;
         $serverMsg = 'location is not explored yet';
@@ -346,7 +390,7 @@ class CtxException extends Exception
             return;
         }
         $function = debug_backtrace()[2]['function'];
-        throw new CtxException($scode,"DB Login Error: {$qry} in {$function}", "DB Logic Error", 251);
+        throw new CtxException($scode, "DB Login Error: {$qry} in {$function}", "DB Logic Error", 251);
     }
 
     /* @throws CtxException */

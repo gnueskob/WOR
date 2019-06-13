@@ -2,6 +2,9 @@
 
 namespace lsb\App\models;
 
+use lsb\Libs\Timezone;
+use Exception;
+
 class WarDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
@@ -10,7 +13,6 @@ class WarDAO extends DAO
         'territory_id' => 'territoryId',
         'attack' => 'attack',
         'manpower' => 'manpower',
-        'building_list' => 'buildingList',
         'food_resource' => 'foodResource',
         'target_defense' => 'targetDefense',
         'prepare_time' => 'prepareTime',
@@ -22,7 +24,6 @@ class WarDAO extends DAO
     public $territoryId;
     public $attack;
     public $manpower;
-    public $buildingList;
     public $foodResource;
     public $targetDefense;
     public $prepareTime;
@@ -34,5 +35,14 @@ class WarDAO extends DAO
             return;
         }
         parent::__construct($data, self::$dbColumToPropertyMap);
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isFinished()
+    {
+        return isset($this->finishTime) && $this->finishTime <= Timezone::getNowUTC();
     }
 }

@@ -7,9 +7,6 @@ use Exception;
 
 class UserDAO extends DAO
 {
-    /*
-    private static $propertyToDBColumnMap = [];
-    */
     private static $dbColumToPropertyMap = [
         'user_id' => 'userId',
         'hive_id' => 'hiveId',
@@ -128,17 +125,8 @@ class UserDAO extends DAO
                 $this->luxuryResource >= $luxury;
     }
 
-    /*
-    public function getDBColumnToPropertyMap()
+    public function hasSUfficientFood(int $food)
     {
-        return self::$dbColumToPropertyMap;
+        return $this->foodResource >= $food;
     }
-
-    public function getPropertyToDBColumnMap()
-    {
-        if (count(self::$propertyToDBColumnMap) === 0) {
-            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
-        }
-        return self::$propertyToDBColumnMap;
-    }*/
 }

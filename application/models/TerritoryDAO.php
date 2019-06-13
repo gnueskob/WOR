@@ -2,6 +2,9 @@
 
 namespace lsb\App\models;
 
+use Exception;
+use lsb\Libs\Timezone;
+
 class TerritoryDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
@@ -22,5 +25,14 @@ class TerritoryDAO extends DAO
             return;
         }
         parent::__construct($data, self::$dbColumToPropertyMap);
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isExplored()
+    {
+        return isset($this->exploreTime) && $this->exploreTime <= Timezone::getNowUTC();
     }
 }

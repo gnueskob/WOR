@@ -2,17 +2,39 @@
 
 namespace lsb\App\services;
 
+use lsb\App\controller\User;
 use lsb\App\models\UserDAO;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use lsb\App\query\UserQuery;
 use Exception;
 use lsb\Libs\Plan;
-use lsb\Libs\Timezone;
-use PDOException;
+use PDOStatement;
 
-class UserServices
+class UserServices extends Update
 {
+    /* @return UserDAO */
+    protected static function getContainer()
+    {
+        return parent::getContainer();
+    }
+
+    protected static function getNewContainer()
+    {
+        return new UserDAO();
+    }
+
+    protected static function updateAll($container, $assign): PDOStatement
+    {
+        return UserQuery::updateUserInfoAll(self::getContainer(), $assign);
+    }
+
+    public static function watchUserId(int $userId)
+    {
+        self::getContainer()->userId = $userId;
+        return new self();
+    }
+
     /**
      * @param int $userId
      * @return UserDAO
@@ -82,70 +104,40 @@ class UserServices
     /**
      * @param int $userId
      * @param string $date
-     * @return bool
-     * @throws CtxException
+     * @return UserServices
+     * @throws Exception
      */
     public static function setUserLastVisit(int $userId, string $date)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
-        $userContainer->lastVisit = $date;
-
-        $stmt = UserQuery::updateUserInfoWithLastVisit($userContainer);
-        CtxException::updateFail($stmt->rowCount() === 0);
-        return true;
+        $container = self::getContainer();
+        $container->userId = $userId;
+        $container->lastVisit = $date;
+        $container->updateProperty(['lastVisit']);
+        return new self();
     }
 
     /**
-     * @param int $userId
      * @param string $name
-     * @return bool
-     * @throws CtxException|Exception
+     * @return UserServices
      */
-    public static function setUserName(int $userId, string $name)
+    public static function setUserName(string $name)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
-        $userContainer->name = $name;
-
-        try {
-            $stmt = UserQuery::updateUserInfoWithName($userContainer);
-            CtxException::updateFail($stmt->rowCount() === 0);
-            return true;
-        } catch (PDOException $e) {
-            // Unique key 중복 제한으로 걸릴 경우 따로 처리
-            if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                return false;
-            } else {
-                throw $e;
-            }
-        }
+        $container = self::getContainer();
+        $container->name = $name;
+        $container->updateProperty(['name']);
+        return new self();
     }
 
     /**
-     * @param int $userId
      * @param int $territoryId
-     * @return bool
-     * @throws CtxException|Exception
+     * @return UserServices
      */
-    public static function setUserTerritory(int $userId, int $territoryId)
+    public static function setUserTerritory(int $territoryId)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
-        $userContainer->territoryId = $territoryId;
-
-        try {
-            $stmt = UserQuery::updateUserInfoWithTerritory($userContainer);
-            CtxException::updateFail($stmt->rowCount() === 0);
-            return true;
-        } catch (PDOException $e) {
-            // Unique key 중복 제한은 따로 처리
-            if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                return false;
-            } else {
-                throw $e;
-            }
-        }
+        $container = self::getContainer();
+        $container->territoryId = $territoryId;
+        $container->updateProperty(['territoryId']);
+        return new self();
     }
 
     /**
@@ -181,115 +173,53 @@ class UserServices
     }
 
     /**
-     * @param UserDAO $user
-     * @param int $neededTacticalResource
-     * @param int $neededFoodResource
-     * @param int $neededLuxuryResource
+     * @param int $currentCastleLevel
      * @param string $upgradeTime
-     * @return bool
-     * @throws CtxException
+     * @return UserServices
      */
-    public static function upgradeUserCastle(
-        UserDAO $user,
-        int $neededTacticalResource,
-        int $neededFoodResource,
-        int $neededLuxuryResource,
-        string $upgradeTime
-    )
+    public static function upgradeUserCastle(int $currentCastleLevel, string $upgradeTime)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $user->userId;
-        $userContainer->tacticalResource = $user->tacticalResource - $neededTacticalResource;
-        $userContainer->foodResource = $user->foodResource - $neededFoodResource;
-        $userContainer->luxuryResource = $user->luxuryResource - $neededLuxuryResource;
-        $userContainer->castleLevel = $user->currentCastleLevel;
-        $userContainer->castleToLevel = $user->currentCastleLevel + 1;
-        $userContainer->upgradeTime = $upgradeTime;
+        $container = self::getContainer();
+        $container->castleLevel = $currentCastleLevel;
+        $container->castleToLevel = $currentCastleLevel + 1;
+        $container->upgradeTime = $upgradeTime;
+        $container->updateProperty(['castleLevel', 'castleToLevel', 'upgradeTime']);
 
-        // 유저 자원 소모시키기 및 업그레이드 갱신
-        $stmt = UserQuery::updateUserInfoWithUpgradeAndResource($userContainer);
-        CtxException::updateFail($stmt->rowCount() === 0);
-
-        return true;
+        return new self();
     }
 
-    /* not used
-     * @param array $data
-     * @throws CtxException
-    public static function resolveUpgradeUserCastle(array $data)
-    {
-        // 성 업그레이드 정보 검색 후 업그레이드 레벨 가져오기
-        $stmt = UserQuery::selectUserCastleUpgrade($data);
-        $res = $stmt->fetch();
-        if ($res === false) {
-            (new CtxException())->selectFail();
-        }
-        $toLevel = $res['to_level'];
-
-        $db = DB::getInstance()->getDBConnection();
-        try {
-            $db->beginTransaction();
-
-            // 성 업그레이드 job 삭제
-            $stmt = UserQuery::deleteUserCastleUpgrade($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->deleteFail();
-            }
-
-            // 성 업그레이드 단계 갱신
-            $data['upgrade'] = $toLevel;
-            $stmt = UserQuery::updateUserInfoWithUpgrade($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
-        }
-    }*/
-
     /**
-     * @param UserDAO $user
      * @param int $tactical
      * @param int $food
      * @param int $luxury
-     * @return bool
-     * @throws CtxException
+     * @return UserServices
      */
-    public static function modifyUserResource(UserDAO $user, int $tactical, int $food, int $luxury)
+    public static function modifyUserResource(int $tactical, int $food, int $luxury)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $user->userId;
-        $userContainer->tacticalResource = $user->tacticalResource + $tactical;
-        $userContainer->foodResource = $user->foodResource + $food;
-        $userContainer->luxuryResource = $user->luxuryResource + $luxury;
+        $container = self::getContainer();
+        $container->tacticalResource =  $tactical;
+        $container->foodResource = $food;
+        $container->luxuryResource = $luxury;
+        $container->updateProperty(['tacticalResource', 'foodResource', 'luxuryResource']);
 
-        $stmt = UserQuery::updateUserInfoWithResource($userContainer);
-        CtxException::updateFail($stmt->rowCount() === 0);
-
-        return true;
+        return new self();
     }
 
     /**
-     * @param int $userId
+     * @param int $manpower
      * @param int $manpowerUsed
-     * @return bool
-     * @throws CtxException
+     * @param int $appendedManpower
+     * @return UserServices
      */
-    public static function modifyUserUsedManpower(int $userId, int $manpowerUsed)
+    public static function modifyUserManpower(int $manpower, int $manpowerUsed, int $appendedManpower)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
-        $userContainer->manpowerUsed = $manpowerUsed;
+        $container = self::getContainer();
+        $container->manpower = $manpower;
+        $container->manpowerUsed = $manpowerUsed;
+        $container->appendedManpower = $appendedManpower;
+        $container->updateProperty(['manpower', 'manpowerUsed', 'appendedManpower']);
 
-        $stmt = UserQuery::updateUserInfoWithUsedManpower($userContainer);
-        CtxException::updateFail($stmt->rowCount() === 0);
-
-        return true;
+        return new self();
     }
 
     /**************************************************************************/
@@ -302,11 +232,10 @@ class UserServices
 
     /**
      * @param int $territoryId
-     * @param string $warTime
-     * @return null
+     * @return int
      * @throws Exception
      */
-    public static function getTargetDefense(int $territoryId, string $warTime)
+    public static function getTargetDefense(int $territoryId)
     {
         $targetUser = UserServices::getUserInfoByTerritory($territoryId);
 
@@ -319,9 +248,7 @@ class UserServices
         $towerDefense = 0;
         $targetBuildings = BuildingServices::getBuildingsByUser($targetUser->userId);
         foreach ($targetBuildings as $building) {
-            if ($building->buildingType !== PLAN_BUILDING_ID_TOWER ||
-                is_null($building->deployTime) ||
-                $building->deployTime > $warTime) {
+            if ($building->buildingType !== PLAN_BUILDING_ID_TOWER || !$building->isDeployed()) {
                 continue;
             }
             $towerDefense += $planTowers[$building->currentLevel]['defense'];

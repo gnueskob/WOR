@@ -24,9 +24,7 @@ class BuffServices
 
         $stmt = BuffQuery::selectBuffByUser($container);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new BuffDAO($res);
     }
 
@@ -42,9 +40,7 @@ class BuffServices
 
         $stmt = BuffQuery::selectBuffByUser($container);
         $res = $stmt->fetchAll();
-        if ($res === false) {
-            return [];
-        }
+        $res = $res === false ? [] : $res;
         foreach ($res as $key => $value) {
             $res[$key] = new BuffDAO($value);
         }
@@ -52,32 +48,20 @@ class BuffServices
     }
 
     /**
-     * @param int $userId
-     * @param int $buffType
-     * @param string $date
-     * @return string
-     * @throws CtxException|Exception
+     * @param BuffDAO $container
+     * @return int
+     * @throws CtxException
      */
-    public static function makeBuff(int $userId, int $buffType, string $date)
+    public static function createBuff(BuffDAO $container)
     {
-        $container = new BuffDAO();
-        $container->userId = $userId;
-        $container->buffType = $buffType;
-        $container->finishTime = $date;
-
         try {
             $stmt = BuffQuery::insertBuff($container);
-
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-
-            $db = DB::getInstance()->getDBConnection();
-            return $db->lastInsertId();
+            CtxException::insertFail($stmt->rowCount() === 0);
+            return DB::getLastInsertId();
         } catch (PDOException $e) {
             // Unique key 중복 제한으로 걸릴 경우 따로 처리
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                (new CtxException())->alreadyExistsBuff();
+                return -1;
             } else {
                 throw $e;
             }
@@ -86,6 +70,7 @@ class BuffServices
 
     /**
      * @param int $userId
+     * @return bool
      * @throws Exception
      */
     public static function refreshBuff(int $userId)
@@ -94,5 +79,7 @@ class BuffServices
         $container->userId = $userId;
 
         BuffQuery::deleteBuffByUser($container);
+
+        return true;
     }
 }

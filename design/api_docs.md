@@ -317,8 +317,16 @@
 | :----------- | :--- | :---- | :---- |
 | user_id      | INT  | Y     | 유저 ID |
 | territory_id | INT  | Y     | 영토 ID |
-| manpower     | INT  | Y     | 출전 병력 |
+| manpower     | ARR  | Y     | 출전 병력 |
 | recource     | INT  | Y     | 군량    |
+
+```json
+"manpower": [
+  {"building_id": 1, "manpower": 231},
+  {"building_id": 2, "manpower": 231},
+  {"building_id": 3, "manpower": 231}
+]
+```
 
 - TODO: 반환 포맷 정리
 
@@ -333,6 +341,7 @@
 | territory_id | INT  | Y     | 영토 ID |
 | war_id  | INT  | Y     | 출전 정보 ID |
 | action_type | INT | Y | 0: 전쟁 준비완료, 1: 출전 취소 |
+
 
 - TODO: 반환 포맷 정리
 

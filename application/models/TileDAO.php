@@ -33,6 +33,6 @@ class TileDAO extends DAO
      */
     public function isExplored()
     {
-        return isset($this->exploreTime) && $this->exploreTime < Timezone::getNowUTC();
+        return isset($this->exploreTime) && $this->exploreTime <= Timezone::getNowUTC();
     }
 }

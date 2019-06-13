@@ -2,6 +2,7 @@
 
 namespace lsb\App\services;
 
+use lsb\App\models\BuildingDAO;
 use lsb\App\models\WarDAO;
 use lsb\App\query\WarQuery;
 use Exception;
@@ -23,9 +24,7 @@ class WarServices
 
         $stmt = WarQuery::selectWar($container);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new WarDAO($res);
     }
 
@@ -41,9 +40,7 @@ class WarServices
 
         $stmt = WarQuery::selectWarByUser($container);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new WarDAO($res);
     }
 
@@ -52,19 +49,16 @@ class WarServices
      * @return string
      * @throws CtxException
      */
-    public static function prepareWar(WarDAO $container)
+    public static function createWar(WarDAO $container)
     {
         try {
             $stmt = WarQuery::insertWar($container);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->insertFail();
-            }
-            $db = DB::getInstance()->getDBConnection();
-            return $db->lastInsertId();
+            CtxException::insertFail($stmt->rowCount() === 0);
+            return DB::getLastInsertId();
         } catch (PDOException $e) {
             // Unique key 중복 제한으로 걸릴 경우 따로 처리
             if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                (new CtxException())->alreadyWarExists();
+                return -1;
             } else {
                 throw $e;
             }
@@ -93,5 +87,21 @@ class WarServices
         $container->territoryId = $territoryId;
 
         WarQuery::deleteWarByTerritory($container);
+    }
+
+    /**********************************************************/
+
+    public static function resolveWarResult(WarDAO $war)
+    {
+        $atk = $war->attack;
+        $dfns = $war->targetDefense;
+        $ratio = $atk / ($atk + $dfns);
+
+        $armyManpower = json_decode($war->buildingList);
+
+        if ($ratio < 0.5) { // 패배
+            BuildingServices::resetBuildingsManpower($armyManpower);
+        }
+
     }
 }

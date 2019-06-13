@@ -7,9 +7,6 @@ use Exception;
 
 class BuildingDAO extends DAO
 {
-    /*
-    private static $propertyToDBColumnMap = [];
-    */
     private static $dbColumToPropertyMap = [
         'building_id' => 'buildingId',
         'user_id' => 'userId',
@@ -20,7 +17,7 @@ class BuildingDAO extends DAO
         'deploy_time' => 'deployTime',
         'upgrade_time' => 'upgradeTime',
         'level' => 'level',
-        'toLevel' => 'to_level',
+        'to_level' => 'toLevel',
         'manpower' => 'manpower',
         'last_update' => 'lastUpdate'
     ];
@@ -41,7 +38,6 @@ class BuildingDAO extends DAO
 
     // hidden property
     public $currentLevel = 1;
-    public $activated = false;
 
     /**
      * BuildingDAO constructor.
@@ -57,25 +53,7 @@ class BuildingDAO extends DAO
         } else {
             $this->currentLevel = $this->level;
         }
-        if (isset($this->deployTime) &&
-            $this->deployTime < Timezone::getNowUTC()) {
-            $this->activated = true;
-        }
     }
-
-    /*
-    public function getDBColumnToPropertyMap()
-    {
-        return self::$dbColumToPropertyMap;
-    }
-
-    public function getPropertyToDBColumnMap()
-    {
-        if (count(self::$propertyToDBColumnMap) === 0) {
-            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
-        }
-        return self::$propertyToDBColumnMap;
-    }*/
 
     /**
      * @return bool
@@ -111,15 +89,6 @@ class BuildingDAO extends DAO
     public function isDeployed()
     {
         return isset($this->deployTime) && $this->deployTime <= Timezone::getNowUTC();
-    }
-
-    /**
-     * @return bool
-     * @throws Exception
-     */
-    public function isCreating()
-    {
-        return isset($this->createTime) && $this->createTime > Timezone::getNowUTC();
     }
 
     /**

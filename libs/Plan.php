@@ -25,6 +25,15 @@ define('PLAN_UPG_WEAPON', 'upgrade_weapon');
 define('PLAN_UNIT', 'unit');
 define('PLAN_ETC', 'etc');
 
+// Map
+define('PLAN_TILE_TYPE_NOT_USED', 0);
+define('PLAN_TILE_TYPE_NORMAL', 1);
+define('PLAN_TILE_TYPE_RESOURCE', 2);
+
+define('PLAN_TERRITORY_TYPE_NOT_USED', 0);
+define('PLAN_TERRITORY_TYPE_NORMAL', 1);
+define('PLAN_TERRITORY_TYPE_BOSS', 2);
+
 // Resource
 define('PLAN_RESOURCE_ID_IRON', 1);
 define('PLAN_RESOURCE_ID_COPPER', 2);
@@ -64,9 +73,13 @@ define('PLAN_TROPHY_ID_SILK', 2);
 define('PLAN_TROPHY_ID_BOW', 3);
 
 // Buff
-define('PLAN_BUF_ID_LOYALTY', 1);
-define('PLAN_BUF_ID_TABOO', 2);
-define('PLAN_BUF_ID_FLOWER', 3);
+define('PLAN_BUFF_ID_LOYALTY', 1);
+define('PLAN_BUFF_ID_TABOO', 2);
+define('PLAN_BUFF_ID_FLOWER', 3);
+
+define('PLAN_BUFF_TYPE_TROPHY', 0);
+define('PLAN_BUFF_TYPE_RESOURCE', 1);
+define('PLAN_BUFF_TYPE_RESOURCE_MANPOWER', 2);
 
 // Weapon
 define('PLAN_WEAPON_ID_BOW', 1);

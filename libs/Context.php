@@ -8,7 +8,7 @@ class Context extends Singleton implements IContext
 {
     public $req;
     public $res;
-
+    private $data = null;
     private $middlewares;
 
     protected function __construct()
@@ -80,8 +80,10 @@ class Context extends Singleton implements IContext
 
     public function getBody()
     {
-        $data = array_merge($this->req->getParams(), $this->req->body);
-        return $data;
+        if (is_null($this->data)) {
+            $this->data = array_merge($this->req->getParams(), $this->req->body);
+        }
+        return $this->data;
     }
 
     public function addBody(array $data): void

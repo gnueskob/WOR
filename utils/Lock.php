@@ -8,7 +8,7 @@ use Exception;
 
 class Lock
 {
-    public static function lock(string $field, int $expire = 1)
+    public static function lockUser(string $field, int $expire = 1)
     {
         return function (Context $ctx) use ($field, $expire) {
             $data = $ctx->getBody();

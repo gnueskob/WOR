@@ -21,6 +21,7 @@ class Utils
     /**
      * @param DAO[] $daos
      * @return array
+     * @throws CtxException
      */
     public static function toArrayAll(array $daos)
     {
@@ -31,15 +32,29 @@ class Utils
         return $res;
     }
 
-    /**
-     * @param object $obj
-     * @throws CtxException
-     */
-    public static function throwExceptionIfNull(object $obj)
+    public static function makeSetClause(DAO $dao, $assign)
     {
-        if (is_null($obj)) {
-            (new CtxException())->selectFail();
+        $dbColumnMap = $dao->getPropertyToDBColumnMap();
+        $set = array_map(function ($property) use ($assign, $dbColumnMap) {
+            $column = $dbColumnMap[$property];
+            return $assign
+                ? "{$column} = :{$column}"
+                : "{$column} = {$column} + :{$column}";
+        }, $dao->getPropertyToQuery());
+        $set = implode(', ', $set);
+        return $set;
+    }
+
+    public static function makeBindParameters(DAO $dao)
+    {
+        $dbColumnMap = $dao->getPropertyToDBColumnMap();
+        $p = [];
+        foreach ($dao->getPropertyToQuery() as $property) {
+            $column = $dbColumnMap[$property];
+            $bind = ":{$column}";
+            $p[$bind] = $dao->{$property};
         }
+        return $p;
     }
 
     public static function getManhattanDistance(int $x1, int $y1, int $x2, int $y2)

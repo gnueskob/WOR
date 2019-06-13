@@ -2,8 +2,8 @@
 
 namespace lsb\App\controller;
 
-use Exception;
-use lsb\App\models\Utils;
+use lsb\Utils\Lock;
+use lsb\Utils\Utils;
 use lsb\App\services\ExploratoinServices;
 use lsb\App\services\UserServices;
 use lsb\Libs\Context;
@@ -12,9 +12,7 @@ use lsb\Libs\DB;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Plan;
 use lsb\Libs\Router;
-use lsb\Libs\SpinLock;
 use lsb\Libs\Timezone;
-use PDOException;
 
 class Exploration extends Router implements ISubRouter
 {
@@ -37,33 +35,32 @@ class Exploration extends Router implements ISubRouter
             $userId = $data['user_id'];
             $tileId = $data['tile_id'];
 
+            // 해당 타일 정보
+            $plan = Plan::getData(PLAN_TILE, $tileId);
+            $tileType = $plan['type'];
+            $tileX = $plan['location_x'];
+            $tileY = $plan['location_y'];
+
+            CtxException::notUsedTile($tileType === PLAN_TILE_TYPE_NOT_USED);
+
             // 단위 수치 기획 정보
             $unit = Plan::getDataAll(PLAN_UNIT);
+            $timeCoefficient = $unit[TILE_EXPLORE_UNIT_TIME]['value'];
+            $tileWidth = $unit[TILE_W]['value'];
+            $tileHeight = $unit[TILE_H]['value'];
 
-            // 해당 타일 정보
-            $tile = Plan::getData(PLAN_TILE, $tileId);
+            // 타겟 타일 까지의 거리
+            $centerX = (int) (($tileWidth - 1) / 2);
+            $centerY = (int) (($tileHeight - 1) / 2);
+            $dist = Utils::getManhattanDistance($tileX, $tileY, $centerX, $centerY);
 
-            if ($tile['type'] === 0) {
-                (new CtxException())->notUsedTile();
-            }
+            $totalExploreUnitTime = $timeCoefficient * $dist;
+            $exploreTime = Timezone::getCompleteTime($totalExploreUnitTime);
 
-            // 영토내 타일 가운데 좌표
-            $centerX = (int) (($unit['max_tile_width']['value'] - 1) / 2);
-            $centerY = (int) (($unit['max_tile_height']['value'] - 1) / 2);
-
-            // 탐사하려는 영토의 위치
-            $x = $tile['location_x'];
-            $y = $tile['location_y'];
-
-            // L2 거리
-            $l2dist = abs($x - $centerX) + abs($y - $centerY);
-            $takenTime = $unit['unit_time'] * $unit['tile_explore_time_coeff'] * $l2dist;
-
-            $exploreTime = (new Timezone())->addDate("{$takenTime} seconds")->getTime();
             $exploreId = ExploratoinServices::exploreTile($userId, $tileId, $exploreTime);
 
-            $tile = ExploratoinServices::getTile($exploreId);
-            $ctx->addBody(['tile' => Utils::toArray($tile)]);
+            $tileArr = ExploratoinServices::getTile($exploreId)->toArray();
+            $ctx->addBody(['tile' => $tileArr]);
             $ctx->send();
         });
 
@@ -72,10 +69,11 @@ class Exploration extends Router implements ISubRouter
             $data = $ctx->getBody();
             $exploreId = $data['explore_id'];
             $tile = ExploratoinServices::getTile($exploreId);
-            if ($tile->exploreTime > Timezone::getNowUTC()) {
-                (new CtxException())->notCompletedYet();
-            }
-            $ctx->addBody(['tile' => Utils::toArray($tile)]);
+
+            CtxException::invalidId($tile->isEmpty());
+            CtxException::notExploredYet(!$tile->isExplored());
+
+            $ctx->addBody(['tile' => $tile->toArray()]);
             $ctx->send();
         });
 
@@ -89,80 +87,65 @@ class Exploration extends Router implements ISubRouter
         });
 
         // 외부 영토 탐사 요청
-        $router->post('/territory/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
-            $userId = $data['user_id'];
-            $territoryId = $data['territory_id'];
+        $router->post(
+            '/territory/:user_id',
+            Lock::lockUser(MANPOWER),
+            function (Context $ctx) {
+                $data = $ctx->getBody();
+                $userId = $data['user_id'];
+                $territoryId = $data['territory_id'];
 
-            // 단위 별 기획 데이터
-            $unit = Plan::getDataAll(PLAN_UNIT);
+                // 단위 별 기획 데이터
+                $unit = Plan::getDataAll(PLAN_UNIT);
+                $timeCoefficient = $unit[TERRITORY_EXPLORE_UNIT_TIME]['value'];
+                $neededManpower = $unit[TERRITORY_EXPLORE_MANPOWER]['value'];
 
-            // 해당 영토 정보
-            $territory = Plan::getData(PLAN_TERRITORY, $territoryId);
+                // 해당 영토 정보
+                $targetTerritory = Plan::getData(PLAN_TERRITORY, $territoryId);
+                $territoryType = $targetTerritory['type'];
+                $targetX = $targetTerritory['location_x'];
+                $targetY = $targetTerritory['location_y'];
 
-            if ($territory['type'] === 0) {
-                (new CtxException())->notUsedTerritory();
-            }
+                CtxException::notUsedTerritory($territoryType === PLAN_TERRITORY_TYPE_NOT_USED);
 
-            // 탐사 지점까지의 유클리드 거리, 걸리는 시간 계산
-            $centerX = (int) ($unit[TERRITORY_W]['value'] / 2);
-            $centerY = (int) ($unit[TERRITORY_H]['value'] / 2);
-            $x = $territory['location_x'];
-            $y = $territory['location_y'];
-            $l2dist = abs($x - $centerX) + abs($y - $centerY);
+                $user = UserServices::getUserInfo($userId);
+                CtxException::invalidId($user->isEmpty());
 
-            $unitTime = $unit[UNIT_TIME]['value'];
-            $timeCoefficient = $unit[TERRITORY_EXPLORE_UNIT_TIME]['value'];
-            $takenTime = $unitTime * $timeCoefficient * $l2dist;
+                // 투입 인력만큼의 가용 인력을 보유 중 인지 확인
+                CtxException::manpowerInsufficient($user->manpowerAvailable < $neededManpower);
 
-            // 인력 소모가 필요하므로..
-            $spinlockKey = SpinLock::getKey(MANPOWER, $userId);
-            SpinLock::spinLock($spinlockKey, 1);
+                list($userX, $userY) = UserServices::getLocation($user->territoryId);
 
-            $user = UserServices::getUserInfo($userId);
+                // 탐사 지점까지의 유클리드 거리, 걸리는 시간 계산
+                $dist = Utils::getManhattanDistance($userX, $userY, $targetX, $targetY);
 
-            // 투입 인력만큼의 가용 인력을 보유 중 인지 확인
-            $neededManpower = $unit[TERRITORY_EXPLORE_MANPOWER]['value'];
-            if ($user->manpowerAvailable < $neededManpower) {
-                SpinLock::spinUnlock($spinlockKey);
-                (new CtxException())->manpowerInsufficient();
-            }
+                $totalExploreTime = $timeCoefficient * $dist;
+                $exploreTime = Timezone::getCompleteTime($totalExploreTime);
 
-            $manpowerUsed = $user->manpowerUsed - $neededManpower;
-            $exploreTime = (new Timezone())->addDate("{$takenTime} seconds")->getTime();
-
-            $db = DB::getInstance()->getDBConnection();
-            try {
-                $db->beginTransaction();
-
+                DB::beginTransaction();
                 $exploreId = ExploratoinServices::exploreTerritory($userId, $territoryId, $exploreTime);
+                UserServices
+                    ::watchUserId($userId)
+                    ::modifyUserManpower(0, +$neededManpower, 0)
+                    ::apply();
+                DB::endTransaction();
 
-                UserServices::modifyUserUsedManpower($userId, $manpowerUsed);
-
-                if ($db->commit() === false) {
-                    (new CtxException())->transactionFail();
-                }
-            } catch (CtxException | PDOException | Exception $e) {
-                $db->rollBack();
-                SpinLock::spinUnlock($spinlockKey);
-                throw $e;
+                $territoryArr = ExploratoinServices::getTerritory($exploreId)->toArray();
+                $ctx->addBody(['territory' => $territoryArr]);
+                $ctx->send();
             }
-            SpinLock::spinUnlock($spinlockKey);
-
-            $territory = ExploratoinServices::getTerritory($exploreId);
-            $ctx->addBody(['territory' => Utils::toArray($territory)]);
-            $ctx->send();
-        });
+        );
 
         // 외부 영토 탐사 완료 요청
         $router->put('/territory/:explore_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $exploreId = $data['explore_id'];
             $territory = ExploratoinServices::getTerritory($exploreId);
-            if ($territory->exploreTime > Timezone::getNowUTC()) {
-                (new CtxException())->notCompletedYet();
-            }
-            $ctx->addBody(['tile' => Utils::toArray($territory)]);
+
+            CtxException::invalidId($territory->isEmpty());
+            CtxException::notExploredYet(!$territory->isExplored());
+
+            $ctx->addBody(['tile' => $territory->toArray()]);
             $ctx->send();
         });
     }

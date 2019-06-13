@@ -2,6 +2,8 @@
 
 namespace lsb\App\controller;
 
+use lsb\App\models\UserDAO;
+use lsb\App\services\MessageServices;
 use lsb\Libs\DB;
 use lsb\Utils\Lock;
 use lsb\Utils\Utils;
@@ -16,8 +18,6 @@ use lsb\Libs\CtxException;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Plan;
 use lsb\Libs\Router;
-use lsb\Libs\SpinLock;
-use Exception;
 use lsb\Libs\Timezone;
 
 class War extends Router implements ISubRouter
@@ -30,99 +30,98 @@ class War extends Router implements ISubRouter
         $router->get('/info/:user_id', function (Context $ctx) {
             $data = $ctx->req->getParams();
             $userId = $data['user_id'];
-            $war = WarServices::getWarByUser($userId);
-            Utils::throwExceptionIfNull($war);
-            $ctx->addBody(['war' => $war->toArray()]);
+            $warArr = WarServices::getWarByUser($userId)->toArray();
+            $ctx->addBody(['war' => $warArr]);
         });
 
         $router->post(
             '/add/:user_id',
-            Lock::lock(MANPOWER, 2),
-            Lock::lock(RESOURCE),
+            Lock::lockUser(MANPOWER, 2),
+            Lock::lockUser(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getBody();
                 $userId = $data['user_id'];
                 $targetTerritoryId = $data['territory_id'];
-                $armyManpower = $data['manpower'];
-
-                // 해당 영토가 유저가 사용할 수 있는 영토인가?
-                $territory = Plan::getData(PLAN_TERRITORY, $targetTerritoryId);
-                if ($territory['type'] === 0) {
-                    (new CtxException())->notUsedTerritory();
-                }
 
                 // 유저가 먼저 해당 영토를 탐사 했는가?
                 $territory = ExploratoinServices::getTerritoryByUserAndTerritory($userId, $targetTerritoryId);
-                if (is_null($territory) || $territory->exploreTime > Timezone::getNowUTC()) {
-                    (new CtxException())->notYetExplored();
-                }
+                CtxException::notExploredYet($territory->isEmpty());
+                CtxException::notExploredYet(!$territory->isExplored());
 
                 $user = UserServices::getUserInfo($userId);
+                CtxException::invalidId($user->isEmpty());
 
-                // 탐사 지점까지의 유클리드 거리, 걸리는 시간 계산
+                // 타겟 영토까지의 거리
                 list($userX, $userY) = UserServices::getLocation($user->territoryId);
                 list($targetX, $targetY) = UserServices::getLocation($targetTerritoryId);
                 $dist = Utils::getManhattanDistance($userX, $userY, $targetX, $targetY);
 
                 // 단위 별 기획 데이터
                 $unit = Plan::getDataAll(PLAN_UNIT);
-                $unitTime = $unit[UNIT_TIME]['value'];
                 $warUnitTimeCoefficient = $unit[WAR_UNIT_TIME]['value'];
                 $warUnitResourcePerManpower = $unit[WAR_UNIT_RESOURCE]['value'];
                 $warPrepareUnitTime = $unit[WAR_PREPARE_TIME]['value'];
 
                 // 기본 출전 준비 시간
-                $prepareTime = $unitTime * $warPrepareUnitTime;
+                $prepareTime = Timezone::getCompleteTime($warPrepareUnitTime);
                 // 출전 준비 시간 + 이동 시간
-                $takenTime = $unitTime * $warUnitTimeCoefficient * $dist + $prepareTime;
-
-                $prepareTime = (new Timezone())->addDate("{$prepareTime} seconds")->getTime();
-                $finishTime = (new Timezone())->addDate("{$takenTime} seconds")->getTime();
+                $warFinishUnitTime = $warUnitTimeCoefficient * $dist + $warPrepareUnitTime;
+                $finishTime = Timezone::getCompleteTime($warFinishUnitTime);
 
                 // 사용하려는 병영에 등록된 총 병력, 공격력
-                list($totalManpower, $totalAttack) = BuildingServices::getArmyManpower($userId, $armyManpower);
-                if ($totalManpower === 0) {
-                    (new CtxException())->manpowerInsufficient();
-                }
-
-                // 총 필요한 군량
-                $neededFoodResource = $warUnitResourcePerManpower * $totalManpower * $dist;
-                $foodResource = $user->foodResource - $neededFoodResource;
-                if ($foodResource < 0) {
-                    (new CtxException())->resourceInsufficient();
-                }
-
-                // 전쟁 출전 준비 시작시의 타겟 영토 건물 기준으로 계산
-                $targetDefense = UserServices::getTargetDefense($targetTerritoryId, $finishTime);
+                list($totalManpower, $totalAttack) = BuildingServices::getArmyManpower($userId);
+                CtxException::manpowerInsufficient($totalManpower === 0);
 
                 // 유저가 가지고 있는 무기 별 총 공격력
                 $weaponAttack = WeaponServices::getAttack($userId);
 
+                // 총 필요한 군량
+                $neededFoodResource = $warUnitResourcePerManpower * $totalManpower * $dist;
+                CtxException::resourceInsufficient(!$user->hasSUfficientFood($neededFoodResource));
+
+                // 전쟁 출전 준비 시작시의 타겟 영토 건물 기준으로 계산
+                $targetDefense = UserServices::getTargetDefense($targetTerritoryId);
+
+                // 전쟁 생성용 컨테이너
                 $warContainer = new WarDAO();
                 $warContainer->userId = $userId;
                 $warContainer->territoryId = $targetTerritoryId;
                 $warContainer->attack = $totalAttack + $weaponAttack;
                 $warContainer->manpower = $totalManpower;
-                $warContainer->buildingList = json_decode($armyManpower);
                 $warContainer->foodResource = $neededFoodResource;
                 $warContainer->targetDefense = $targetDefense;
                 $warContainer->prepareTime = $prepareTime;
                 $warContainer->finishTime = $finishTime;
 
                 DB::beginTransaction();
-                UserServices::modifyUserResource(
-                    $userId,
-                    $user->tacticalResource,
-                    $foodResource,
-                    $user->luxuryResource
-                );
-                $warId = WarServices::prepareWar($warContainer);
+                UserServices
+                    ::watchUserId($userId)
+                    ::modifyUserResource(0, -$neededFoodResource, 0)
+                    ::modifyUserManpower(-$totalManpower, -$totalManpower, 0)
+                    ::apply();
+                BuildingServices::resetBuildingsManpower();
+                $warId = WarServices::createWar($warContainer);
+                CtxException::alreadyWarExists($warId === -1);
+                MessageServices::postMessage(MSG_WAR_FNS, $userId, $warId, $finishTime);
                 DB::endTransaction();
 
-                $war = WarServices::getWar($warId);
-                Utils::throwExceptionIfNull($war);
-                $ctx->addBody(['war' => $war->toArray()]);
+                $warArr = WarServices::getWar($warId)->toArray();
+                $ctx->addBody(['war' => $warArr]);
             }
         );
+
+        // 전쟁 완료 확인
+        $router->get('/add/:war_id', function (Context $ctx) {
+            $data = $ctx->getBody();
+            $warId = $data['war_id'];
+            $war = WarServices::getWar($warId);
+
+            CtxException::invalidId($war->isEmpty());
+            CtxException::notFinishedYet(!$war->isFinished());
+
+            WarServices::resolveWarResult($war);
+
+            $ctx->send();
+        });
     }
 }

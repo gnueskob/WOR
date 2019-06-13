@@ -2,6 +2,9 @@
 
 namespace lsb\App\models;
 
+use Exception;
+use lsb\Libs\Timezone;
+
 class BuffDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
@@ -21,7 +24,15 @@ class BuffDAO extends DAO
         if (count($data) === 0) {
             return;
         }
-
         parent::__construct($data, self::$dbColumToPropertyMap);
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isFinished()
+    {
+        return isset($this->finishTime) && $this->finishTime < Timezone::getNowUTC();
     }
 }

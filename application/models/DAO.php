@@ -9,12 +9,9 @@ use lsb\Utils\Utils;
 abstract class DAO
 {
     private $empty = false;
-    /*
     private $updatedProperty = [];
 
-    abstract public function getDBColumnToPropertyMap();
-    abstract public function getPropertyToDBColumnMap();
-    */
+    private static $propertyToDBColumnMap = [];
 
     /**
      * DAO constructor.
@@ -39,6 +36,14 @@ abstract class DAO
             }
             $this->{$property} = $value;
         }
+    }
+
+    public function getPropertyToDBColumnMap(array $map)
+    {
+        if (empty(self::$propertyToDBColumnMap)) {
+            self::$propertyToDBColumnMap = array_flip($map);
+        }
+        return self::$propertyToDBColumnMap;
     }
 
     /**
@@ -66,9 +71,8 @@ abstract class DAO
      */
     public function toArray()
     {
-        if ($this->isEmpty()) {
-            (new CtxException())->selectFail();
-        }
+        CtxException::selectFail($this->isEmpty());
+
         $properties = get_object_vars($this);
         $res = [];
         foreach ($properties as $key => $value) {
@@ -83,15 +87,6 @@ abstract class DAO
         return $this->empty;
     }
 
-    /* @throws CtxException */
-    public function throwCtxExceptionIfEmpty()
-    {
-        if ($this->isEmpty()) {
-            (new CtxException())->selectFail();
-        }
-    }
-
-    /*
     public function updateProperty(array $p)
     {
         foreach ($p as $property => $value) {
@@ -102,5 +97,5 @@ abstract class DAO
     public function getPropertyToQuery()
     {
         return $this->updatedProperty;
-    }*/
+    }
 }

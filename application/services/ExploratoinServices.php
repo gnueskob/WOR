@@ -25,9 +25,7 @@ class ExploratoinServices
 
         $stmt = ExplorationQuery::selectTile($container);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new TileDAO($res);
     }
 
@@ -45,15 +43,13 @@ class ExploratoinServices
 
         $stmt = ExplorationQuery::selectTileByUserAndTile($container);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new TileDAO($res);
     }
 
     /**
      * @param int $userId
-     * @return array
+     * @return TileDAO[]
      * @throws Exception|Exception
      */
     public static function getTilesByUser(int $userId)
@@ -62,9 +58,7 @@ class ExploratoinServices
         $container->userId = $userId;
         $stmt = ExplorationQuery::selectTilesByUser($container);
         $res = $stmt->fetchAll();
-        if ($res === false) {
-            return [];
-        }
+        $res = $res === false ? [] : $res;
         foreach ($res as $key => $value) {
             $res[$key] = new TileDAO($value);
         }
@@ -74,7 +68,7 @@ class ExploratoinServices
     /**
      * @param int $exploreId
      * @return TerritoryDAO
-     * @throws CtxException|Exception
+     * @throws Exception
      */
     public static function getTerritory(int $exploreId)
     {
@@ -83,16 +77,14 @@ class ExploratoinServices
 
         $stmt = ExplorationQuery::selectTerritory($container);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new TerritoryDAO($res);
     }
 
     /**
      * @param int $userId
      * @param int $territoryId
-     * @return TerritoryDAO|null
+     * @return TerritoryDAO
      * @throws Exception
      */
     public static function getTerritoryByUserAndTerritory(int $userId, int $territoryId)
@@ -103,16 +95,14 @@ class ExploratoinServices
 
         $stmt = ExplorationQuery::selectTerritoryByUserAndTerritory($container);
         $res = $stmt->fetch();
-        if ($res === false) {
-            return null;
-        }
+        $res = $res === false ? [] : $res;
         return new TerritoryDAO($res);
     }
 
     /**
      * @param int $userId
-     * @return array|bool
-     * @throws CtxException|Exception
+     * @return TerritoryDAO[]
+     * @throws Exception
      */
     public static function getTerritoriesByUser(int $userId)
     {
@@ -121,9 +111,7 @@ class ExploratoinServices
 
         $stmt = ExplorationQuery::selectTerritoriesByUser($container);
         $res = $stmt->fetchAll();
-        if ($res === false) {
-            return [];
-        }
+        $res = $res === false ? [] : $res;
         foreach ($res as $key => $value) {
             $res[$key] = new TerritoryDAO($value);
         }
@@ -146,49 +134,9 @@ class ExploratoinServices
 
         // 타일 탐사 데이터 추가
         $stmt = ExplorationQuery::insertTile($container);
-        if ($stmt->rowCount() === 0) {
-            (new CtxException())->insertFail();
-        }
-        $db = DB::getInstance()->getDBConnection();
-        return $db->lastInsertId();
+        CtxException::insertFail($stmt->rowCount() === 0);
+        return DB::getLastInsertId();
     }
-
-    /*
-    public static function resolveExploreTile(array $data)
-    {
-        // 기존 타일 탐사 정보 검색
-        $stmt = ExplorationQuery::selectTile($data);
-        $res = $stmt->fetch();
-        if ($res === false) {
-            (new CtxException())->selectFail();
-        }
-        $exploreTime = $res['explore_finish_time'];
-
-        $db = DB::getInstance()->getDBConnection();
-        try {
-            $db->beginTransaction();
-
-            // 탐사 job 삭제
-            $stmt = ExplorationQuery::deleteTimeExplore($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->deleteFail();
-            }
-
-            // 업그레이드 레벨 갱신
-            $data['explore_time'] = $exploreTime;
-            $stmt = ExplorationQuery::updateTileWithExploreTime($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
-        }
-    }*/
 
     /**
      * @param int $userId
@@ -205,48 +153,8 @@ class ExploratoinServices
         $container->exploreTime = $date;
 
         $stmt = ExplorationQuery::insertTerritory($container);
-        if ($stmt->rowCount() === 0) {
-            (new CtxException())->insertFail();
-        }
+        CtxException::insertFail($stmt->rowCount() === 0);
 
-        $db = DB::getInstance()->getDBConnection();
-        return $db->lastInsertId();
+        return DB::getLastInsertId();
     }
-
-    /*
-    public static function resolveExploreTerritory(array $data)
-    {
-        // 기존 영토 탐사 정보 검색
-        $stmt = ExplorationQuery::selectTerritory($data);
-        $res = $stmt->fetch();
-        if ($res === false) {
-            (new CtxException())->selectFail();
-        }
-        $exploreTime = $res['explore_finish_time'];
-
-        $db = DB::getInstance()->getDBConnection();
-        try {
-            $db->beginTransaction();
-
-            // 탐사 job 삭제
-            $stmt = ExplorationQuery::deleteTerritoryExplore($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->deleteFail();
-            }
-
-            // 탐사 시간 갱신
-            $data['explore_time'] = $exploreTime;
-            $stmt = ExplorationQuery::updateTerritoryWithExploreTime($data);
-            if ($stmt->rowCount() === 0) {
-                (new CtxException())->updateFail();
-            }
-
-            if ($db->commit() === false) {
-                (new CtxException())->transactionFail();
-            }
-        } catch (CtxException | PDOException | Exception $e) {
-            $db->rollBack();
-            throw $e;
-        }
-    }*/
 }

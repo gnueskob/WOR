@@ -11,10 +11,10 @@ class Transaction
     public static function transactionHandler()
     {
         return function (Context $ctx) {
-            $isTransactionMode = DB::getTransactionMode();
             try {
                 $ctx->next();
             } catch (Exception $e) {
+                $isTransactionMode = DB::getTransactionMode();
                 if ($isTransactionMode) {
                     DB::getInstance()->getDBConnection()->rollBack();
                 }

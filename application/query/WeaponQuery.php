@@ -6,6 +6,7 @@ use lsb\App\models\WeaponDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use Exception;
+use lsb\Utils\Utils;
 use PDOStatement;
 
 class WeaponQuery
@@ -122,6 +123,19 @@ class WeaponQuery
         return DB::runQuery($q, $p);
     }
     */
+
+    public static function updateBuildingAll(WeaponDAO $container, bool $assign = false)
+    {
+        $set = Utils::makeSetClause($container, $assign);
+        $q = "
+            UPDATE weapon
+            SET {$set}
+            WHERE weapon_id = :weapon_id;
+        ";
+        $p = Utils::makeBindParameters($container);
+        $p[':weapon_id'] = $container->weaponId;
+        return DB::runQuery($q, $p);
+    }
 
     public static function updateWeaponWithLevel(WeaponDAO $weapon)
     {

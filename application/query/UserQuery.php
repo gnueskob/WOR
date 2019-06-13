@@ -6,6 +6,7 @@ use lsb\App\models\UserDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use Exception;
+use lsb\Utils\Utils;
 use PDOStatement;
 
 class UserQuery
@@ -60,18 +61,20 @@ class UserQuery
         return DB::runQuery($q, $p);
     }
 
-    /* not used
-    public static function selectUserCastleUpgrade(array $d)
+    public static function updateUserInfoAll(UserDAO $user, bool $assign = false)
     {
+        $set = Utils::makeSetClause($user, $assign);
         $q = "
-            SELECT *
-            FROM user_castle_upgrade
+            UPDATE user_info
+            SET {$set}
             WHERE user_id = :user_id;
         ";
-        $p = [':user_id' => $d['user_id']];
+        $p = Utils::makeBindParameters($user);
+        $p[':user_id'] = $user->userId;
         return DB::runQuery($q, $p);
-    }*/
+    }
 
+    /*
     public static function updateUserInfoWithLastVisit(UserDAO $user)
     {
         $q = "
@@ -80,8 +83,8 @@ class UserQuery
             WHERE user_id = :user_id;
         ";
         $p = [
-            ':name' => $user->name,
-            ':last_visit' => $user->userId
+            ':user_id' => $user->userId,
+            ':last_visit' => $user->lastVisit
         ];
         return DB::runQuery($q, $p);
     }
@@ -118,9 +121,9 @@ class UserQuery
     {
         $q = "
             UPDATE user_info
-            SET tactical_resource = :tactical_resource,
-                food_resource = :food_resource,
-                luxury_resource = :luxury_resource
+            SET tactical_resource = tactical_resource + :tactical_resource,
+                food_resource = food_resource + :food_resource,
+                luxury_resource = luxury_resource + :luxury_resource
             WHERE user_id = :user_id;
         ";
         $p = [
@@ -181,7 +184,7 @@ class UserQuery
             ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
-    }
+    }*/
 
     /**
      * @param UserDAO $user
@@ -294,45 +297,4 @@ class UserQuery
         ];
         return DB::runQuery($q, $p);
     }
-
-    /* not used
-    public static function insertUserCastleUpgrade(array $d)
-    {
-        $q = "
-            INSERT INTO user_castle_upgrade
-            VALUE (
-                   :id,
-                   :user_id,
-                   :from_level,
-                   :to_level,
-                   :upgrade_finish_time
-            );
-        ";
-        $p = [
-            ':id' => null,
-            ':user_id' => $d['user_id'],
-            ':from_level' => $d['from_level'],
-            ':to_level' => $d['to_level'],
-            ':upgrade_finish_time' => $d['upgrade_finish_time']
-        ];
-        return DB::runQuery($q, $p);
-    }*/
-
-    /* not used
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-    public static function deleteUserCastleUpgrade(array $d)
-    {
-        $q = "
-            DELETE FROM user_castle_upgrade
-            WHERE user_id = :user_id
-              AND finish_time <= :finish_time;
-        ";
-        $p = [
-            ':user_id' => $d['user_id'],
-            ':finish_time' => Timezone::getNowUTC()
-        ];
-        return DB::runQuery($q, $p);
-    }*/
 }

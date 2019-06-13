@@ -257,7 +257,6 @@ CREATE TABLE war (
   territory_id  BIGINT        NOT NULL,
   attack        BIGINT        NOT NULL,
   manpower      BIGINT        NOT NULL,
-  building_list TEXT          NOT NULL,
   food_resource BIGINT        NOT NULL,
   target_defense  BIGINT      NOT NULL,
   prepare_time  DATETIME      NOT NULL,
@@ -345,21 +344,80 @@ CREATE TABLE mail (
   mail_id             BIGINT      NOT NULL    AUTO_INCREMENT,
   from_user_id        BIGINT      NOT NULL,
   to_user_id          BIGINT      NOT NULL,
-  created_date        DATETIME    NOT NULL,
+  create_time         DATETIME    NOT NULL,
+  text                TEXT        NULL,
+  item                TEXT        NULL,
   last_update         DATETIME    NOT NULL,
   PRIMARY KEY (mail_id),
   INDEX idx_to_user (to_user_id)
 );
 
-CREATE TABLE mail_wait (
-  wait_id         BIGINT    NOT NULL    AUTO_INCREMENT,
-  from_user_id    BIGINT    NOT NULL,
-  to_user_id      BIGINT    NOT NULL,
-  text                TEXT        NULL,
-  tactical_resource   BIGINT      NOT NULL,
-  food_resource       BIGINT      NOT NULL,
-  luxury_resource     BIGINT      NOT NULL,
-  created_time    BIGINT    NOT NULL,
-  PRIMARY KEY (waid_id),
-  INDEX idx_to_user_id (to_user_id)
+/**
+  * pendig job 체크용 테이블
+*/
+
+CREATE TABLE msg_building_create (
+  msg_id              BIGINT      NOT NULL    AUTO_INCREMENT,
+  user_id             BIGINT      NOT NULL,
+  target_id           BIGINT      NOT NULL,
+  create_time         DATETIME    NOT NULL,
+  active_time         DATETIME    NOT NULL,
+  PRIMARY KEY (mail_id),
+  INDEX idx_target_id (target_id),
+  INDEX idx_user_active (user_id, active_time)
+);
+
+CREATE TABLE msg_building_upgrade (
+  msg_id              BIGINT      NOT NULL    AUTO_INCREMENT,
+  user_id             BIGINT      NOT NULL,
+  target_id           BIGINT      NOT NULL,
+  create_time         DATETIME    NOT NULL,
+  active_time         DATETIME    NOT NULL,
+  PRIMARY KEY (mail_id),
+  INDEX idx_target_id (target_id),
+  INDEX idx_user_active (user_id, active_time)
+);
+
+CREATE TABLE msg_building_deploy (
+  msg_id              BIGINT      NOT NULL    AUTO_INCREMENT,
+  user_id             BIGINT      NOT NULL,
+  target_id           BIGINT      NOT NULL,
+  create_time         DATETIME    NOT NULL,
+  active_time         DATETIME    NOT NULL,
+  PRIMARY KEY (mail_id),
+  INDEX idx_target_id (target_id),
+  INDEX idx_user_active (user_id, active_time)
+);
+
+CREATE TABLE msg_weapon_create (
+  msg_id              BIGINT      NOT NULL    AUTO_INCREMENT,
+  user_id             BIGINT      NOT NULL,
+  target_id           BIGINT      NOT NULL,
+  create_time         DATETIME    NOT NULL,
+  active_time         DATETIME    NOT NULL,
+  PRIMARY KEY (mail_id),
+  INDEX idx_target_id (target_id),
+  INDEX idx_user_active (user_id, active_time)
+);
+
+CREATE TABLE msg_weapon_upgrade (
+  msg_id              BIGINT      NOT NULL    AUTO_INCREMENT,
+  user_id             BIGINT      NOT NULL,
+  target_id           BIGINT      NOT NULL,
+  create_time         DATETIME    NOT NULL,
+  active_time         DATETIME    NOT NULL,
+  PRIMARY KEY (mail_id),
+  INDEX idx_target_id (target_id),
+  INDEX idx_user_active (user_id, active_time)
+);
+
+CREATE TABLE msg_war_finish (
+  msg_id              BIGINT      NOT NULL    AUTO_INCREMENT,
+  user_id             BIGINT      NOT NULL,
+  target_id           BIGINT      NOT NULL,
+  create_time         DATETIME    NOT NULL,
+  active_time         DATETIME    NOT NULL,
+  PRIMARY KEY (mail_id),
+  INDEX idx_target_id (target_id),
+  INDEX idx_user_active (user_id, active_time)
 );

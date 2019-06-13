@@ -6,6 +6,7 @@ use lsb\App\models\BuildingDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use Exception;
+use lsb\Utils\Utils;
 use PDOStatement;
 
 class BuildingQuery
@@ -32,10 +33,10 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
-    public static function selectBuildingByUser(BuildingDAO $building)
+    public static function selectBuildingsByUser(BuildingDAO $building)
     {
         $q = "
-            SELECT b.*
+            SELECT *
             FROM building
             WHERE user_id = :user_id;
         ";
@@ -43,18 +44,20 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
-    /* 각 테이블 별로 쿼리 분할 시 비용 하락으로 더 좋으나... 시간 없음 ㅎ;
-    public static function selectBuildingUpgrade(array $d)
+    public static function updateBuildingAll(BuildingDAO $building, bool $assign = false)
     {
+        $set = Utils::makeSetClause($building, $assign);
         $q = "
-            SELECT *
-            FROM building_upgrade
+            UPDATE building
+            SET {$set}
             WHERE building_id = :building_id;
         ";
-        $p = [':building_id' => $d['building_id']];
+        $p = Utils::makeBindParameters($building);
+        $p[':building_id'] = $building->buildingId;
         return DB::runQuery($q, $p);
-    }*/
+    }
 
+    /*
     public static function updateBuildingWithLevel(BuildingDAO $building)
     {
         $q = "
@@ -72,7 +75,6 @@ class BuildingQuery
         return DB::runQuery($q, $p);
     }
 
-    /*
     public static function updateBuildingWithCreateTime(array $d)
     {
         $q = "
@@ -85,7 +87,7 @@ class BuildingQuery
             ':create_time' => $d['create_time']
         ];
         return DB::runQuery($q, $p);
-    }*/
+    }
 
     public static function updateBuildingWithDeployTimeAndManpower(BuildingDAO $building)
     {
@@ -101,7 +103,7 @@ class BuildingQuery
             ':building_id' => $building->buildingId
         ];
         return DB::runQuery($q, $p);
-    }
+    }*/
 
     /**
      * @param BuildingDAO $building
@@ -141,116 +143,4 @@ class BuildingQuery
         ];
         return DB::runQuery($q, $p);
     }
-
-    /*
-    public static function insertBuildingCreate(array $d)
-    {
-        $q = "
-            INSERT INTO building_create
-            VALUE (
-                   :crate_id,
-                   :building_id,
-                   :user_id,
-                   :create_finish_time
-            );
-        ";
-        $p = [
-            ':crate_id' => null,
-            ':building_id' => $d['building_id'],
-            ':user_id' => $d['user_id'],
-            ':create_finish_time' => $d['create_finish_time']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function insertBuildingUpgrade(array $d)
-    {
-        $q = "
-            INSERT INTO building_upgrade
-            VALUE (
-                   :upgrade_id,
-                   :building_id,
-                   :user_id,
-                   :from_level,
-                   :to_level,
-                   :done,
-                   :upgrade_finish_time
-            );
-        ";
-        $p = [
-            ':upgrade_id' => null,
-            ':building_id' => $d['building_id'],
-            ':user_id' => $d['user_id'],
-            ':from_level' => $d['from_level'],
-            ':to_level' => $d['to_level'],
-            ':done' => null,
-            ':upgrade_finish_time' => $d['upgrade_finish_time']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function insertBuildingDeploy(array $d)
-    {
-        $q = "
-            INSERT INTO building_deploy
-            VALUE (
-                   :upgrade_id,
-                   :building_id,
-                   :user_id,
-                   :done,
-                   :deploy_finish_time
-            );
-        ";
-        $p = [
-            ':upgrade_id' => null,
-            ':building_id' => $d['building_id'],
-            ':user_id' => $d['user_id'],
-            ':done' => null,
-            ':deploy_finish_time' => $d['deploy_finish_time']
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function deleteBuildingCreate(array $d)
-    {
-        $q = "
-            DELETE FROM building_create
-            WHERE building_id = :building_id
-              AND create_finish_time <= :create_finish_time;
-        ";
-        $p = [
-            ':building_id' => $d['building_id'],
-            ':create_finish_time' => Timezone::getNowUTC()
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function deleteBuildingUpgrade(array $d)
-    {
-        $q = "
-            DELETE FROM building_upgrade
-            WHERE building_id = :building_id
-              AND upgrade_finish_time <= :upgrade_finish_time;
-        ";
-        $p = [
-            ':building_id' => $d['building_id'],
-            ':upgrade_finish_time' => Timezone::getNowUTC()
-        ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function deleteBuildingDeploy(array $d)
-    {
-        $q = "
-            DELETE FROM building_deploy
-            WHERE building_id = :building_id
-              AND deploy_finish_time <= :deploy_finish_time;
-        ";
-        $p = [
-            ':building_id' => $d['building_id'],
-            ':deploy_finish_time' => Timezone::getNowUTC()
-        ];
-        return DB::runQuery($q, $p);
-    }
-    */
 }

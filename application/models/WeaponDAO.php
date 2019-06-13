@@ -50,4 +50,31 @@ class WeaponDAO extends DAO
             $this->currentLevel = $this->level;
         }
     }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isUpgrading()
+    {
+        return isset($this->upgradeTime) && $this->upgradeTime > Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isUpgraded()
+    {
+        return isset($this->upgradeTime) && $this->upgradeTime <= Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isCreated()
+    {
+        return isset($this->createTime) && $this->createTime <= Timezone::getNowUTC();
+    }
 }

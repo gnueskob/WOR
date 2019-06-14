@@ -3,6 +3,7 @@
 namespace lsb\App\models;
 
 use lsb\Libs\DB;
+use PDOException;
 
 class Query
 {
@@ -32,6 +33,8 @@ class Query
     {
         return new static;
     }
+
+    /**********************************************************/
 
     public function setQuery($q, $p)
     {
@@ -95,7 +98,7 @@ class Query
         $this->q = "{$insertClause} {$columns} {$valueClause}";
     }
 
-    public function run()
+    public function run(array $PDOExceptionCode = [])
     {
         if ($this->selectQurey) {
             $this->makeSelectQuery();
@@ -106,7 +109,14 @@ class Query
         } elseif ($this->insertQurey) {
             $this->makeInsertQuery();
         }
-        return DB::runQuery($this->q, $this->p);
+        try {
+            return DB::runQuery($this->q, $this->p);
+        } catch (PDOException $e) {
+            if (in_array($e->getCode(), $PDOExceptionCode)) {
+                return false;
+            }
+            throw $e;
+        }
     }
 
     protected function setTable($table)
@@ -171,7 +181,7 @@ class Query
         foreach ($conditions as $column => $value) {
             $column = $this->map[$column];
             $bind = ":{$column}";
-            $this->where[] = "{$column} {$eq} {$bind}";
+            $this->where[$bind] = "{$column} {$eq} {$bind}";
             $this->p[$bind] = $value;
         }
         return $this;
@@ -207,7 +217,7 @@ class Query
         foreach ($sets as $column => $value) {
             $column = $this->map[$column];
             $bind = ":{$column}";
-            $this->set[] = $sign === ''
+            $this->set[$bind] = $sign === ''
                 ? "{$column} = {$bind}"
                 : "{$column} = {$column} {$sign} {$bind}";
             $this->p[$bind] = $value;
@@ -228,8 +238,8 @@ class Query
         foreach ($insertValues as $column => $value) {
             $column = $this->map[$column];
             $bind = ":{$column}";
-            $this->column[] = $column;
-            $this->value[] = $bind;
+            $this->column[$bind] = $column;
+            $this->value[$bind] = $bind;
             $this->p[$bind] = $value;
         }
         return $this;

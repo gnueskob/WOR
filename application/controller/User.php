@@ -21,15 +21,17 @@ class User extends Router implements ISubRouter
         // hive 정보로 로그인
         $router->put('/login', function (Context $ctx) {
             $data = $ctx->getBody();
+            $hiveId = $data['hive_id'];
+            $hiveUid = $data['hive_uid'];
 
             // 하이브 정보로 유저 검색 후 없는 경우 비정상 유저
-            $user = UserServices::checkHiveUserExists($data);
+            $user = UserServices::checkHiveUserExists($hiveId, $hiveUid);
             $userId = $user->userId;
 
-            UserServices::visitUser($userId);
+            UserServices::visit($userId);
 
             // TODO: token 생성
-            $userArr = UserServices::getUser($data)->toArray();
+            $userArr = UserServices::getUser($userId)->toArray();
             $ctx->addBody([
                 'user' => $userArr,
                 'token' => 'token_temp'
@@ -40,18 +42,18 @@ class User extends Router implements ISubRouter
         // hive 정보로 회원가입
         $router->post('/register', function (Context $ctx) {
             $data = $ctx->getBody();
+            $hiveId = $data['hive_id'];
+            $hiveUid = $data['hive_uid'];
 
             // 하이브 정보로 유저 검색 후 이미 존재하면 fail
-            UserServices::checkNewHiveUser($data);
+            UserServices::checkNewHiveUser($hiveId, $hiveUid);
 
             // 없는 정보일 시 새로운 계정 생성
-            $userId = UserServices::registerNewAccount($data);
-            $data['user_id'] = $userId;
+            $user = UserServices::registerNewAccount($data);
 
             // TODO: token 생성
-            $userArr = UserServices::getUser($data)->toArray();
             $ctx->addBody([
-                'user' => $userArr,
+                'user' => $user->toArray(),
                 'token' => 'token_temp'
             ]);
             $ctx->send();
@@ -60,12 +62,11 @@ class User extends Router implements ISubRouter
         // 이름 변경
         $router->put('/name/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
-
-            // TODO:
+            $userId = $data['user_id'];
+            $name = $data['name'];
 
             // 최초 로그인 후 영주 이름 설정
-            $isSuccess = UserServices::renameUser($data);
-            CtxException::alreadyUsedName(!$isSuccess);
+            UserServices::rename($userId, $name);
 
             $userArr = UserServices::getUser($userId)->toArray();
             $ctx->addBody(['user' => $userArr]);
@@ -75,15 +76,11 @@ class User extends Router implements ISubRouter
         // 영토 변경
         $router->put('/territory/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
-            // 최초 로그인 시 영토 지정
             $userId = $data['user_id'];
             $territoryId = $data['territory_id'];
 
-            $isSuccess = UserServices
-                ::watchUserId($userId)
-                ::setUserTerritory($territoryId)
-                ::apply(true);
-            CtxException::alreadyUsedTerritory(!$isSuccess);
+            // 최초 로그인 시 영토 지정
+            UserServices::relocateTerritory($userId, $territoryId);
 
             $userArr = UserServices::getUser($userId)->toArray();
             $ctx->addBody(['user' => $userArr]);
@@ -109,33 +106,16 @@ class User extends Router implements ISubRouter
                 $data = $ctx->getBody();
                 $userId = $data['user_id'];
 
-                // 유저 자원 정보 확인
                 $user = UserServices::getUserInfo($userId);
-                CtxException::invalidId($user->isEmpty());
-
-                // 이미 업그레이드 진행중 인지 검사
-                CtxException::notUpgradedYet($user->isUpgrading());
 
                 // 업그레이드에 필요한 자원
-                $plan = Plan::getData(PLAN_UPG_CASTLE, $user->currentCastleLevel);
-                $neededTactical = $plan['need_tactical_resource'];
-                $neededFood = $plan['need_food_resource'];
-                $neededLuxury = $plan['need_luxury_resource'];
+                $planResource = Plan::getData(PLAN_UPG_CASTLE, $user->currentCastleLevel);
 
-                // 필요한 재료를 가지고 있는 지 검사
-                $hasResource = $user->hasSufficientResource($neededTactical, $neededFood, $neededLuxury);
-                CtxException::resourceInsufficient(!$hasResource);
-
-                // 업그레이드에 필요한 시간
-                $castleUpgradeUnitTime = Plan::getData(PLAN_BUILDING, PLAN_BUILDING_ID_CASTLE)['upgrade_unit_time'];
-                $upgradeTime = Timezone::getCompleteTime($castleUpgradeUnitTime);
+                // 유저 자원 정보 확인
+                UserServices::checkUpgradePossible($user, $planResource);
 
                 // 유저 자원 소모, 성 업그레이드
-                UserServices
-                    ::watchUserId($userId)
-                    ::modifyUserResource(-$neededTactical, -$neededFood, -$neededLuxury)
-                    ::upgradeUserCastle($user->currentCastleLevel, $upgradeTime)
-                    ::apply();
+                UserServices::upgradeCastle($user, $planResource);
 
                 $userArr = UserServices::getUser($userId)->toArray();
                 $ctx->addBody(['user' => $userArr]);
@@ -149,8 +129,7 @@ class User extends Router implements ISubRouter
             $userId = $data['user_id'];
             $user = UserServices::getUser($userId);
 
-            CtxException::invalidId($user->isEmpty());
-            CtxException::notUpgradedYet(!$user->isUpgraded());
+            UserServices::checkUpgradeFinished($user);
 
             $ctx->addBody(['user' => $user->toArray()]);
             $ctx->send();

@@ -34,12 +34,32 @@ class UserQuery extends Query
 
     /**************************************************************/
 
-    public function duplicateCheck()
+    private function setResource($tactical, $food, $luxury, $sign)
     {
-        // TODO:
+        if ($sign === '+') {
+            return $this->setAdd([
+                'tacticalResource' => $tactical,
+                'foodResource' => $food,
+                'luxuryResource' => $luxury
+            ]);
+        } elseif ($sign === '-') {
+            return $this->setSub([
+                'tacticalResource' => $tactical,
+                'foodResource' => $food,
+                'luxuryResource' => $luxury
+            ]);
+        }
     }
 
-    /**************************************************************/
+    public function setSubResource($tactical, $food, $luxury)
+    {
+        return $this->setResource($tactical, $food, $luxury, '-');
+    }
+
+    public function setAddResource($tactical, $food, $luxury)
+    {
+        return $this->setResource($tactical, $food, $luxury, '+');
+    }
 
     public function whereHiveUser($hiveId, $hiveUid)
     {
@@ -56,25 +76,14 @@ class UserQuery extends Query
 
     /**************************************************************/
 
+    // SELCET QUERY FOR USER
+
     public static function qSelectHiveUser(UserDAO $dao)
     {
         return static::userPlatform()
             ->selectQurey()
             ->select(['userId'])
             ->whereHiveUser($dao->hiveId, $dao->hiveUid);
-    }
-
-    /**
-     * @param UserDAO $dao
-     * @return UserQuery
-     * @throws Exception
-     */
-    public static function qUpdateUserLastVisit(UserDAO $dao)
-    {
-        return static::userInfo()
-            ->updateQurey()
-            ->set(['lastVisit' => Timezone::getNowUTC()])
-            ->whereUserId($dao->userId);
     }
 
     public static function qSelectUserInfo(UserDAO $dao)
@@ -92,12 +101,120 @@ class UserQuery extends Query
             ->whereUserId($dao->userId);
     }
 
+    /**************************************************************/
+
+    // UPDATE QUERY FOR USER
+
+    public static function qUpdateUserSetLastVisit(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->set(['lastVisit' => $dao->lastVisit])
+            ->whereUserId($dao->userId);
+    }
+
     public static function qUpdateUserInfoSetName(UserDAO $dao)
     {
         return static::userInfo()
             ->updateQurey()
             ->set(['name' => $dao->name])
-            ->whereEqual($dao->userId);
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qUpdateUserInfoSetTerritoryId(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->set(['territoryId' => $dao->territoryId])
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qUpdateUserInfoSetResource(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->setSubResource(
+                $dao->tacticalResource,
+                $dao->foodResource,
+                $dao->luxuryResource
+            )
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qUpdateUserInfoSetCastleLevel(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->setSubResource(
+                $dao->tacticalResource,
+                $dao->foodResource,
+                $dao->luxuryResource
+            )
+            ->set([
+                'castleLevel' => $dao->castleLevel,
+                'castleToLevel' => $dao->castleToLevel,
+                'upgradeTime' => $dao->upgradeTime
+            ])
+            ->whereUserId($dao->userId);
+    }
+
+    /**************************************************************/
+
+    // INSERT QUERY FOR USER
+
+    public static function qInsertUserPlatform(UserDAO $dao)
+    {
+        return static::userPlatform()
+            ->insertQurey()
+            ->value([
+                'userId' => null,
+                'hiveId' => $dao->hiveId,
+                'hiveUid' => $dao->hiveUid,
+                'registerDate' => $dao->registerDate,
+                'country' => $dao->country,
+                'lang' => $dao->lang,
+                'osVersion' => $dao->osVersion,
+                'appVersion' => $dao->appVersion
+            ]);
+    }
+
+    public static function qInsertUserInfo(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->insertQurey()
+            ->value([
+                'userId' => $dao->userId,
+                'lastVisit' => $dao->lastVisit,
+                'territoryId' => $dao->territoryId,
+                'name' => null,
+                'castleLevel' => $dao->castleLevel,
+                'castleToLevel' => $dao->castleToLevel,
+                'upgradeTime' => null,
+                'penaltyFinishTime' => null,
+                'autoGenerateManpower' => $dao->autoGenerateManpower,
+                'manpower' => $dao->manpower,
+                'appendedManpower' => $dao->appendedManpower,
+                'tacticalResource' => $dao->tacticalResource,
+                'foodResource' => $dao->foodResource,
+                'luxuryResource' => $dao->luxuryResource
+            ]);
+    }
+
+    public static function qInsertUserStat(UserDAO $dao)
+    {
+        return static::userStat()
+            ->insertQurey()
+            ->value([
+                'userId' => $dao->userId,
+                'warRequest' => $dao->warRequest,
+                'warVictory' => $dao->warVictory,
+                'warDefeated' => $dao->warDefeated,
+                'despoilDefenseSuccess' => $dao->despoilDefenseSuccess,
+                'despoilDefenseFail' => $dao->despoilDefenseFail,
+                'boss1KillCount' => $dao->boss1KillCount,
+                'boss2KillCount' => $dao->boss2KillCount,
+                'boss3KillCount' => $dao->boss3KillCount
+            ]);
     }
 
     /**************************************************************/
@@ -260,14 +377,8 @@ class UserQuery extends Query
      * @return PDOStatement
      * @throws Exception
      */
-    public static function insertUserPlatform(UserDAO $user)
+    public static function insertUserPlatform(UserDAO $dao)
     {
-        return static::userPlatform()
-            ->insertQurey()
-            ->value([
-                'userId' => $user->userId,
-                'hive'
-            ]);
         $q = "
             INSERT INTO user_platform
             VALUE (

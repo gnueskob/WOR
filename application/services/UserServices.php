@@ -6,114 +6,127 @@ use lsb\App\controller\User;
 use lsb\App\models\UserDAO;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
-use lsb\App\query\UserQuery;
+use lsb\App\query\UserQuery as UQ;
 use Exception;
-use lsb\Libs\Plan;
 use PDOStatement;
+use lsb\Libs\Plan;
 
-class UserServices extends Update
+class UserServices
 {
-    /* @return UserDAO */
-    protected static function getContainer()
-    {
-        return parent::getContainer();
-    }
-
-    protected static function getNewContainer()
-    {
-        return new UserDAO();
-    }
-
-    protected static function updateAll($container, $assign): PDOStatement
-    {
-        return UserQuery::updateUserInfoAll(self::getContainer(), $assign);
-    }
-
-    public static function watchUserId(int $userId)
-    {
-        self::getContainer()->userId = $userId;
-        return new self();
-    }
+    private static $queryContainer = null;
 
     /**
-     * @param int $userId
+     * @param PDOStatement $stmt
      * @return UserDAO
      * @throws Exception
      */
-    public static function getUser(int $userId)
+    private static function getUserDAO(PDOStatement $stmt)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
-
-        $stmt = UserQuery::selectUser($userContainer);
         $res = $stmt->fetch();
         $res = $res === false ? [] : $res;
         return new UserDAO($res);
     }
 
     /**
-     * @param $hiveId
-     * @param $hiveUid
-     * @return UserDAO|null
+     * @param array $data
+     * @return UserDAO
+     * @throws CtxException|Exception
+     */
+    public static function checkHiveUserExists(array $data)
+    {
+        $dao = new UserDAO();
+        $dao->hiveId = $data['hiveId'];
+        $dao->hiveUid = $data['hiveUid'];
+
+        $stmt = UQ::qSelectHiveUser($dao)->run();
+        $user = static::getUserDAO($stmt);
+        CtxException::invalidUser($user->isEmpty());
+
+        return $user;
+    }
+
+    /**
+     * @param array $data
+     * @throws CtxException|Exception
+     */
+    public static function checkNewHiveUser(array $data)
+    {
+        $dao = new UserDAO();
+        $dao->hiveId = $data['hiveId'];
+        $dao->hiveUid = $data['hiveUid'];
+
+        $stmt = UQ::qSelectHiveUser($dao)->run();
+        $user = static::getUserDAO($stmt);
+        CtxException::alreadyRegistered(false === $user->isEmpty());
+    }
+
+    /**
+     * @param array $data
      * @throws Exception
      */
-    public static function getUserByHive(string $hiveId, int $hiveUid)
+    public static function visitUser(array $data)
     {
-        $userContainer = new UserDAO();
-        $userContainer->hiveId = $hiveId;
-        $userContainer->hiveUid = $hiveUid;
+        $dao = new UserDAO();
+        $dao->userId = $data['userId'];
 
-        $stmt = UserQuery::selectUserPlatformByHive($userContainer);
-        $res = $stmt->fetch();
-        $res = $res === false ? [] : $res;
-        return new UserDAO($res);
+        UQ::qUpdateUserLastVisit($dao)->run();
     }
 
     /**
-     * @param int $userId
-     * @return UserDAO|null
+     * @param array $data
+     * @return UserDAO
      * @throws Exception
      */
-    public static function getUserInfo(int $userId)
+    public static function getUser(array $data)
     {
-        $userContainer = new UserDAO();
-        $userContainer->userId = $userId;
+        $dao = new UserDAO();
+        $dao->userId = $data['userId'];
 
-        $stmt = UserQuery::selectUserInfo($userContainer);
-        $res = $stmt->fetch();
-        $res = $res === false ? [] : $res;
-        return new UserDAO($res);
+        $stmt = UQ::selectUser($dao)->run();
+        return static::getUserDAO($stmt);
     }
 
     /**
-     * @param int $territoryId
-     * @return UserDAO|null
+     * @param array $data
+     * @return UserDAO
      * @throws Exception
      */
-    public static function getUserInfoByTerritory(int $territoryId)
+    public static function getUserInfo(array $data)
     {
-        $userContainer = new UserDAO();
-        $userContainer->territoryId = $territoryId;
+        $dao = new UserDAO();
+        $dao->userId = $data['userId'];
 
-        $stmt = UserQuery::selectUserInfoByTerritory($userContainer);
-        $res = $stmt->fetch();
-        $res = $res === false ? [] : $res;
-        return new UserDAO($res);
+        $stmt = UQ::qSelectUserInfo($dao)->run();
+        return static::getUserDAO($stmt);
     }
 
     /**
-     * @param int $userId
-     * @param string $date
+     * @param array $data
+     * @return UserDAO
+     * @throws Exception
+     */
+    public static function getUserInfoByTerritory(array $data)
+    {
+        $dao = new UserDAO();
+        $dao->territoryId = $data['territory_id'];
+
+        $stmt = UQ::qSelectUserInfoByTerritory($dao)->run();
+        return static::getUserDAO($stmt);
+    }
+
+    /**
+     * @param array $data
      * @return UserServices
      * @throws Exception
      */
-    public static function setUserLastVisit(int $userId, string $date)
+    public static function renameUser(array $data)
     {
-        $container = self::getContainer();
-        $container->userId = $userId;
-        $container->lastVisit = $date;
-        $container->updateProperty(['lastVisit']);
-        return new self();
+        $dao = new UserDAO();
+        $dao->userId = $data['user_id'];
+        $dao->name = $data['name'];
+
+        $stmt = UQ::qUpdateUserInfoSetName($dao);
+        // TODO:
     }
 
     /**
@@ -146,15 +159,13 @@ class UserServices extends Update
      * @return int
      * @throws CtxException|Exception
      */
-    public static function registerNewAccount(string $hiveId, int $hiveUid): int
+    public static function registerNewAccount(array $data): int
     {
-        $userContainer = new UserDAO();
-        $userContainer->hiveId = $hiveId;
-        $userContainer->hiveUid = $hiveUid;
+
 
         DB::beginTransaction();
         // user_platform 테이블 레코드 추가
-        $stmt = UserQuery::insertUserPlatform($userContainer);
+        $stmt = UQ::insertUserPlatform($userContainer);
         CtxException::insertFail($stmt->rowCount() === 0);
 
         $userId = DB::getLastInsertId();

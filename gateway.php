@@ -31,8 +31,12 @@ $app->get('/phpinfo', function () {
 $app->get('/test', function (\lsb\Libs\Context $ctx) {
     $userId = 1;
     $manpower = 10;
-    \lsb\App\query\UserQuery::userInfo()->insertQurey()
-        ->value(['userId' => null])
-        ->run();
+    \lsb\App\query\UserQuery::userPlatform()
+        ->selectQurey()
+        ->select(['userId'])
+        ->whereEqual([
+            'hiveId' => $userId,
+            'hiveUid' => $userId
+        ])->run();
 });
 $app->run();

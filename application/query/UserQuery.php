@@ -32,7 +32,77 @@ class UserQuery extends Query
         return static::make()->setTable('user_statistics');
     }
 
-    public static function selectUser(UserDAO $user)
+    /**************************************************************/
+
+    public function duplicateCheck()
+    {
+        // TODO:
+    }
+
+    /**************************************************************/
+
+    public function whereHiveUser($hiveId, $hiveUid)
+    {
+        return $this->whereEqual([
+            'hiveId' => $hiveId,
+            'hiveUid' => $hiveUid
+        ]);
+    }
+
+    public function whereUserId($userId)
+    {
+        return $this->whereEqual(['userId' => $userId]);
+    }
+
+    /**************************************************************/
+
+    public static function qSelectHiveUser(UserDAO $dao)
+    {
+        return static::userPlatform()
+            ->selectQurey()
+            ->select(['userId'])
+            ->whereHiveUser($dao->hiveId, $dao->hiveUid);
+    }
+
+    /**
+     * @param UserDAO $dao
+     * @return UserQuery
+     * @throws Exception
+     */
+    public static function qUpdateUserLastVisit(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->set(['lastVisit' => Timezone::getNowUTC()])
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qSelectUserInfo(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->selectAll()
+            ->whereUserId($dao->userId);
+    }
+
+
+    public static function qSelectUserInfoByTerritory(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->selectAll()
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qUpdateUserInfoSetName(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->set(['name' => $dao->name])
+            ->whereEqual($dao->userId);
+    }
+
+    /**************************************************************/
+
+    public static function selectUser(UserDAO $dao)
     {
         $q = "
             SELECT up.*, ui.*, us.*
@@ -41,8 +111,8 @@ class UserQuery extends Query
                 JOIN user_statistics us ON up.user_id = us.user_id
             WHERE up.user_id = :user_id;
         ";
-        $p = [':user_id' => $user->userId];
-        return DB::runQuery($q, $p);
+        $p = [':user_id' => $dao->userId];
+        return static::make()->setQuery($q, $p);
     }
 
     public static function selectUserPlatformByHive(UserDAO $user)
@@ -57,28 +127,6 @@ class UserQuery extends Query
             ':hive_id' => $user->hiveId,
             ':hive_uid' => $user->hiveUid
         ];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function selectUserInfo(UserDAO $user)
-    {
-        $q = "
-            SELECT *
-            FROM user_info
-            WHERE user_id = :user_id;
-        ";
-        $p = [':user_id' => $user->userId];
-        return DB::runQuery($q, $p);
-    }
-
-    public static function selectUserInfoByTerritory(UserDAO $user)
-    {
-        $q = "
-            SELECT *
-            FROM user_info
-            WHERE territory_id = :territory_id;
-        ";
-        $p = [':territory_id' => $user->territoryId];
         return DB::runQuery($q, $p);
     }
 
@@ -214,6 +262,12 @@ class UserQuery extends Query
      */
     public static function insertUserPlatform(UserDAO $user)
     {
+        return static::userPlatform()
+            ->insertQurey()
+            ->value([
+                'userId' => $user->userId,
+                'hive'
+            ]);
         $q = "
             INSERT INTO user_platform
             VALUE (

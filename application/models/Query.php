@@ -17,7 +17,6 @@ class Query
     private $column = [];
     private $set = [];
     private $value = [];
-    private $bind = [];
 
     private $map = [];
 
@@ -32,6 +31,13 @@ class Query
     public static function make()
     {
         return new static;
+    }
+
+    public function setQuery($q, $p)
+    {
+        $this->q = $q;
+        $this->p = $p;
+        return $this;
     }
 
     public function selectQurey()
@@ -100,9 +106,7 @@ class Query
         } elseif ($this->insertQurey) {
             $this->makeInsertQuery();
         }
-        var_dump($this->q);
-        var_dump($this->p);
-        //return DB::runQuery($this->q, $this->p);
+        return DB::runQuery($this->q, $this->p);
     }
 
     protected function setTable($table)
@@ -134,27 +138,32 @@ class Query
 
     public function whereEqual(array $conds)
     {
-        return $this->where($conds, '=');
+        $this->where($conds, '=');
+        return $this;
     }
 
     public function whereLT(array $conds)
     {
-        return $this->where($conds, '<');
+        $this->where($conds, '<');
+        return $this;
     }
 
     public function whereLTE(array $conds)
     {
-        return $this->where($conds, '<=');
+        $this->where($conds, '<=');
+        return $this;
     }
 
     public function whereGT(array $conds)
     {
-        return $this->where($conds, '>');
+        $this->where($conds, '>');
+        return $this;
     }
 
     public function whereGTE(array $conds)
     {
-        return $this->where($conds, '>=');
+        $this->where($conds, '>=');
+        return $this;
     }
 
     private function where(array $conditions, string $eq)
@@ -177,17 +186,20 @@ class Query
 
     public function set(array $sets)
     {
-        return $this->pset($sets);
+        $this->pset($sets);
+        return $this;
     }
 
     public function setAdd(array $sets)
     {
-        return $this->pset($sets, '+');
+        $this->pset($sets, '+');
+        return $this;
     }
 
     public function setSub(array $sets)
     {
-        return $this->pset($sets, '-');
+        $this->pset($sets, '-');
+        return $this;
     }
 
     private function pset(array $sets, string $sign = '')

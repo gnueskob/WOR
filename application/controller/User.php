@@ -23,17 +23,13 @@ class User extends Router implements ISubRouter
             $data = $ctx->getBody();
 
             // 하이브 정보로 유저 검색 후 없는 경우 비정상 유저
-            $hiveId = $data['hive_id'];
-            $hiveUid = $data['hive_uid'];
-            $user = UserServices::getUserByHive($hiveId, $hiveUid);
-            CtxException::invalidUser($user->isEmpty());
+            $user = UserServices::checkHiveUserExists($data);
+            $userId = $user->userId;
 
-            // 로그인 성공 시 마지막 방문일자 갱신
-            $now = Timezone::getNowUTC();
-            UserServices::setUserLastVisit($user->userId, $now);
+            UserServices::visitUser($userId);
 
             // TODO: token 생성
-            $userArr = UserServices::getUser($user->userId)->toArray();
+            $userArr = UserServices::getUser($data)->toArray();
             $ctx->addBody([
                 'user' => $userArr,
                 'token' => 'token_temp'
@@ -46,16 +42,14 @@ class User extends Router implements ISubRouter
             $data = $ctx->getBody();
 
             // 하이브 정보로 유저 검색 후 이미 존재하면 fail
-            $hiveId = $data['hive_id'];
-            $hiveUid = $data['hive_uid'];
-            $user = UserServices::getUserByHive($hiveId, $hiveUid);
-            CtxException::alreadyRegistered(!$user->isEmpty());
+            UserServices::checkNewHiveUser($data);
 
             // 없는 정보일 시 새로운 계정 생성
-            $userId = UserServices::registerNewAccount($hiveUid, $hiveId);
+            $userId = UserServices::registerNewAccount($data);
+            $data['user_id'] = $userId;
 
             // TODO: token 생성
-            $userArr = UserServices::getUser($userId)->toArray();
+            $userArr = UserServices::getUser($data)->toArray();
             $ctx->addBody([
                 'user' => $userArr,
                 'token' => 'token_temp'
@@ -66,14 +60,11 @@ class User extends Router implements ISubRouter
         // 이름 변경
         $router->put('/name/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
-            // 최초 로그인 후 영주 이름 설정
-            $userId = $data['user_id'];
-            $name = $data['name'];
 
-            $isSuccess = UserServices
-                ::watchUserId($userId)
-                ::setUserName($name)
-                ::apply(true);
+            // TODO:
+
+            // 최초 로그인 후 영주 이름 설정
+            $isSuccess = UserServices::renameUser($data);
             CtxException::alreadyUsedName(!$isSuccess);
 
             $userArr = UserServices::getUser($userId)->toArray();

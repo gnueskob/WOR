@@ -181,6 +181,5 @@ class BuildingServices extends Update
         $container->userId = $userId;
         $container->deployTime = Timezone::getNowUTC();
 
-        $stmt = // TODO:
     }
 }

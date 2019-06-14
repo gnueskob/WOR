@@ -11,8 +11,6 @@ abstract class DAO
     private $empty = false;
     private $updatedProperty = [];
 
-    private static $propertyToDBColumnMap = [];
-
     /**
      * DAO constructor.
      * @param array $data
@@ -36,14 +34,6 @@ abstract class DAO
             }
             $this->{$property} = $value;
         }
-    }
-
-    public function getPropertyToDBColumnMap(array $map)
-    {
-        if (empty(self::$propertyToDBColumnMap)) {
-            self::$propertyToDBColumnMap = array_flip($map);
-        }
-        return self::$propertyToDBColumnMap;
     }
 
     /**

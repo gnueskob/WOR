@@ -7,7 +7,7 @@ use Exception;
 
 class UserDAO extends DAO
 {
-    private static $dbColumToPropertyMap = [
+    public static $dbColumToPropertyMap = [
         'user_id' => 'userId',
         'hive_id' => 'hiveId',
         'hive_uid' => 'hiveUid',
@@ -38,6 +38,15 @@ class UserDAO extends DAO
         'boss2_kill_count' => 'boss2KillCount',
         'boss3_kill_count' => 'boss3KillCount'
     ];
+
+    private static $propertyToDBColumnMap = [];
+    public static function getColumnMap()
+    {
+        if (empty(self::$propertyToDBColumnMap)) {
+            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
+        }
+        return self::$propertyToDBColumnMap;
+    }
 
     // platform
     public $userId;

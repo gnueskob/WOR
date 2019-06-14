@@ -2,6 +2,7 @@
 
 namespace lsb\App\query;
 
+use lsb\App\models\Query;
 use lsb\App\models\UserDAO;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
@@ -9,8 +10,28 @@ use Exception;
 use lsb\Utils\Utils;
 use PDOStatement;
 
-class UserQuery
+class UserQuery extends Query
 {
+    public function __construct()
+    {
+        parent::__construct(UserDAO::getColumnMap());
+    }
+
+    public static function userInfo()
+    {
+        return static::make()->setTable('user_info');
+    }
+
+    public static function userPlatform()
+    {
+        return static::make()->setTable('user_platform');
+    }
+
+    public static function userStat()
+    {
+        return static::make()->setTable('user_statistics');
+    }
+
     public static function selectUser(UserDAO $user)
     {
         $q = "

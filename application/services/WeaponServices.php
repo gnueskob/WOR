@@ -4,38 +4,14 @@ namespace lsb\App\services;
 
 use lsb\Libs\Plan;
 use lsb\App\models\WeaponDAO;
-use lsb\App\query\UserQuery;
 use lsb\App\query\WeaponQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use Exception;
 use lsb\Libs\Timezone;
-use PDOException;
-use PDOStatement;
 
-class WeaponServices extends Update
+class WeaponServices extends Services
 {
-    /* @return WeaponDAO */
-    protected static function getContainer()
-    {
-        return parent::getContainer();
-    }
-
-    protected static function getNewContainer()
-    {
-        return new WeaponDAO();
-    }
-
-    protected static function updateAll($container, $assign): PDOStatement
-    {
-        return WeaponQuery::updateBuildingAll(self::getContainer(), $assign);
-    }
-
-    public static function watchWeaponId(int $weaponId)
-    {
-        self::getContainer()->weaponId = $weaponId;
-        return new self();
-    }
 
     /**
      * @param int $weaponId
@@ -44,13 +20,13 @@ class WeaponServices extends Update
      */
     public static function getWeapon(int $weaponId)
     {
-        $container = new WeaponDAO();
-        $container->weaponId = $weaponId;
+        $dao = new WeaponDAO();
+        $dao->weaponId = $weaponId;
 
-        $stmt = WeaponQuery::selectWeapon($container);
-        $res = $stmt->fetch();
-        $res = $res === false ? [] : $res;
-        return new WeaponDAO($res);
+        $stmt = WeaponQuery::qSelectWeapon($dao)->run();
+        $weapon = static::getWeaponDAO($stmt);
+        CtxException::invalidWeapon($weapon->isEmpty());
+        return $weapon;
     }
 
     /**
@@ -60,43 +36,85 @@ class WeaponServices extends Update
      */
     public static function getWeaponsByUser(int $userId)
     {
-        $container = new WeaponDAO();
-        $container->userId = $userId;
+        $dao = new WeaponDAO();
+        $dao->userId = $userId;
 
-        $stmt = WeaponQuery::selectWeaponsByUser($container);
-        $res = $stmt->fetchAll();
-        $res = $res === false ? [] : $res;
-        foreach ($res as $key => $value) {
-            $res[$key] = new WeaponDAO($value);
-        }
-        return $res;
+        $stmt = WeaponQuery::qSelectWeaponsByUser($dao)->run();
+        return static::getWeaponDAOs($stmt);
     }
 
     /**
-     * @param WeaponDAO $container
+     * @param int $userId
+     * @param int $weaponType
+     * @param int $createUnitTime
      * @return int
      * @throws CtxException|Exception
      */
-    public static function createWeapon(WeaponDAO $container)
+    public static function createWeapon(int $userId, int $weaponType, int $createUnitTime)
     {
-        $stmt = WeaponQuery::insertWeapon($container);
-        CtxException::insertFail($stmt->rowCount() === 0);
+        $dao = new WeaponDAO();
+        $dao->weaponId = null;
+        $dao->userId = $userId;
+        $dao->weaponType = $weaponType;
+        $dao->createTime = Timezone::getCompleteTime($createUnitTime);
+        $dao->upgradeTime = null;
+        $dao->level = 1;
+        $dao->toLevel = 1;
+        $dao->lastUpdate = Timezone::getNowUTC();
+
+        $stmt = WeaponQuery::qInsertWeapon($dao)->run();
+        static::validateInsert($stmt);
         return DB::getLastInsertId();
     }
 
     /**
+     * @param int $weaponId
      * @param int $currentLevel
-     * @param string $date
-     * @return WeaponServices
+     * @param int $upgradeUnitTime
+     * @param bool $pending
+     * @throws CtxException
      */
-    public static function upgradeWeapon(int $currentLevel, string $date)
+    public static function upgradeWeapon(int $weaponId, int $currentLevel, int $upgradeUnitTime, bool $pending = false)
     {
-        $container = self::getContainer();
-        $container->level = $currentLevel;
-        $container->toLevel = $currentLevel + 1;
-        $container->upgradeTime = $date;
-        $container->updateProperty(['level', 'toLevel', 'upgradeTime']);
-        return new self();
+        $dao = new WeaponDAO();
+        $dao->weaponId = $weaponId;
+        $dao->level = $currentLevel;
+        $dao->toLevel = $currentLevel + 1;
+        $dao->upgradeTime = Timezone::getCompleteTime($upgradeUnitTime);
+
+        $query = WeaponQuery::qSetUpgradeFromWeapon($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    /********************************************************************/
+
+    // CHECK
+
+    /**
+     * @param WeaponDAO $weapon
+     * @throws CtxException|Exception
+     */
+    public static function checkCreateFinished(WeaponDAO $weapon)
+    {
+        CtxException::notCreatedYet(!$weapon->isCreated());
+    }
+
+    /**
+     * @param WeaponDAO $weapon
+     * @throws CtxException|Exception
+     */
+    public static function checkUpgradeStatus(WeaponDAO $weapon)
+    {
+        CtxException::notCompletedPreviousJobYet($weapon->isUpgrading());
+    }
+
+    /**
+     * @param WeaponDAO $weapon
+     * @throws CtxException|Exception
+     */
+    public static function checkUpgradeFinished(WeaponDAO $weapon)
+    {
+        CtxException::notUpgradedYet(!$weapon->isUpgraded());
     }
 
     /********************************************************************/
@@ -108,14 +126,15 @@ class WeaponServices extends Update
      */
     public static function getAttack(int $userId)
     {
-        $weapons = self::getWeaponsByUser($userId);
-        $planWeapon = Plan::getDataAll(PLAN_WEAPON);
+        Plan::getDataAll(PLAN_WEAPON);
+
         $attack = 0;
+        $weapons = self::getWeaponsByUser($userId);
         foreach ($weapons as $weapon) {
-            if ($weapon->createTime < Timezone::getNowUTC()) {
+            if (!$weapon->isCreated()) {
                 continue;
             }
-            $attack += $planWeapon[$weapon->weaponType] * $weapon->currentLevel;
+            $attack += Plan::getWeaponUpgradeAttack($weapon->weaponType, $weapon->currentLevel);
         }
         return $attack;
     }

@@ -18,6 +18,15 @@ class WeaponDAO extends DAO
         'last_update' => 'lastUpdate'
     ];
 
+    private static $propertyToDBColumnMap = [];
+    public static function getColumnMap()
+    {
+        if (empty(self::$propertyToDBColumnMap)) {
+            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
+        }
+        return self::$propertyToDBColumnMap;
+    }
+
     public $weaponId;
     public $userId;
     public $weaponType;

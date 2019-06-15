@@ -20,6 +20,7 @@ class Query
     private $value = [];
 
     private $map = [];
+    private $PDOExceptionCode = [];
 
     private $q;
     private $p;
@@ -98,8 +99,37 @@ class Query
         $this->q = "{$insertClause} {$columns} {$valueClause}";
     }
 
-    public function run(array $PDOExceptionCode = [])
+    public function checkError(array $PDOExceptionCode = [])
     {
+        $this->PDOExceptionCode = $PDOExceptionCode;
+        return $this;
+    }
+
+    public function mergeQuery(Query $pending)
+    {
+        if ($this->selectQurey !== $pending->selectQurey ||
+            $this->updateQurey !== $pending->updateQurey ||
+            $this->deleteQurey !== $pending->deleteQurey ||
+            $this->insertQurey !== $pending->insertQurey ||
+            $this->table === $pending->table
+        ) {
+            throw new PDOException("Pending query type dose not matched");
+        }
+
+        $this->PDOExceptionCode = array_merge($this->PDOExceptionCode, $this->PDOExceptionCode);
+        $this->where = array_merge($this->where, $pending->where);
+        $this->set = array_merge($this->set, $pending->set);
+        $this->column = array_merge($this->column, $pending->column);
+        $this->value = array_merge($this->value, $pending->value);
+        $this->p = array_merge($this->p, $pending->p);
+    }
+
+    public function run(Query $pending = null)
+    {
+        if (isset($pending)) {
+            $this->mergeQuery($pending);
+        }
+
         if ($this->selectQurey) {
             $this->makeSelectQuery();
         } elseif ($this->updateQurey) {
@@ -109,11 +139,12 @@ class Query
         } elseif ($this->insertQurey) {
             $this->makeInsertQuery();
         }
+
         try {
             return DB::runQuery($this->q, $this->p);
         } catch (PDOException $e) {
-            if (in_array($e->getCode(), $PDOExceptionCode)) {
-                return false;
+            if (in_array($e->getCode(), $this->PDOExceptionCode)) {
+                return $e->getCode();
             }
             throw $e;
         }
@@ -138,6 +169,14 @@ class Query
     public function selectAll()
     {
         $this->column = ['*'];
+        return $this;
+    }
+
+    public function selectSum(array $columns)
+    {
+        foreach ($columns as $column => $as) {
+            $this->column[] = "SUM({$this->map[$column]}) AS {$as}";
+        }
         return $this;
     }
 

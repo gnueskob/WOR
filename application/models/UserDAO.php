@@ -24,7 +24,6 @@ class UserDAO extends DAO
         'penalty_finish_time' => 'penaltyFinishTime',
         'auto_generate_manpower' => 'autoGenerateManpower',
         'manpower' => 'manpower',
-        'manpower_used' => 'manpowerUsed',
         'appended_manpower' => 'appendedManpower',
         'tactical_resource' => 'tacticalResource',
         'food_resource' => 'foodResource',
@@ -69,7 +68,6 @@ class UserDAO extends DAO
     public $penaltyFinishTime;
     public $autoGenerateManpower;
     public $manpower;
-    public $manpowerUsed;
     public $appendedManpower;
     public $tacticalResource;
     public $foodResource;
@@ -87,7 +85,8 @@ class UserDAO extends DAO
 
     // hidden property
     public $currentCastleLevel;
-    public $manpowerAvailable;
+    public $availableManpower;
+    public $usedManpower;
 
     /**
      * UserDAO constructor.
@@ -102,10 +101,6 @@ class UserDAO extends DAO
             $this->currentCastleLevel = $this->castleToLevel;
         } else {
             $this->currentCastleLevel = $this->castleLevel;
-        }
-        if (isset($this->manpower) &&
-            isset($this->manpowerUsed)) {
-            $this->manpowerAvailable = $this->manpower - $this->manpowerUsed;
         }
     }
 
@@ -137,5 +132,10 @@ class UserDAO extends DAO
     public function hasSUfficientFood(int $food)
     {
         return $this->foodResource >= $food;
+    }
+
+    public function hasSufficientAvailableManpower(int $manpower)
+    {
+        return $this->availableManpower > $manpower;
     }
 }

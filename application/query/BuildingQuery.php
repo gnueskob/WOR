@@ -3,14 +3,109 @@
 namespace lsb\App\query;
 
 use lsb\App\models\BuildingDAO;
-use lsb\Libs\DB;
-use lsb\Libs\Timezone;
-use Exception;
-use lsb\Utils\Utils;
-use PDOStatement;
+use lsb\App\models\Query;
 
-class BuildingQuery
+class BuildingQuery extends Query
 {
+    public function __construct()
+    {
+        parent::__construct(BuildingDAO::getColumnMap());
+    }
+
+    public static function building()
+    {
+        return static::make()->setTable('building');
+    }
+
+    /************************************************************/
+
+    public function whereUserId($userId)
+    {
+        return $this->whereEqual(['userId' => $userId]);
+    }
+
+    public function whereBuildingId($buildingId)
+    {
+        return $this->whereEqual(['BuildingId' => $buildingId]);
+    }
+
+    /************************************************************/
+
+    // SELECT QUERY
+
+    public static function qSelectBuilding(BuildingDAO $dao)
+    {
+        return static::building()
+            ->selectQurey()
+            ->selectAll()
+            ->whereBuildingId($dao->buildingId);
+    }
+
+    public static function qSelectBuildings(BuildingDAO $dao)
+    {
+        return static::building()
+            ->selectQurey()
+            ->selectAll()
+            ->whereUserId($dao->userId);
+    }
+
+    /************************************************************/
+
+    // INSERT QUERY
+
+    public static function qInsertBuilding(BuildingDAO $dao)
+    {
+        return static::building()
+            ->insertQurey()
+            ->value([
+                'buildingId' => $dao->buildingId,
+                'userId' => $dao->userId,
+                'territoryId' => $dao->territoryId,
+                'tileId' => $dao->tileId,
+                'buildingType' => $dao->buildingType,
+                'createTime' => $dao->createTime,
+                'upgradeTime' => $dao->upgradeTime,
+                'deployTime' => $dao->deployTime,
+                'level' => $dao->level,
+                'toLevel' => $dao->toLevel,
+                'manpower' => $dao->manpower,
+                'lastUpdate' => $dao->lastUpdate
+            ]);
+    }
+
+    /************************************************************/
+
+    // UPDATE QUERY
+
+    public static function qSetUpgradeFromBuilding(BuildingDAO $dao)
+    {
+        return static::building()
+            ->updateQurey()
+            ->set([
+                'level' => $dao->level,
+                'toLevel' => $dao->toLevel,
+                'upgradeTime' => $dao->upgradeTime
+            ])
+            ->whereBuildingId($dao->buildingId);
+    }
+
+    public static function qSetDeployFromBuilding(BuildingDAO $dao)
+    {
+        return static::building()
+            ->updateQurey()
+            ->set([
+                'manpower' => $dao->manpower,
+                'deployTime' => $dao->deployTime
+            ])
+            ->whereBuildingId($dao->buildingId);
+    }
+
+    /************************************************************/
+
+
+    /************************************************************/
+
+    /*
     public static function selectBuilding(BuildingDAO $building)
     {
         $q = "
@@ -103,13 +198,8 @@ class BuildingQuery
             ':building_id' => $building->buildingId
         ];
         return DB::runQuery($q, $p);
-    }*/
+    }
 
-    /**
-     * @param BuildingDAO $building
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function insertBuilding(BuildingDAO $building)
     {
         $q = "
@@ -142,5 +232,5 @@ class BuildingQuery
             ':last_update' => Timezone::getNowUTC()
         ];
         return DB::runQuery($q, $p);
-    }
+    }*/
 }

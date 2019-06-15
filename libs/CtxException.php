@@ -106,6 +106,7 @@ class CtxException extends Exception
     /**************************************
      ** Only Logic Exceptions            **
      **************************************/
+
     /**
      * @param bool $flag
      * @throws CtxException
@@ -114,6 +115,17 @@ class CtxException extends Exception
     {
         $serverErrCode = 1000;
         $serverMsg = 'invalid user';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidWeapon(bool $flag = true): void
+    {
+        $serverErrCode = 1000;
+        $serverMsg = 'invalid weapon';
         self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
@@ -202,6 +214,17 @@ class CtxException extends Exception
     {
         $serverErrCode = 1007;
         $serverMsg = 'war is not finished yet';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notUpgradable(bool $flag = true): void
+    {
+        $serverErrCode = 1007;
+        $serverMsg = 'building is not upgradable';
         self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 

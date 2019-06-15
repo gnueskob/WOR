@@ -105,7 +105,7 @@ class UserQuery extends Query
 
     // UPDATE QUERY FOR USER
 
-    public static function qUpdateUserSetLastVisit(UserDAO $dao)
+    public static function qSetLastVisitFromUserInfo(UserDAO $dao)
     {
         return static::userInfo()
             ->updateQurey()
@@ -113,7 +113,7 @@ class UserQuery extends Query
             ->whereUserId($dao->userId);
     }
 
-    public static function qUpdateUserInfoSetName(UserDAO $dao)
+    public static function qSetNameFromUserInfo(UserDAO $dao)
     {
         return static::userInfo()
             ->updateQurey()
@@ -121,7 +121,7 @@ class UserQuery extends Query
             ->whereUserId($dao->userId);
     }
 
-    public static function qUpdateUserInfoSetTerritoryId(UserDAO $dao)
+    public static function qSetTerritoryIdFromUserInfo(UserDAO $dao)
     {
         return static::userInfo()
             ->updateQurey()
@@ -129,7 +129,7 @@ class UserQuery extends Query
             ->whereUserId($dao->userId);
     }
 
-    public static function qUpdateUserInfoSetResource(UserDAO $dao)
+    public static function qSubtarctResourcesFromUserInfo(UserDAO $dao)
     {
         return static::userInfo()
             ->updateQurey()
@@ -141,15 +141,26 @@ class UserQuery extends Query
             ->whereUserId($dao->userId);
     }
 
-    public static function qUpdateUserInfoSetCastleLevel(UserDAO $dao)
+    public static function qAddManpowerUsedFromUserInfo(UserDAO $dao)
     {
         return static::userInfo()
             ->updateQurey()
-            ->setSubResource(
-                $dao->tacticalResource,
-                $dao->foodResource,
-                $dao->luxuryResource
-            )
+            ->setAdd(['manpowerUsed' => $dao->manpowerUsed])
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qSubtractManpowerUsedFromUserInfo(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->setSub(['manpowerUsed' => $dao->manpowerUsed])
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qUpdateUserInfoSetCastle(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
             ->set([
                 'castleLevel' => $dao->castleLevel,
                 'castleToLevel' => $dao->castleToLevel,
@@ -167,7 +178,7 @@ class UserQuery extends Query
         return static::userPlatform()
             ->insertQurey()
             ->value([
-                'userId' => null,
+                'userId' => $dao->userId,
                 'hiveId' => $dao->hiveId,
                 'hiveUid' => $dao->hiveUid,
                 'registerDate' => $dao->registerDate,
@@ -186,11 +197,11 @@ class UserQuery extends Query
                 'userId' => $dao->userId,
                 'lastVisit' => $dao->lastVisit,
                 'territoryId' => $dao->territoryId,
-                'name' => null,
+                'name' => $dao->name,
                 'castleLevel' => $dao->castleLevel,
                 'castleToLevel' => $dao->castleToLevel,
-                'upgradeTime' => null,
-                'penaltyFinishTime' => null,
+                'upgradeTime' => $dao->upgradeTime,
+                'penaltyFinishTime' => $dao->penaltyFinishTime,
                 'autoGenerateManpower' => $dao->autoGenerateManpower,
                 'manpower' => $dao->manpower,
                 'appendedManpower' => $dao->appendedManpower,
@@ -219,7 +230,7 @@ class UserQuery extends Query
 
     /**************************************************************/
 
-    public static function selectUser(UserDAO $dao)
+    public static function jSelectUserFromAll(UserDAO $dao)
     {
         $q = "
             SELECT up.*, ui.*, us.*
@@ -232,6 +243,7 @@ class UserQuery extends Query
         return static::make()->setQuery($q, $p);
     }
 
+    /*
     public static function selectUserPlatformByHive(UserDAO $user)
     {
         $q = "
@@ -260,7 +272,6 @@ class UserQuery extends Query
         return DB::runQuery($q, $p);
     }
 
-    /*
     public static function updateUserInfoWithLastVisit(UserDAO $user)
     {
         $q = "
@@ -370,13 +381,8 @@ class UserQuery extends Query
             ':user_id' => $user->userId
         ];
         return DB::runQuery($q, $p);
-    }*/
+    }
 
-    /**
-     * @param UserDAO $user
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function insertUserPlatform(UserDAO $dao)
     {
         $q = "
@@ -407,11 +413,6 @@ class UserQuery extends Query
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param UserDAO $user
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function insertUserInfo(UserDAO $user)
     {
         $q = "
@@ -483,4 +484,5 @@ class UserQuery extends Query
         ];
         return DB::runQuery($q, $p);
     }
+    */
 }

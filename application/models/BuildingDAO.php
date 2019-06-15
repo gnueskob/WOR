@@ -22,6 +22,15 @@ class BuildingDAO extends DAO
         'last_update' => 'lastUpdate'
     ];
 
+    private static $propertyToDBColumnMap = [];
+    public static function getColumnMap()
+    {
+        if (empty(self::$propertyToDBColumnMap)) {
+            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
+        }
+        return self::$propertyToDBColumnMap;
+    }
+
     public $buildingId;
     public $userId;
     public $territoryId;
@@ -89,6 +98,15 @@ class BuildingDAO extends DAO
     public function isDeployed()
     {
         return isset($this->deployTime) && $this->deployTime <= Timezone::getNowUTC();
+    }
+
+    /**
+     * @return bool
+     * @throws Exception
+     */
+    public function isCreating()
+    {
+        return isset($this->createTime) && $this->createTime > Timezone::getNowUTC();
     }
 
     /**

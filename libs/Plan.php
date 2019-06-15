@@ -209,8 +209,15 @@ class Plan
         return $res;
     }
 
+    /***********************************************************/
+
+    private static $cache = [];
+
     public static function getData(string $keyTag, string $key)
     {
+        if (isset(static::$cache[$keyTag . $key])) {
+            return static::$cache[$keyTag . $key];
+        }
         $driver = Config::getInstance()->getConfig('plan')['driver'];
         switch ($driver) {
             default:
@@ -227,11 +234,15 @@ class Plan
                 $res = apcu_fetch($keyTag)[$key];
                 break;
         }
+        static::$cache[$keyTag . $key] = $res;
         return $res;
     }
 
     public static function getDataAll(string $keyTag)
     {
+        if (isset(static::$cache[$keyTag])) {
+            return static::$cache[$keyTag];
+        }
         $driver = Config::getInstance()->getConfig('plan')['driver'];
         switch ($driver) {
             default:
@@ -257,6 +268,228 @@ class Plan
                 $res = apcu_fetch($keyTag);
                 break;
         }
+        foreach ($res as $key => $value) {
+            static::$cache[$keyTag . $key] = $value;
+        }
+        static::$cache[$keyTag] = $res;
         return $res;
     }
+
+    /************************************************************/
+
+    // CASTLE UPGRADE PLAN DATA
+
+    public static function getCastleUpgrade(int $level)
+    {
+        $plan = Plan::getData(PLAN_UPG_CASTLE, $level);
+        return [
+            $plan['level'],
+            $plan['defense'],
+            $plan['max_manpower'],
+            $plan['production_per_unit_time'],
+
+            $plan['need_tactical_resource'],    // 4
+            $plan['need_food_resource'],
+            $plan['need_luxury_resource'],
+
+            $plan['loyality_bound']
+        ];
+    }
+
+    public static function getCastleUpgradeResource(int $level)
+    {
+        return array_slice(static::getCastleUpgrade($level), 4, 3);
+    }
+
+    /*****************************************************************/
+
+    public static function getTowerUpgrade(int $level)
+    {
+        $plan = Plan::getData(PLAN_UPG_CASTLE, $level);
+        return [
+            $plan['level'],
+            $plan['defense_power'],
+
+            $plan['need_tactical_resource'],    // 4
+            $plan['need_food_resource'],
+            $plan['need_luxury_resource']
+        ];
+    }
+
+    public static function getTowerUpgradeResource(int $level)
+    {
+        return array_slice(static::getCastleUpgrade($level), 4, 3);
+    }
+
+    /************************************************************/
+
+    public static function getArmyUpgrade(int $level)
+    {
+        $plan = Plan::getData(PLAN_UPG_ARMY, $level);
+        return [
+            $plan['level'],
+            $plan['max_manpower'],
+
+            $plan['need_tactical_resource'],    // 4
+            $plan['need_food_resource'],
+            $plan['need_luxury_resource']
+        ];
+    }
+
+    public static function getArmyUpgradeResource(int $level)
+    {
+        return array_slice(static::getCastleUpgrade($level), 4, 3);
+    }
+
+    /************************************************************/
+
+    // BUILDING PLAN DATA
+
+    public static function getBuilding(int $buildingType)
+    {
+        $plan = Plan::getData(PLAN_BUILDING, $buildingType);
+        return [
+            $plan['building_id'],
+            $plan['name'],
+            $plan['type'],
+            $plan['type_name'],
+
+            $plan['need_tactical_resource'],    // 4
+            $plan['need_food_resource'],
+            $plan['need_luxury_resource'],
+
+            $plan['pay_manpower'],              // 7
+            $plan['max_manpower'],
+
+            $plan['create_unit_time'],          // 9
+            $plan['upgrade_unit_time'],
+            $plan['deploy_unit_time'],
+
+            $plan['feature_tactical_resource'], // 12
+            $plan['feature_food_resource'],
+            $plan['feature_loyality']
+        ];
+    }
+
+    public static function getBuildingResource(int $buildingType)
+    {
+        return array_slice(static::getBuilding($buildingType), 4, 3);
+    }
+
+    public static function getBuildingUnitTime(int $buildingType)
+    {
+        return array_slice(static::getBuilding($buildingType), 9, 3);
+    }
+
+    public static function getBuildingManpower(int $buildingType)
+    {
+        return array_slice(static::getBuilding($buildingType), 7, 2);
+    }
+
+    /*****************************************************************/
+
+    // WEAPON PLAN DATA
+
+    public static function getWeapon(int $weaponType)
+    {
+        $plan = Plan::getData(PLAN_WEAPON, $weaponType);
+        return [
+            $plan['weapon_id'],
+            $plan['name'],
+            $plan['attack'],
+
+            $plan['need_tactical_resource'],    // 3
+            $plan['need_food_resource'],
+            $plan['need_luxury_resource'],
+
+            $plan['create_unit_time'],          // 6
+            $plan['upgrade_unit_time'],
+        ];
+    }
+
+    public static function getWeaponResource(int $weaponType)
+    {
+        return array_slice(static::getWeapon($weaponType), 3, 3);
+    }
+
+    public static function getWeaponUnitTime(int $weaponType)
+    {
+        return array_slice(static::getWeapon($weaponType), 6, 2);
+    }
+
+    // WEAPON UPGRADE PLAN
+
+    public static function getWeaponUpgrade(int $weaponType, int $level)
+    {
+        list($weaponId,
+            $name,
+            $attack,
+            $tactical,
+            $food,
+            $luxury,
+            $createUnitTime,
+            $upgradeUnitTime) = static::getWeapon($weaponType);
+
+        $attack = $attack * $level;
+        $tactical = 0.1 * $tactical * $level;
+        $food = 0.1 * $food * $level;
+        $luxury = 0.1 * $luxury * $level;
+        $upgradeUnitTime = 0.3 * $upgradeUnitTime * $level;
+
+        return [$weaponId,
+            $name,
+            $attack,
+            $tactical,
+            $food,
+            $luxury,
+            $createUnitTime,
+            $upgradeUnitTime];
+    }
+
+    public static function getWeaponUpgradeResources(int $weaponType, int $level)
+    {
+        return array_slice(static::getWeaponUpgrade($weaponType, $level), 3, 3);
+    }
+
+    public static function getWeaponUpgradeUnitTime(int $weaponType, int $level)
+    {
+        return static::getWeaponUpgrade($weaponType, $level)[7];
+    }
+
+    public static function getWeaponUpgradeAttack(int $weaponType, int $level)
+    {
+        return static::getWeaponUpgrade($weaponType, $level)[2];
+    }
+
+    /*****************************************************************/
+
+    public static function getBuildingUpgrade(int $buildingType, int $level)
+    {
+        switch ($buildingType) {
+            default:
+                return null;
+            case PLAN_BUILDING_ID_TOWER:
+                return static::getTowerUpgrade($level);
+            case PLAN_BUILDING_ID_ARMY:
+                return static::getArmyUpgrade($level);
+            case PLAN_BUILDING_ID_CASTLE:
+                return static::getCastleUpgrade($level);
+        }
+    }
+
+    public static function getBuildingUpgradeResource(int $buildingType, int $level)
+    {
+        switch ($buildingType) {
+            default:
+                return null;
+            case PLAN_BUILDING_ID_TOWER:
+                return static::getTowerUpgradeResource($level);
+            case PLAN_BUILDING_ID_ARMY:
+                return static::getArmyUpgradeResource($level);
+            case PLAN_BUILDING_ID_CASTLE:
+                return static::getCastleUpgradeResource($level);
+        }
+    }
+
+    /*****************************************************************/
 }

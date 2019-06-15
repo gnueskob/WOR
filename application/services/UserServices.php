@@ -2,20 +2,16 @@
 
 namespace lsb\App\services;
 
-use lsb\App\controller\User;
 use lsb\App\models\UserDAO;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
-use lsb\App\query\UserQuery as UQ;
+use lsb\App\query\UserQuery;
 use Exception;
 use lsb\Libs\Timezone;
-use PDOStatement;
 use lsb\Libs\Plan;
 
 class UserServices extends Services
 {
-    private static $queryContainer = null;
-
     /**
      * @param string $hiveId
      * @param int $hiveUid
@@ -28,7 +24,7 @@ class UserServices extends Services
         $dao->hiveId = $hiveId;
         $dao->hiveUid = $hiveUid;
 
-        $stmt = UQ::qSelectHiveUser($dao)->run();
+        $stmt = UserQuery::qSelectHiveUser($dao)->run();
         $user = static::getUserDAO($stmt);
         CtxException::invalidUser($user->isEmpty());
 
@@ -46,23 +42,9 @@ class UserServices extends Services
         $dao->hiveId = $hiveId;
         $dao->hiveUid = $hiveUid;
 
-        $stmt = UQ::qSelectHiveUser($dao)->run();
+        $stmt = UserQuery::qSelectHiveUser($dao)->run();
         $user = static::getUserDAO($stmt);
         CtxException::alreadyRegistered(false === $user->isEmpty());
-    }
-
-    /**
-     * @param int $userId
-     * @throws Exception
-     */
-    public static function visit(int $userId)
-    {
-        $dao = new UserDAO();
-        $dao->userId = $userId;
-        $dao->lastVisit = Timezone::getNowUTC();
-
-        $stmt = UQ::qUpdateUserSetLastVisit($dao)->run();
-        static::validateUpdate($stmt);
     }
 
     /**
@@ -75,9 +57,14 @@ class UserServices extends Services
         $dao = new UserDAO();
         $dao->userId = $userId;
 
-        $stmt = UQ::selectUser($dao)->run();
+        $stmt = UserQuery::jSelectUserFromAll($dao)->run();
         $user = static::getUserDAO($stmt);
         CtxException::invalidUser($user->isEmpty());
+
+        $usedManpower = static::getUsedManpower($userId);
+        $user->usedManpower = $usedManpower;
+        $user->availableManpower = $user->manpower - $user->usedManpower;
+
         return $user;
     }
 
@@ -91,9 +78,25 @@ class UserServices extends Services
         $dao = new UserDAO();
         $dao->userId = $userId;
 
-        $stmt = UQ::qSelectUserInfo($dao)->run();
+        $stmt = UserQuery::qSelectUserInfo($dao)->run();
         $user = static::getUserDAO($stmt);
         CtxException::invalidUser($user->isEmpty());
+        return $user;
+    }
+
+    /**
+     * @param int $userId
+     * @return mixed
+     * @throws Exception
+     */
+    public static function getUserInfoWithManpower(int $userId)
+    {
+        $user = static::getUserInfo($userId);
+
+        $usedManpower = static::getUsedManpower($userId);
+        $user->usedManpower = $usedManpower;
+        $user->availableManpower = $user->manpower - $user->usedManpower;
+
         return $user;
     }
 
@@ -107,71 +110,212 @@ class UserServices extends Services
         $dao = new UserDAO();
         $dao->territoryId = $territoryId;
 
-        $stmt = UQ::qSelectUserInfoByTerritory($dao)->run();
+        $stmt = UserQuery::qSelectUserInfoByTerritory($dao)->run();
         $user = static::getUserDAO($stmt);
         CtxException::invalidUser($user->isEmpty());
         return $user;
     }
 
+    /*************************************************************************/
+
+    // Change user data
+
+    /**
+     * @param int $userId
+     * @param bool $pending
+     * @throws CtxException|Exception
+     */
+    public static function visit(int $userId, bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+        $dao->lastVisit = Timezone::getNowUTC();
+
+        $query = UserQuery::qSetLastVisitFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+
     /**
      * @param int $userId
      * @param string $name
+     * @param bool $pending
      * @throws CtxException
      */
-    public static function rename(int $userId, string $name)
+    public static function rename(int $userId, string $name, bool $pending = false)
     {
         $dao = new UserDAO();
         $dao->userId = $userId;
         $dao->name = $name;
 
-        $stmt = UQ::qUpdateUserInfoSetName($dao)->run([DUPLICATE_ERRORCODE]);
-        CtxException::alreadyUsedName($stmt === false);
-        static::validateUpdate($stmt);
+        $query = UserQuery::qSetNameFromUserInfo($dao)
+            ->checkError([DUPLICATE_ERRORCODE]);
+        $res = static::validateUpdate($query, $pending);
+        CtxException::alreadyUsedName($res === DUPLICATE_ERRORCODE);
     }
 
     /**
      * @param int $userId
      * @param int $territoryId
+     * @param bool $pending
      * @throws CtxException
      */
-    public static function relocateTerritory(int $userId, int $territoryId)
+    public static function relocateTerritory(int $userId, int $territoryId, bool $pending = false)
     {
         $dao = new UserDAO();
         $dao->userId = $userId;
         $dao->territoryId = $territoryId;
 
-        $stmt = UQ::qUpdateUserInfoSetTerritoryId($dao)->run([DUPLICATE_ERRORCODE]);
-        CtxException::alreadyUsedTerritory($stmt === false);
-        static::validateUpdate($stmt);
+        $query = UserQuery::qSetTerritoryIdFromUserInfo($dao)
+            ->checkError([DUPLICATE_ERRORCODE]);
+        $res = static::validateUpdate($query, $pending);
+        CtxException::alreadyUsedTerritory($res === DUPLICATE_ERRORCODE);
     }
 
     /**
-     * @param array $data
-     * @return UserDAO
-     * @throws CtxException|Exception
+     * @param int $userId
+     * @param int $currentCastleLevet
+     * @param int $upgradeUnitTime
+     * @param bool $pending
+     * @throws CtxException
      */
-    public static function registerNewAccount(array $data)
+    public static function upgradeCastle(
+        int $userId,
+        int $currentCastleLevet,
+        int $upgradeUnitTime,
+        bool $pending = false)
     {
         $dao = new UserDAO();
-        $dao->hiveId = $data['hive_id'];
-        $dao->hiveUid = $data['hive_uid'];
-        $dao->registerDate = $data['register_date'];
-        $dao->country = $data['country'];
-        $dao->lang = $data['lang'];
-        $dao->osVersion = $data['os_version'];
-        $dao->appVersion = $data['app_version'];
+        $dao->userId = $userId;
 
+        $dao->castleLevel = $currentCastleLevet;
+        $dao->castleToLevel = $currentCastleLevet + 1;
+
+        $dao->upgradeTime = Timezone::getCompleteTime($upgradeUnitTime);
+
+        $query = UserQuery::qUpdateUserInfoSetCastle($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    /**
+     * @param int $userId
+     * @param int $neededTactical
+     * @param int $neededFood
+     * @param int $neededLuxury
+     * @param bool $pending
+     * @throws CtxException
+     */
+    public static function useResource(
+        int $userId,
+        int $neededTactical,
+        int $neededFood,
+        int $neededLuxury,
+        bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+
+        $dao->tacticalResource = $neededTactical;
+        $dao->foodResource = $neededFood;
+        $dao->luxuryResource = $neededLuxury;
+
+        $query = UserQuery::qSubtarctResourcesFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    /*
+    public static function useAvailableManpower(int $userId, int $manpower, bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+
+        $dao->manpowerUsed = $manpower;
+
+        $query = UserQuery::qAddManpowerUsedFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    public static function freeUsedManpower(int $userId, int $usedManpower, bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+        $dao->manpowerUsed = $usedManpower;
+
+        $query = UserQuery::qSubtractManpowerUsedFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }*/
+
+    /************************************************************/
+
+    /**
+     * @param string $hiveId
+     * @param int $hiveUid
+     * @param string $country
+     * @param string $lang
+     * @param string $osVersion
+     * @param string $appVersion
+     * @return int
+     * @throws CtxException|Exception
+     */
+    public static function createNewUserPlatform(
+        string $hiveId,
+        int $hiveUid,
+        string $country,
+        string $lang,
+        string $osVersion,
+        string $appVersion)
+    {
+        $dao = new UserDAO();
+        $dao->userId = null;
+        $dao->hiveId = $hiveId;
+        $dao->hiveUid = $hiveUid;
+        $dao->registerDate = Timezone::getNowUTC();
+        $dao->country = $country;
+        $dao->lang = $lang;
+        $dao->osVersion = $osVersion;
+        $dao->appVersion = $appVersion;
+
+        // user_platform 테이블 레코드 추가
+        $stmt = UserQuery::qInsertUserPlatform($dao)->run();
+        static::validateInsert($stmt);
+        return DB::getLastInsertId();
+    }
+
+    /**
+     * @param int $userId
+     * @throws CtxException|Exception
+     */
+    public static function createNewUserInfo(int $userId)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+        $dao->lastVisit = Timezone::getNowUTC();
+        $dao->territoryId = null;
+        $dao->name = null;
         $dao->castleLevel = 1;
         $dao->castleToLevel = 1;
-        $dao->upgradeTime = Timezone::getNowUTC();
+        $dao->upgradeTime = null;
+        $dao->penaltyFinishTime = null;
         $dao->autoGenerateManpower = true;
         $dao->manpower = 10;
         $dao->appendedManpower = 0;
         $dao->tacticalResource = 0;
         $dao->foodResource = 0;
         $dao->luxuryResource = 0;
-        $dao->lastVisit = $data['last_visit'];
 
+        // user_info 테이블 레코드 추가
+        $stmt = UserQuery::qInsertUserInfo($dao)->run();
+        static::validateInsert($stmt);
+    }
+
+    /**
+     * @param int $userId
+     * @throws CtxException
+     */
+    public static function createNewUserStat(int $userId)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
         $dao->warRequest = 0;
         $dao->warVictory = 0;
         $dao->warDefeated = 0;
@@ -181,39 +325,24 @@ class UserServices extends Services
         $dao->boss2KillCount = 0;
         $dao->boss3KillCount = 0;
 
-        DB::beginTransaction();
-        // user_platform 테이블 레코드 추가
-        $stmt = UQ::qInsertUserPlatform($dao)->run();
-        static::validateInsert($stmt);
-
-        $dao->userId = DB::getLastInsertId();
-
-        // user_info 테이블 레코드 추가
-        $stmt = UQ::qInsertUserInfo($dao)->run();
-        static::validateInsert($stmt);
-
         // user_statistics 테이블 레코드 추가
-        $stmt = UQ::qInsertUserStat($dao)->run();
+        $stmt = UserQuery::qInsertUserStat($dao)->run();
         static::validateInsert($stmt);
-        DB::endTransaction();
-
-        return $dao;
     }
+
+    /**************************************************************************/
+
+    // CHECK
 
     /**
      * @param UserDAO $user
-     * @param array $resource
-     * @throws Exception
+     * @param int $neededTactical
+     * @param int $neededFood
+     * @param int $neededLuxury
+     * @throws CtxException
      */
-    public static function checkUpgradePossible(UserDAO $user, array $resource)
+    public static function checkResourceSufficient(UserDAO $user, int $neededTactical, int $neededFood, int $neededLuxury)
     {
-        // 이미 업그레이드 진행중 인지 검사
-        CtxException::notUpgradedYet($user->isUpgrading());
-
-        $neededTactical = $resource['need_tactical_resource'];
-        $neededFood = $resource['need_food_resource'];
-        $neededLuxury = $resource['need_luxury_resource'];
-
         // 필요한 재료를 가지고 있는 지 검사
         $hasResource = $user->hasSufficientResource($neededTactical, $neededFood, $neededLuxury);
         CtxException::resourceInsufficient(!$hasResource);
@@ -221,27 +350,24 @@ class UserServices extends Services
 
     /**
      * @param UserDAO $user
-     * @param array $resource
+     * @param int $neededManpower
+     * @throws CtxException
+     */
+    public static function checkAvailableManpowerSufficient(UserDAO $user, int $neededManpower)
+    {
+        // 인력이 충분한지 검사
+        $hasManpower = $user->hasSufficientAvailableManpower($neededManpower);
+        CtxException::manpowerInsufficient(!$hasManpower);
+    }
+
+    /**
+     * @param UserDAO $user
      * @throws Exception
      */
-    public static function upgradeCastle(UserDAO $user, array $resource)
+    public static function checkUpgradeStatus(UserDAO $user)
     {
-        $dao = new UserDAO();
-        $dao->userId = $user->userId;
-
-        $dao->castleLevel = $user->currentCastleLevel;
-        $dao->castleToLevel = $user->currentCastleLevel + 1;
-
-        $dao->tacticalResource = $resource['need_tactical_resource'];
-        $dao->foodResource = $resource['need_food_resource'];
-        $dao->luxuryResource = $resource['need_luxury_resource'];
-
-        // 업그레이드에 필요한 시간
-        $castleUpgradeUnitTime = Plan::getData(PLAN_BUILDING, PLAN_BUILDING_ID_CASTLE)['upgrade_unit_time'];
-        $dao->upgradeTime = Timezone::getCompleteTime($castleUpgradeUnitTime);
-
-        $stmt = UQ::qUpdateUserInfoSetCastleLevel($dao)->run();
-        static::validateUpdate($stmt);
+        // 이미 업그레이드 진행중 인지 검사
+        CtxException::notCompletedPreviousJobYet($user->isUpgrading());
     }
 
     /**
@@ -250,47 +376,34 @@ class UserServices extends Services
      */
     public static function checkUpgradeFinished(UserDAO $user)
     {
-        CtxException::invalidId($user->isEmpty());
         CtxException::notUpgradedYet(!$user->isUpgraded());
     }
 
-    /**
-     * @param int $tactical
-     * @param int $food
-     * @param int $luxury
-     * @return UserServices
-     */
-    public static function modifyResource(array $data)
-    {
-
-
-        $container = self::getContainer();
-        $container->tacticalResource =  $tactical;
-        $container->foodResource = $food;
-        $container->luxuryResource = $luxury;
-        $container->updateProperty(['tacticalResource', 'foodResource', 'luxuryResource']);
-
-        return new self();
-    }
-
-    /**
-     * @param int $manpower
-     * @param int $manpowerUsed
-     * @param int $appendedManpower
-     * @return UserServices
-     */
-    public static function modifyUserManpower(int $manpower, int $manpowerUsed, int $appendedManpower)
-    {
-        $container = self::getContainer();
-        $container->manpower = $manpower;
-        $container->manpowerUsed = $manpowerUsed;
-        $container->appendedManpower = $appendedManpower;
-        $container->updateProperty(['manpower', 'manpowerUsed', 'appendedManpower']);
-
-        return new self();
-    }
-
     /**************************************************************************/
+
+    /**
+     * @param int $userId
+     * @throws Exception
+     */
+    public static function getUsedManpower(int $userId)
+    {
+        Plan::getDataAll(PLAN_BUILDING);
+
+        $buildingUsedManpower = 0;
+        $buildings = BuildingServices::getBuildingsByUser($userId);
+        foreach ($buildings as $building) {
+            if ($building->isCreating()) {
+                list($payManpower) = Plan::getBuildingManpower($building->buildingType);
+                $buildingUsedManpower += $payManpower;
+            } else {
+                $buildingUsedManpower += $building->manpower;
+            }
+        }
+        // TODO: territory
+        // $exploreUsedManpower
+        // $warUsedManpower
+        // $raidUsedManpower
+    }
 
     public static function getLocation(int $territoryId)
     {

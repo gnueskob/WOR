@@ -99,7 +99,6 @@ CREATE TABLE user_info (
   penalty_finish_time         DATETIME      NULL,
   auto_generate_manpower      TINYINT       NOT NULL    DEFAULT TRUE,
   manpower             BIGINT        NOT NULL    DEFAULT 0,
-  manpower_used        BIGINT        NOT NULL    DEFAULT 0,
   appended_manpower    BIGINT        NOT NULL    DEFAULT 0,
   tactical_resource    BIGINT        NOT NULL    DEFAULT 0,
   food_resource        BIGINT        NOT NULL    DEFAULT 0,

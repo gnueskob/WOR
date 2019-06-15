@@ -2,15 +2,92 @@
 
 namespace lsb\App\query;
 
+use lsb\App\models\Query;
 use lsb\App\models\WeaponDAO;
-use lsb\Libs\DB;
-use lsb\Libs\Timezone;
-use Exception;
-use lsb\Utils\Utils;
-use PDOStatement;
 
-class WeaponQuery
+class WeaponQuery extends Query
 {
+    public function __construct()
+    {
+        parent::__construct(WeaponDAO::getColumnMap());
+    }
+
+    public static function weapon()
+    {
+        return static::make()->setTable('weapon');
+    }
+
+    /**************************************************************/
+
+    public function whereUserId(int $userId)
+    {
+        return $this->whereEqual(['userId' => $userId]);
+    }
+
+    public function whereWeaponId(int $weaponId)
+    {
+        return $this->whereEqual(['weaponId' => $weaponId]);
+    }
+
+    /**************************************************************/
+
+    // SELECT QUERY
+
+    public static function qSelectWeapon(WeaponDAO $dao)
+    {
+        return static::weapon()
+            ->selectQurey()
+            ->selectAll()
+            ->whereWeaponId($dao->weaponId);
+    }
+
+    public static function qSelectWeaponsByUser(WeaponDAO $dao)
+    {
+        return static::weapon()
+            ->selectQurey()
+            ->selectAll()
+            ->whereUserId($dao->userId);
+    }
+
+    /**************************************************************/
+
+    // INSERT QUERY
+
+    public static function qInsertWeapon(WeaponDAO $dao)
+    {
+        return static::weapon()
+            ->insertQurey()
+            ->value([
+                'weaponId' => $dao->weaponId,
+                'userId' => $dao->userId,
+                'weaponType' => $dao->weaponType,
+                'createTime' => $dao->createTime,
+                'upgradeTime' => $dao->upgradeTime,
+                'level' => $dao->level,
+                'toLevel' => $dao->toLevel,
+                'lastUpdate' => $dao->lastUpdate
+            ]);
+    }
+
+    /**************************************************************/
+
+    // UPDATE QUERY
+
+    public static function qSetUpgradeFromWeapon(WeaponDAO $dao)
+    {
+        return static::weapon()
+            ->updateQurey()
+            ->set([
+                'level' => $dao->level,
+                'toLevel' => $dao->toLevel,
+                'upgradeTime' => $dao->upgradeTime
+            ])
+            ->whereWeaponId($dao->weaponId);
+    }
+
+    /**************************************************************/
+
+    /*
     public static function selectWeapon(WeaponDAO $weapon)
     {
         $q = "
@@ -33,11 +110,6 @@ class WeaponQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param WeaponDAO $weapon
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function insertWeapon(WeaponDAO $weapon)
     {
         $q = "
@@ -122,7 +194,6 @@ class WeaponQuery
         ];
         return DB::runQuery($q, $p);
     }
-    */
 
     public static function updateBuildingAll(WeaponDAO $container, bool $assign = false)
     {
@@ -155,11 +226,6 @@ class WeaponQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteWeaponCreate(array $d)
     {
         $q = "
@@ -174,11 +240,6 @@ class WeaponQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param array $d
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteWeaponUpgrade(array $d)
     {
         $q = "
@@ -192,4 +253,5 @@ class WeaponQuery
         ];
         return DB::runQuery($q, $p);
     }
+    */
 }

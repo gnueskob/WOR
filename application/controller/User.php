@@ -5,11 +5,9 @@ namespace lsb\App\controller;
 use lsb\Libs\DB;
 use lsb\Utils\Lock;
 use lsb\App\services\UserServices;
-use lsb\Libs\CtxException;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\Libs\Context;
-use lsb\Libs\Timezone;
 use lsb\Libs\Plan;
 
 class User extends Router implements ISubRouter
@@ -44,16 +42,31 @@ class User extends Router implements ISubRouter
             $data = $ctx->getBody();
             $hiveId = $data['hive_id'];
             $hiveUid = $data['hive_uid'];
+            $country = $data['country'];
+            $lang = $data['lang'];
+            $osVersion = $data['os_version'];
+            $appVersion = $data['app_version'];
 
             // 하이브 정보로 유저 검색 후 이미 존재하면 fail
             UserServices::checkNewHiveUser($hiveId, $hiveUid);
 
             // 없는 정보일 시 새로운 계정 생성
-            $user = UserServices::registerNewAccount($data);
+            DB::beginTransaction();
+            $userId = UserServices::createNewUserPlatform(
+                $hiveId,
+                $hiveUid,
+                $country,
+                $lang,
+                $osVersion,
+                $appVersion);
+            UserServices::createNewUserInfo($userId);
+            UserServices::createNewUserStat($userId);
+            DB::endTransaction();
 
+            $userArr = UserServices::getUser($userId)->toArray();
             // TODO: token 생성
             $ctx->addBody([
-                'user' => $user->toArray(),
+                'user' => $userArr,
                 'token' => 'token_temp'
             ]);
             $ctx->send();
@@ -109,13 +122,16 @@ class User extends Router implements ISubRouter
                 $user = UserServices::getUserInfo($userId);
 
                 // 업그레이드에 필요한 자원
-                $planResource = Plan::getData(PLAN_UPG_CASTLE, $user->currentCastleLevel);
+                list($neededTactical, $neededFood, $neededLuxury) = Plan::getCastleUpgradeResource($user->currentCastleLevel);
+                list(, $upgradeUnitTime) = Plan::getBuildingUnitTime(PLAN_BUILDING_ID_CASTLE);
 
-                // 유저 자원 정보 확인
-                UserServices::checkUpgradePossible($user, $planResource);
+                // 성 업그레이드 가능 여부 검사
+                UserServices::checkUpgradeStatus($user);
+                UserServices::checkResourceSufficient($user, $neededTactical, $neededFood, $neededLuxury);
 
                 // 유저 자원 소모, 성 업그레이드
-                UserServices::upgradeCastle($user, $planResource);
+                UserServices::useResource($user->userId, $neededTactical, $neededFood, $neededLuxury, true);
+                UserServices::upgradeCastle($user->userId, $user->currentCastleLevel, $upgradeUnitTime);
 
                 $userArr = UserServices::getUser($userId)->toArray();
                 $ctx->addBody(['user' => $userArr]);
@@ -129,6 +145,7 @@ class User extends Router implements ISubRouter
             $userId = $data['user_id'];
             $user = UserServices::getUser($userId);
 
+            // 유저 성 업그레이드 완료 여부 검사
             UserServices::checkUpgradeFinished($user);
 
             $ctx->addBody(['user' => $user->toArray()]);

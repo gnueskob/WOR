@@ -37,7 +37,7 @@ class Weapon extends Router implements ISubRouter
                 $weaponType = $data['weapon_type'];
 
                 // 무기 생성에 필요한 자원
-                list($neededTactical, $neededFood, $neededLuxury) = Plan::getWeaponResource($weaponType);
+                list($neededTactical, $neededFood, $neededLuxury) = Plan::getWeaponCreateResources($weaponType);
                 list($createUnitTime) = Plan::getWeaponUnitTime($weaponType);
 
                 // 현재 유저 자원 정보
@@ -60,8 +60,8 @@ class Weapon extends Router implements ISubRouter
         $router->get('/add/:weapon_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $weaponId = $data['weapon_id'];
-            $weapon = WeaponServices::getWeapon($weaponId);
 
+            $weapon = WeaponServices::getWeapon($weaponId);
             WeaponServices::checkCreateFinished($weapon);
 
             $ctx->addBody(['weapon' => $weapon->toArray()]);
@@ -85,7 +85,7 @@ class Weapon extends Router implements ISubRouter
 
                 // 다음 레벨 업그레이드에 필요한 자원
                 list($neededTactical, $neededFood, $neededLuxury) = Plan::getWeaponUpgradeResources($weapon->weaponType, $weapon->currentLevel);
-                $upgradeUnitTime = Plan::getWeaponUpgradeUnitTime($weapon->weaponType, $weapon->currentLevel);
+                list(, $upgradeUnitTime) = Plan::getWeaponUnitTime($weapon->weaponType, $weapon->currentLevel);
 
                 // 현재 유저 자원 정보
                 $user = UserServices::getUserInfo($userId);

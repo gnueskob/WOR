@@ -28,6 +28,7 @@ class UserDAO extends DAO
         'tactical_resource' => 'tacticalResource',
         'food_resource' => 'foodResource',
         'luxury_resource' => 'luxuryResource',
+        'friend_attack' => 'friendAttack',
         'war_request' => 'warRequest',
         'war_victory' => 'warVictory',
         'war_defeated' => 'warDefeated',
@@ -72,6 +73,7 @@ class UserDAO extends DAO
     public $tacticalResource;
     public $foodResource;
     public $luxuryResource;
+    public $friendAttack;
 
     // statistical
     public $warRequest;

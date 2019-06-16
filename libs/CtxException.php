@@ -321,6 +321,17 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
+    public static function maxLevel(bool $flag = true): void
+    {
+        $serverErrCode = 1012;
+        $serverMsg = 'current level is max';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
     public static function alreadyUsedTile(bool $flag = true): void
     {
         $serverErrCode = 1013;
@@ -336,6 +347,17 @@ class CtxException extends Exception
     {
         $serverErrCode = 1014;
         $serverMsg = 'buff is already in use';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyExplored(bool $flag = true): void
+    {
+        $serverErrCode = 1014;
+        $serverMsg = 'already explored';
         self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
@@ -376,10 +398,131 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
-    public static function invalidId(bool $flag = true): void
+    public static function alreadyRaidExists(bool $flag = true): void
+    {
+        $serverErrCode = 1017;
+        $serverMsg = 'raid is already exists';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyRequestedAlliance(bool $flag = true): void
+    {
+        $serverErrCode = 1017;
+        $serverMsg = 'Alliance is already requested';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function alreadyWarPrepared(bool $flag = true): void
+    {
+        $serverErrCode = 1017;
+        $serverMsg = 'war is already prepared';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidBuilding(bool $flag = true): void
     {
         $serverErrCode = 1018;
-        $serverMsg = 'id is invalid';
+        $serverMsg = 'building id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidBuff(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'buff id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidTile(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'Tile id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidWar(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'War id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidRaid(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'Raid id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidTerritory(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'Territory id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function invalidAlliance(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'Alliance id is invalid';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notAlliance(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'no alliance with friend id';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function notBossTerritory(bool $flag = true): void
+    {
+        $serverErrCode = 1018;
+        $serverMsg = 'not Boss Territory';
         self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 

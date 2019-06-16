@@ -2,22 +2,18 @@
 
 namespace lsb\App\models;
 
-use lsb\Libs\Timezone;
 use Exception;
+use lsb\Libs\Timezone;
 
-class WarDAO extends DAO
+class RaidDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
-        'war_id' => 'warId',
+        'raid_id' => 'raidId',
+        'boss_id' => 'bossId',
         'user_id' => 'userId',
         'territory_id' => 'territoryId',
-        'attack' => 'attack',
-        'friend_attack' => 'friendAttack',
-        'manpower' => 'manpower',
-        'food_resource' => 'foodResource',
-        'target_defense' => 'targetDefense',
-        'prepare_time' => 'prepareTime',
-        'finish_time' => 'finishTime'
+        'is_victory' => 'isVictory',
+        'finish_time' => 'finishTime',
     ];
 
     private static $propertyToDBColumnMap = [];
@@ -29,15 +25,11 @@ class WarDAO extends DAO
         return self::$propertyToDBColumnMap;
     }
 
-    public $warId;
+    public $raidId;
+    public $bossId;
     public $userId;
     public $territoryId;
-    public $attack;
-    public $friendAttack;
-    public $manpower;
-    public $foodResource;
-    public $targetDefense;
-    public $prepareTime;
+    public $isVictory;
     public $finishTime;
 
     public function __construct(array $data = [])
@@ -54,15 +46,6 @@ class WarDAO extends DAO
      */
     public function isFinished()
     {
-        return isset($this->finishTime) && $this->finishTime <= Timezone::getNowUTC();
-    }
-
-    /**
-     * @return bool
-     * @throws Exception
-     */
-    public function isPrepared()
-    {
-        return isset($this->prepareTime) && $this->prepareTime <= Timezone::getNowUTC();
+        return isset($this->finishTime) && $this->finishTime < Timezone::getNowUTC();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace lsb\App\services;
 
+use lsb\App\controller\Weapon;
 use lsb\App\models\UserDAO;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
@@ -175,14 +176,14 @@ class UserServices extends Services
     /**
      * @param int $userId
      * @param int $currentCastleLevet
-     * @param int $upgradeUnitTime
+     * @param float $upgradeUnitTime
      * @param bool $pending
      * @throws CtxException
      */
     public static function upgradeCastle(
         int $userId,
         int $currentCastleLevet,
-        int $upgradeUnitTime,
+        float $upgradeUnitTime,
         bool $pending = false)
     {
         $dao = new UserDAO();
@@ -220,6 +221,83 @@ class UserServices extends Services
         $dao->luxuryResource = $neededLuxury;
 
         $query = UserQuery::qSubtarctResourcesFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    /**
+     * @param int $userId
+     * @param int $manpower
+     * @param bool $pending
+     * @throws CtxException
+     */
+    public static function useManpower(int $userId, int $manpower, bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+        $dao->manpower = $manpower;
+
+        $query = UserQuery::qSubtractManpowerFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    /**
+     * @param int $userId
+     * @param int $neededTactical
+     * @param int $neededFood
+     * @param int $neededLuxury
+     * @param bool $pending
+     * @throws CtxException
+     */
+    public static function obtainResource(
+        int $userId,
+        int $neededTactical,
+        int $neededFood,
+        int $neededLuxury,
+        bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+
+        $dao->tacticalResource = $neededTactical;
+        $dao->foodResource = $neededFood;
+        $dao->luxuryResource = $neededLuxury;
+
+        $query = UserQuery::qAddResourcesFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    /**
+     * @param int $userId
+     * @param int $manpower
+     * @param bool $pending
+     * @throws CtxException
+     */
+    public static function obtainManpower(int $userId, int $manpower, bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+        $dao->manpower = $manpower;
+
+        $query = UserQuery::qAddManpowerFromUserInfo($dao);
+        static::validateUpdate($query, $pending);
+    }
+
+    /**
+     * @param int $userId
+     * @param bool $pending
+     * @throws CtxException|Exception
+     */
+    public static function registerFriendAttackPower(int $userId, bool $pending = false)
+    {
+        $dao = new UserDAO();
+        $dao->userId = $userId;
+
+        list(, $buildingAttack) = BuildingServices::getArmyManpowerAndAttack($userId);
+        $weaponAttack = WeaponServices::getAttackPower($userId);
+
+        $dao->friendAttack = $buildingAttack + $weaponAttack;
+
+        $query = UserQuery::qSetFriendAttack($dao);
         static::validateUpdate($query, $pending);
     }
 
@@ -379,36 +457,40 @@ class UserServices extends Services
         CtxException::notUpgradedYet(!$user->isUpgraded());
     }
 
+    /**
+     * @param UserDAO $user
+     * @param $maxLevel
+     * @throws CtxException
+     */
+    public static function checkMaxLevelOver(UserDAO $user, $maxLevel)
+    {
+        CtxException::maxLevel($user->currentCastleLevel >= $maxLevel);
+    }
+
     /**************************************************************************/
 
     /**
      * @param int $userId
+     * @return int|mixed
      * @throws Exception
      */
     public static function getUsedManpower(int $userId)
     {
-        Plan::getDataAll(PLAN_BUILDING);
+        $buildingUsedManpower = BuildingServices::getUsedManpower($userId);
+        $exploreUsedManpower = ExploratoinServices::getTerritoryUsedManpower($userId);
 
-        $buildingUsedManpower = 0;
-        $buildings = BuildingServices::getBuildingsByUser($userId);
-        foreach ($buildings as $building) {
-            if ($building->isCreating()) {
-                list($payManpower) = Plan::getBuildingManpower($building->buildingType);
-                $buildingUsedManpower += $payManpower;
-            } else {
-                $buildingUsedManpower += $building->manpower;
-            }
-        }
-        // TODO: territory
-        // $exploreUsedManpower
-        // $warUsedManpower
-        // $raidUsedManpower
+        return $buildingUsedManpower + $exploreUsedManpower;
     }
 
-    public static function getLocation(int $territoryId)
+    public static function getCastleLocation()
     {
-        $territory = Plan::getData(PLAN_TERRITORY, $territoryId);
-        return [$territory['location_x'], $territory['location_y']];
+        list($tileWidth, $tileHeight) = Plan::getUnitTileMaxSize();
+
+        // 영내 가운데 위치 (짝수일시 수치상 더 작은 앞 칸)
+        $centerX = (int) (($tileWidth - 1) / 2);
+        $centerY = (int) (($tileHeight - 1) / 2);
+
+        return [$centerX, $centerY];
     }
 
     /**
@@ -416,24 +498,16 @@ class UserServices extends Services
      * @return int
      * @throws Exception
      */
-    public static function getTargetDefense(int $territoryId)
+    public static function getTotalDefense(int $territoryId)
     {
         $targetUser = UserServices::getUserInfoByTerritory($territoryId);
 
         // 성 방어력
-        $planCastle = Plan::getData(PLAN_UPG_CASTLE, $targetUser->currentCastleLevel);
-        $castleDefense = $planCastle['defense'];
+        $castleDefense = Plan::getBuildingDefense(PLAN_BUILDING_ID_CASTLE, $targetUser->currentCastleLevel);
 
         // 방어탑 방어력
-        $planTowers = Plan::getDataAll(PLAN_UPG_DEF_TOWER);
-        $towerDefense = 0;
-        $targetBuildings = BuildingServices::getBuildingsByUser($targetUser->userId);
-        foreach ($targetBuildings as $building) {
-            if ($building->buildingType !== PLAN_BUILDING_ID_TOWER || !$building->isDeployed()) {
-                continue;
-            }
-            $towerDefense += $planTowers[$building->currentLevel]['defense'];
-        }
+        $towerDefense = BuildingServices::getDefensePower($targetUser->userId);
+
         return $castleDefense + $towerDefense;
     }
 }

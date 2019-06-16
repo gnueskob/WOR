@@ -2,57 +2,49 @@
 
 namespace lsb\App\controller;
 
-use lsb\App\models\UserDAO;
+use Couchbase\Exception;
 use lsb\App\services\AllianceServices;
-use lsb\App\services\MessageServices;
-use lsb\Libs\DB;
-use lsb\Utils\Lock;
-use lsb\Utils\Utils;
-use lsb\App\models\WarDAO;
 use lsb\App\services\BuildingServices;
 use lsb\App\services\ExploratoinServices;
+use lsb\App\services\RaidServices;
 use lsb\App\services\UserServices;
-use lsb\App\services\WarServices;
 use lsb\App\services\WeaponServices;
 use lsb\Libs\Context;
 use lsb\Libs\CtxException;
+use lsb\Libs\DB;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Plan;
 use lsb\Libs\Router;
-use lsb\Libs\Timezone;
+use lsb\Utils\Lock;
 
-class War extends Router implements ISubRouter
+class Raid extends Router implements ISubRouter
 {
     public function make()
     {
         $router = $this;
 
-        // 유저가 진행 중인 전쟁 정보
+        // 유저가 진행 중인 레이드 정보
         $router->get('/info/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+            $data = $ctx->req->getParams();
             $userId = $data['user_id'];
-
-            // 만료된 전쟁
-            WarServices::refreshWar($userId);
-
-            $warArr = WarServices::getWarByUser($userId)->toArray();
-            $ctx->addBody(['war' => $warArr]);
+            $raidArr = RaidServices::getRaidByUser($userId)->toArray();
+            $ctx->addBody(['raid' => $raidArr]);
             $ctx->send();
         });
 
-        // 끝난 전쟁 확인
+        // 끝난 레이드 검사
         $router->get('/check/:user_id', function (Context $ctx) {
             $data = $ctx->getBody();
             $userId = $data['user_id'];
 
-            // 만료된 전쟁
-            $war = WarServices::refreshWar($userId);
-            $warArr = $war->isEmpty() ? [] : $war->toArray();
+            $raid = RaidServices::refreshRaid($userId);
+            $raidArr = $raid->isEmpty() ? [] : $raid->toArray();
 
-            $ctx->addBody(['war' => $warArr]);
+            $ctx->addBody(['raid' => $raidArr]);
             $ctx->send();
         });
 
+        // 레이드 출전
         $router->post(
             '/add/:user_id',
             Lock::lockUser(MANPOWER, 2),
@@ -61,20 +53,15 @@ class War extends Router implements ISubRouter
                 $data = $ctx->getBody();
                 $userId = $data['user_id'];
                 $targetTerritoryId = $data['territory_id'];
-                $friendId = $data['friend_id'];
 
-                // 이미 전쟁 중 인가?
-                WarServices::checkWarring($userId);
+                // 이미 출전 중 인가?
+                RaidServices::checkWarring($userId);
+
+                list($territoryClass) = Plan::getTerritoryClass($targetTerritoryId);
+                CtxException::notBossTerritory($territoryClass !== PLAN_TERRITORY_TYPE_BOSS);
 
                 // 유저가 먼저 해당 영토를 탐사 했는가?
                 ExploratoinServices::checkUserExploredTerritory($userId, $targetTerritoryId);
-
-                // 동맹 지원군을 요청할 시 상대방과 동맹 중인가?
-                if (isset($friendId)) {
-                    AllianceServices::checkAllianceWithFriend($userId, $friendId);
-                }
-
-                $friend = UserServices::getUserInfo($friendId);
 
                 $user = UserServices::getUserInfo($userId);
 
@@ -98,9 +85,7 @@ class War extends Router implements ISubRouter
                 $neededFoodResource = $resourceCoeff * $armyManpower * $dist;
                 UserServices::checkResourceSufficient($user, 0, $neededFoodResource, 0);
 
-                // 전쟁 출전 준비 시작시의 타겟 영토 건물 기준으로 계산
-                $targetDefense = UserServices::getTotalDefense($targetTerritoryId);
-
+                // TODO: 레이드 보스 체력 계산ㅎ
                 DB::beginTransaction();
                 UserServices::useManpower($userId, $armyManpower, true);
                 UserServices::useResource($userId, 0, $neededFoodResource, 0);
@@ -118,7 +103,6 @@ class War extends Router implements ISubRouter
 
                 $warArr = WarServices::getWar($warId)->toArray();
                 $ctx->addBody(['war' => $warArr]);
-                $ctx->send();
             }
         );
 
@@ -136,33 +120,6 @@ class War extends Router implements ISubRouter
 
                 DB::beginTransaction();
                 WarServices::resolveWarResult($war);
-                WarServices::removeWar($war->warId);
-                DB::endTransaction();
-
-                $userArr = UserServices::getUser($war->warId)->toArray();
-                $ctx->addBody(['user' => $userArr]);
-                $ctx->send();
-            }
-        );
-
-        // 전쟁 출전 취소
-        $router->put(
-            '/cancel/:war_id',
-            Lock::lockUser(MANPOWER, 2),
-            Lock::lockUser(RESOURCE),
-            function (Context $ctx) {
-                $data = $ctx->getBody();
-                $warId = $data['war_id'];
-
-                $war = WarServices::getWar($warId);
-                WarServices::checkPrepared($war);
-
-                $halfManpower = (int) ($war->manpower / 2);
-                $halfFood = (int) ($war->foodResource / 2);
-
-                DB::beginTransaction();
-                UserServices::obtainManpower($war->userId, $halfManpower, true);
-                UserServices::obtainResource($war->userId, 0, $halfFood, 0);
                 WarServices::removeWar($war->warId);
                 DB::endTransaction();
 

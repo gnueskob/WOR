@@ -3,13 +3,94 @@
 namespace lsb\App\query;
 
 use lsb\App\models\BuffDAO;
+use lsb\App\models\Query;
 use lsb\Libs\DB;
 use lsb\Libs\Timezone;
 use PDOStatement;
 use Exception;
 
-class BuffQuery
+class BuffQuery extends Query
 {
+    public function __construct()
+    {
+        parent::__construct(BuffDAO::getColumnMap());
+    }
+
+    public static function buff()
+    {
+        return static::make()->setTable('buff');
+    }
+
+    /************************************************************/
+
+    public function whereUserId(int $userId)
+    {
+        return $this->whereEqual(['userId' => $userId]);
+    }
+
+    public function whereBuffId(int $buffId)
+    {
+        return $this->whereEqual(['buffId' => $buffId]);
+    }
+
+    protected function whereExpired(string $time)
+    {
+        return $this->whereLT(['finishTime' => $time]);
+    }
+
+    /************************************************************/
+
+    // SELECT QUERY
+
+    public static function qSelectBuff(BuffDAO $dao)
+    {
+        return static::buff()
+            ->selectQurey()
+            ->selectAll()
+            ->whereBuffId($dao->buffId);
+    }
+
+    public static function qSelectBuffByUser(BuffDAO $dao)
+    {
+        return static::buff()
+            ->selectQurey()
+            ->selectAll()
+            ->whereUserId($dao->userId);
+    }
+
+    /************************************************************/
+
+    // INSERT QUERY
+
+    public static function qInsertBuff(BuffDAO $dao)
+    {
+        return static::buff()
+            ->insertQurey()
+            ->value([
+                'buffId' => $dao->buffId,
+                'userId' => $dao->userId,
+                'buffType' => $dao->buffType,
+                'finishTime' => $dao->finishTime,
+            ]);
+    }
+
+    /************************************************************/
+
+    // DELETE QUERY
+
+    public static function qDeleteExpiredBuff(BuffDAO $dao)
+    {
+        return static::buff()
+            ->deleteQurey()
+            ->whereUserId($dao->userId)
+            ->whereExpired($dao->finishTime);
+    }
+
+    /************************************************************/
+
+    /************************************************************/
+
+    /*
     public static function selectBuffByUser(BuffDAO $buff)
     {
         $q = "
@@ -56,11 +137,6 @@ class BuffQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param BuffDAO $buff
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteBuffByUser(BuffDAO $buff)
     {
         $q = "
@@ -74,4 +150,5 @@ class BuffQuery
         ];
         return DB::runQuery($q, $p);
     }
+    */
 }

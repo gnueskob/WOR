@@ -2,79 +2,75 @@
 
 namespace lsb\App\services;
 
-use lsb\App\models\BuildingDAO;
-use lsb\App\models\WarDAO;
-use lsb\App\query\WarQuery;
 use Exception;
+use lsb\App\models\RaidDAO;
+use lsb\App\query\RaidQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use lsb\Libs\Plan;
 use lsb\Libs\Timezone;
-use PDOException;
 use PDOStatement;
 
-class WarServices extends Services
+class RaidServices
 {
     /**
      * @param PDOStatement $stmt
-     * @return WarDAO
+     * @return RaidDAO
      * @throws Exception
      */
-    private static function getWarDAO(PDOStatement $stmt)
+    private static function getRaidDAO(PDOStatement $stmt)
     {
         $res = $stmt->fetch();
         $res = $res === false ? [] : $res;
-        return new WarDAO($res);
+        return new RaidDAO($res);
     }
 
     /************************************************************/
 
     /**
-     * @param int $warId
-     * @return WarDAO
+     * @param int $raidId
+     * @return RaidDAO
      * @throws CtxException|Exception
      */
-    public static function getWar(int $warId)
+    public static function getRaid(int $raidId)
     {
-        $dao = new WarDAO();
-        $dao->warId = $warId;
+        $dao = new RaidDAO();
+        $dao->raidId = $raidId;
 
-        $stmt = WarQuery::qSelectWar($dao)->run();
-        $war = static::getWarDAO($stmt);
-        CtxException::invalidWar($war->isEmpty());
-        return $war;
+        $stmt = RaidQuery::qSelectRaid($dao)->run();
+        $raid = static::getRaidDAO($stmt);
+        CtxException::invalidRaid($raid->isEmpty());
+        return $raid;
     }
 
     /**
      * @param int $userId
-     * @return WarDAO
+     * @return RaidDAO
      * @throws Exception
      */
-    public static function getWarByUser(int $userId)
+    public static function getRaidByUser(int $userId)
     {
-        $dao = new WarDAO();
+        $dao = new RaidDAO();
         $dao->userId = $userId;
         $dao->finishTime = Timezone::getNowUTC();
 
-        $stmt = WarQuery::qSelectWarByUser($dao)->run();
-        return static::getWarDAO($stmt);
+        $stmt = RaidQuery::qSelectRaidByUser($dao)->run();
+        return static::getRaidDAO($stmt);
     }
 
-
-        /**
+    /**
      * @param int $userId
-     * @return WarDAO
-     * @throws Exception
+     * @throws CtxException|Exception
      */
     public static function checkWarring(int $userId)
     {
-        $dao = new WarDAO();
+        $dao = new RaidDAO();
         $dao->userId = $userId;
         $dao->finishTime = Timezone::getNowUTC();
 
-        $stmt = WarQuery::qSelectActiveWarByUser($dao)->run();
-        $war = static::getWarDAO($stmt);
-        CtxException::alreadyWarExists(!$war->isEmpty());
+        $stmt = RaidQuery::qSelectActiveRaidByUser($dao)->run();
+        $war = static::getRaidDAO($stmt);
+        CtxException::alreadyRaidExists(!$war->isEmpty());
     }
 
     /**
@@ -136,17 +132,18 @@ class WarServices extends Services
 
     /**
      * @param int $userId
-     * @return WarDAO|void
+     * @return RaidDAO
      * @throws Exception
      */
-    public static function refreshWar(int $userId)
+    public static function refreshRaid(int $userId)
     {
-        $dao = new WarDAO();
+        $dao = new RaidDAO();
         $dao->userId = $userId;
         $dao->finishTime = Timezone::getNowUTC();
 
-        $stmt = WarQuery::qSelcetFinishedWarByUser($dao)->run();
-        return static::getWarDAO($stmt);
+        $stmt = RaidQuery::qSelcetFinishedRaidByUser($dao)->run();
+        return static::getRaidDAO($stmt);
+
     }
 
     /**********************************************************/
@@ -174,28 +171,14 @@ class WarServices extends Services
     /**********************************************************/
 
     /**
-     * @param WarDAO $war
+     * @param RaidDAO $raid
      * @throws CtxException
      */
-    public static function resolveWarResult(WarDAO $war)
+    public static function resolveRaidResult(RaidDAO $raid)
     {
-        $attack = $war->attack;
-        $defense = $war->targetDefense;
-        $ratio = $attack - $defense / $attack;
+        if (false === $raid->isVictory) {
+            // 레이드 실패
 
-        if ($ratio <= 0) { // 패배, 무승부
-            return;
         }
-
-        $manpower = $war->manpower;
-        $food = $war->foodResource;
-        list(, , , $defaultManpowerRatio) = Plan::getUnitWar();
-
-        $manpower -= (int)($manpower * $defaultManpowerRatio);
-        $remainManpower = $manpower * $ratio;
-        $remainFood = $food * $ratio;
-
-        UserServices::obtainManpower($war->userId, $remainManpower, true);
-        UserServices::obtainResource($war->userId, 0, $remainFood, 0);
     }
 }

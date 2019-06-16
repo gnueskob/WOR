@@ -2,13 +2,24 @@
 
 namespace lsb\App\query;
 
+use lsb\App\models\Query;
 use lsb\App\models\TerritoryDAO;
 use lsb\App\models\TileDAO;
 use lsb\Libs\DB;
 use PDOStatement;
 
-class ExplorationQuery
+class ExplorationQuery extends Query
 {
+    public function __construct()
+    {
+        parent::__construct(WeaponDAO::getColumnMap());
+    }
+
+    public static function weapon()
+    {
+        return static::make()->setTable('weapon');
+    }
+
     public static function selectTile(TileDAO $tile)
     {
         $q = "

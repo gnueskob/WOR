@@ -122,10 +122,12 @@ class User extends Router implements ISubRouter
                 $user = UserServices::getUserInfo($userId);
 
                 // 업그레이드에 필요한 자원
-                list($neededTactical, $neededFood, $neededLuxury) = Plan::getCastleUpgradeResource($user->currentCastleLevel);
-                list(, $upgradeUnitTime) = Plan::getBuildingUnitTime(PLAN_BUILDING_ID_CASTLE);
+                list($neededTactical, $neededFood, $neededLuxury) = Plan::getBuildingUpgradeResources(PLAN_BUILDING_ID_CASTLE, $user->currentCastleLevel);
+                list(, $upgradeUnitTime) = Plan::getBuildingUnitTime(PLAN_BUILDING_ID_CASTLE, $user->currentCastleLevel);
+                list(, $maxLevel) = Plan::getBuildingUpgradeStatus(PLAN_BUILDING_ID_CASTLE);
 
                 // 성 업그레이드 가능 여부 검사
+                UserServices::checkMaxLevelOver($user, $maxLevel);
                 UserServices::checkUpgradeStatus($user);
                 UserServices::checkResourceSufficient($user, $neededTactical, $neededFood, $neededLuxury);
 
@@ -147,6 +149,18 @@ class User extends Router implements ISubRouter
 
             // 유저 성 업그레이드 완료 여부 검사
             UserServices::checkUpgradeFinished($user);
+
+            $ctx->addBody(['user' => $user->toArray()]);
+            $ctx->send();
+        });
+
+        // 동맹용 덱 등록
+        $router->put('/deck/:user_id', function (Context $ctx) {
+            $data = $ctx->getBody();
+            $userId = $data['user_id'];
+
+            UserServices::registerFriendAttackPower($userId);
+            $user = UserServices::getUser($userId);
 
             $ctx->addBody(['user' => $user->toArray()]);
             $ctx->send();

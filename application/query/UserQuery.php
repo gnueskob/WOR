@@ -61,6 +61,27 @@ class UserQuery extends Query
         return $this->setResource($tactical, $food, $luxury, '+');
     }
 
+    private function setManpower($manpower, $sign)
+    {
+        if ($sign === '+') {
+            return $this->setAdd(['manpower' => $manpower]);
+        } elseif ($sign === '-') {
+            return $this->setSub(['manpower' => $manpower]);
+        }
+    }
+
+    public function setSubManpower($manpower)
+    {
+        return $this->setManpower($manpower, '-');
+    }
+
+    public function setAddManpower($manpower)
+    {
+        return $this->setManpower($manpower, '+');
+    }
+
+    /**************************************************************/
+
     public function whereHiveUser($hiveId, $hiveUid)
     {
         return $this->whereEqual([
@@ -141,6 +162,35 @@ class UserQuery extends Query
             ->whereUserId($dao->userId);
     }
 
+    public static function qAddResourcesFromUserInfo(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->setAddResource(
+                $dao->tacticalResource,
+                $dao->foodResource,
+                $dao->luxuryResource
+            )
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qSubtractManpowerFromUserInfo(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->setSubManpower($dao->manpower)
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qAddManpowerFromUserInfo(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->setAddManpower($dao->manpower)
+            ->whereUserId($dao->userId);
+    }
+
+    /*
     public static function qAddManpowerUsedFromUserInfo(UserDAO $dao)
     {
         return static::userInfo()
@@ -155,7 +205,7 @@ class UserQuery extends Query
             ->updateQurey()
             ->setSub(['manpowerUsed' => $dao->manpowerUsed])
             ->whereUserId($dao->userId);
-    }
+    }*/
 
     public static function qUpdateUserInfoSetCastle(UserDAO $dao)
     {
@@ -166,6 +216,14 @@ class UserQuery extends Query
                 'castleToLevel' => $dao->castleToLevel,
                 'upgradeTime' => $dao->upgradeTime
             ])
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qSetFriendAttack(UserDAO $dao)
+    {
+        return static::userInfo()
+            ->updateQurey()
+            ->set(['friendAttack' => $dao->friendAttack])
             ->whereUserId($dao->userId);
     }
 

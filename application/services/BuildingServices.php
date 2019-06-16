@@ -27,7 +27,9 @@ class BuildingServices extends Services
         $dao->userId = $userId;
 
         $stmt = BuildingQuery::qSelectBuilding($dao)->run();
-        return static::getBuildingDAO($stmt);
+        $building = static::getBuildingDAO($stmt);
+        CtxException::invalidBuilding($building->isEmpty());
+        return $building;
     }
 
     /**
@@ -49,7 +51,7 @@ class BuildingServices extends Services
      * @param int $territoryId
      * @param int $tileId
      * @param int $buildingType
-     * @param string $createUnitTime
+     * @param float $createUnitTime
      * @return int
      * @throws CtxException|Exception
      */
@@ -58,7 +60,7 @@ class BuildingServices extends Services
         int $territoryId,
         int $tileId,
         int $buildingType,
-        string $createUnitTime)
+        float $createUnitTime)
     {
         $dao = new BuildingDAO();
         $dao->buildingId = null;
@@ -90,14 +92,14 @@ class BuildingServices extends Services
     /**
      * @param int $buildingId
      * @param int $currentLevel
-     * @param int $upgradeUnitTime
+     * @param float $upgradeUnitTime
      * @param bool $pending
      * @throws CtxException
      */
     public static function upgrade(
         int $buildingId,
         int $currentLevel,
-        int $upgradeUnitTime,
+        float $upgradeUnitTime,
         bool $pending = false)
     {
         $dao = new BuildingDAO();
@@ -115,14 +117,14 @@ class BuildingServices extends Services
     /**
      * @param int $buildingId
      * @param int $manpower
-     * @param int $deployUnitTime
+     * @param float $deployUnitTime
      * @param bool $pending
      * @throws CtxException
      */
     public static function deploy(
         int $buildingId,
         int $manpower,
-        int $deployUnitTime,
+        float $deployUnitTime,
         bool $pending = false)
     {
         $dao = new BuildingDAO();
@@ -217,6 +219,18 @@ class BuildingServices extends Services
     /**
      * @param BuildingDAO $building
      * @param int $deployManpower
+     * @param int $deployMinManpower
+     * @throws CtxException
+     */
+    public static function checkBuildingManpowerMin(BuildingDAO $building, int $deployManpower, int $deployMinManpower)
+    {
+        $isInsufficient = $building->manpower + $deployManpower < $deployMinManpower;
+        CtxException::manpowerInsufficient($isInsufficient);
+    }
+
+    /**
+     * @param BuildingDAO $building
+     * @param int $deployManpower
      * @param int $manpowerLimit
      * @throws CtxException
      */
@@ -228,16 +242,27 @@ class BuildingServices extends Services
 
     /*************************************************************/
 
-    /*
-    public static function getManpower(int $userId)
+    /**
+     * @param int $userId
+     * @return int
+     * @throws Exception
+     */
+    public static function getUsedManpower(int $userId)
     {
-        $dao = new BuildingDAO();
-        $dao->userId = $userId;
+        Plan::getDataAll(PLAN_BUILDING);
 
-        $stmt = BuildingQuery::qSumManpowerFromBuilding($dao)->run();
-        $res = $stmt->fetch();
-        return $res === false ? 0 : $res['totalManpower'];
-    }*/
+        $usedManpower = 0;
+        $buildings = static::getBuildingsByUser($userId);
+        foreach ($buildings as $building) {
+            if ($building->isCreating()) {
+                list($createManpower) = Plan::getBuildingManpower($building->buildingType);
+                $usedManpower += $createManpower;
+            } else {
+                $usedManpower += $building->manpower;
+            }
+        }
+        return $usedManpower;
+    }
 
     public static function parseArmyManpower(array $armyManpower)
     {
@@ -254,29 +279,51 @@ class BuildingServices extends Services
     /**
      * @param int $userId
      * @return array|null
-     * @throws CtxException|Exception
+     * @throws Exception
      */
-    public static function getArmyManpower(int $userId)
+    public static function getArmyManpowerAndAttack(int $userId)
     {
-        $buildings = self::getBuildingsByUser($userId);
+        $dao = new BuildingDAO();
+        $dao->userId = $userId;
+        $dao->buildingType = PLAN_BUILDING_ID_ARMY;
+        $dao->deployTime = Timezone::getNowUTC();
+
+        $stmt = BuildingQuery::qSelectActiveBuildings($dao)->run();
+        $armyBuildings = static::getBuildingDAOs($stmt);
 
         $totalManpower = 0;
         $totalAttack = 0;
 
-        /* @var BuildingDAO[] $buildings */
-        foreach ($buildings as $building) {
-            CtxException::invalidId($building->userId !== $userId);
-
-            if (!$building->isDeployed() &&
-                $building->buildingType !== PLAN_BUILDING_ID_ARMY) {
-                continue;
-            }
-
+        foreach ($armyBuildings as $building) {
             $totalAttack += $building->manpower * $building->currentLevel;
             $totalManpower += $building->manpower;
         }
 
         return [$totalManpower, $totalAttack];
+    }
+
+    /**
+     * @param int $userId
+     * @return float|int|mixed
+     * @throws Exception
+     */
+    public static function getDefensePower(int $userId)
+    {
+        $dao = new BuildingDAO();
+        $dao->userId = $userId;
+        $dao->buildingType = PLAN_BUILDING_ID_TOWER;
+        $dao->deployTime = Timezone::getNowUTC();
+
+        $stmt = BuildingQuery::qSelectActiveBuildings($dao)->run();
+        $towerBuildings = static::getBuildingDAOs($stmt);
+
+        $totalDefense = 0;
+
+        foreach ($towerBuildings as $building) {
+            $totalDefense += Plan::getBuildingDefense(PLAN_BUILDING_ID_TOWER, $building->currentLevel);
+        }
+
+        return $totalDefense;
     }
 
     /**

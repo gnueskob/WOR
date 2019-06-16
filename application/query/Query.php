@@ -172,6 +172,27 @@ class Query
         return $this;
     }
 
+    public function selectCountAll(string $as = "COUNT")
+    {
+        $this->column = ["COUNT(*) AS {$as}"];
+        return $this;
+    }
+
+    public function selectCount(array $columns)
+    {
+        foreach ($columns as $column => $as) {
+            $this->column[] = "COUNT({$this->map[$column]}) AS {$as}";
+        }
+        return $this;
+    }
+
+    public function selectSumAll(string $as = "SUM")
+    {
+        $this->column = ["SUM(*) AS {$as}"];
+        return $this;
+    }
+
+
     public function selectSum(array $columns)
     {
         foreach ($columns as $column => $as) {
@@ -188,6 +209,18 @@ class Query
     public function whereEqual(array $conds)
     {
         $this->where($conds, '=');
+        return $this;
+    }
+
+    public function whereIsNot(array $conds)
+    {
+        $this->where($conds, 'IS NOT');
+        return $this;
+    }
+
+    public function whereIs(array $conds)
+    {
+        $this->where($conds, 'IS');
         return $this;
     }
 

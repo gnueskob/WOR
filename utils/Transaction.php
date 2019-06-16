@@ -14,8 +14,7 @@ class Transaction
             try {
                 $ctx->next();
             } catch (Exception $e) {
-                $isTransactionMode = DB::getTransactionMode();
-                if ($isTransactionMode) {
+                if (DB::getTransactionMode() >= 1) {
                     DB::getInstance()->getDBConnection()->rollBack();
                 }
                 throw $e;

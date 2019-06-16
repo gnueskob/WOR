@@ -2,16 +2,13 @@
 
 namespace lsb\App\models;
 
-use Exception;
-use lsb\Libs\Timezone;
-
-class TerritoryDAO extends DAO
+class AllianceDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
-        'explore_id' => 'exploreId',
+        'alliance_id' => 'allianceId',
         'user_id' => 'userId',
-        'territory_id' => 'territoryId',
-        'explore_time' => 'exploreTime'
+        'friend_id' => 'friendId',
+        'created_time' => 'createdTime'
     ];
 
     private static $propertyToDBColumnMap = [];
@@ -23,10 +20,10 @@ class TerritoryDAO extends DAO
         return self::$propertyToDBColumnMap;
     }
 
-    public $exploreId;
+    public $allianceId;
     public $userId;
-    public $territoryId;
-    public $exploreTime;
+    public $friendId;
+    public $createdTime;
 
     public function __construct(array $data = [])
     {
@@ -34,14 +31,5 @@ class TerritoryDAO extends DAO
             return;
         }
         parent::__construct($data, self::$dbColumToPropertyMap);
-    }
-
-    /**
-     * @return bool
-     * @throws Exception
-     */
-    public function isExplored()
-    {
-        return isset($this->exploreTime) && $this->exploreTime <= Timezone::getNowUTC();
     }
 }

@@ -14,6 +14,15 @@ class TileDAO extends DAO
         'explore_time' => 'exploreTime'
     ];
 
+    private static $propertyToDBColumnMap = [];
+    public static function getColumnMap()
+    {
+        if (empty(self::$propertyToDBColumnMap)) {
+            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
+        }
+        return self::$propertyToDBColumnMap;
+    }
+
     public $exploreId;
     public $userId;
     public $tileId;

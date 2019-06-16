@@ -2,14 +2,117 @@
 
 namespace lsb\App\query;
 
+use lsb\App\models\Query;
 use lsb\App\models\WarDAO;
-use lsb\Libs\DB;
-use lsb\Libs\Timezone;
-use PDOStatement;
-use Exception;
 
-class WarQuery
+class WarQuery extends Query
 {
+    public function __construct()
+    {
+        parent::__construct(WarDAO::getColumnMap());
+    }
+
+    public static function war()
+    {
+        return static::make()->setTable('war');
+    }
+
+    /************************************************************/
+
+    private function whereUserId(int $userId)
+    {
+        return $this->whereEqual(['userId' => $userId]);
+    }
+
+    private function whereWarId(int $warId)
+    {
+        return $this->whereEqual(['warId' => $warId]);
+    }
+
+    private function whereFinished(string $time)
+    {
+        return $this->whereLT(['finishTime' => $time]);
+    }
+
+    private function whereWarring(string $time)
+    {
+        return $this->whereGTE(['finishTime' => $time]);
+    }
+
+    /************************************************************/
+
+    // SELCET QUERY
+
+    public static function qSelectWar(WarDAO $dao)
+    {
+        return static::war()
+            ->selectQurey()
+            ->selectAll()
+            ->whereWarId($dao->warId);
+    }
+
+    public static function qSelectWarByUser(WarDAO $dao)
+    {
+        return static::war()
+            ->selectQurey()
+            ->selectAll()
+            ->whereUserId($dao->userId);
+    }
+
+    public static function qSelectActiveWarByUser(WarDAO $dao)
+    {
+        return static::war()
+            ->selectQurey()
+            ->selectAll()
+            ->whereUserId($dao->userId)
+            ->whereWarring($dao->finishTime);
+    }
+
+    public static function qSelcetFinishedWarByUser(WarDAO $dao)
+    {
+        return static::war()
+            ->selectQurey()
+            ->selectAll()
+            ->whereUserId($dao->userId)
+            ->whereFinished($dao->finishTime);
+    }
+
+    /************************************************************/
+
+    // INSERT QUERY
+
+    public static function qInsertWar(WarDAO $dao)
+    {
+        return static::war()
+            ->insertQurey()
+            ->value([
+                'warId' => $dao->warId,
+                'userId' => $dao->userId,
+                'territoryId' => $dao->territoryId,
+                'attack' => $dao->attack,
+                'manpower' => $dao->manpower,
+                'foodResource' => $dao->foodResource,
+                'targetDefense' => $dao->targetDefense,
+                'prepareTime' => $dao->prepareTime,
+                'finishTime' => $dao->finishTime
+            ]);
+    }
+
+    /************************************************************/
+
+    // DELETE QUERY
+
+    public static function qDeleteWar(WarDAO $dao)
+    {
+        return static::war()
+            ->deleteQurey()
+            ->whereUserId($dao->userId)
+            ->whereWarId($dao->warId);
+    }
+
+    /************************************************************/
+
+    /*
     public static function selectWar(WarDAO $war)
     {
         $q = "
@@ -64,11 +167,6 @@ class WarQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param WarDAO $war
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteWarByUser(WarDAO $war)
     {
         $q = "
@@ -83,11 +181,6 @@ class WarQuery
         return DB::runQuery($q, $p);
     }
 
-    /**
-     * @param WarDAO $war
-     * @return PDOStatement
-     * @throws Exception
-     */
     public static function deleteWarByTerritory(WarDAO $war)
     {
         $q = "
@@ -101,4 +194,5 @@ class WarQuery
         ];
         return DB::runQuery($q, $p);
     }
+    */
 }

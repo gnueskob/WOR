@@ -10,7 +10,6 @@ use Exception;
 class Timezone extends DateTime
 {
     const FORMAT = 'Y-m-d H:i:s';
-    private static $unitTime = null;
 
     public function __construct(string $timezone = 'UTC', $time = 'now')
     {
@@ -76,12 +75,10 @@ class Timezone extends DateTime
         return (new DateTime('now', new DateTimeZone('UTC')))->format(self::FORMAT);
     }
 
-    public static function getCompleteTime(int $needUnitTime)
+    public static function getCompleteTime(float $needUnitTime)
     {
-        if (is_null(self::$unitTime)) {
-            self::$unitTime = Plan::getData(PLAN_UNIT, UNIT_TIME)['value'];
-        }
-        $sec = self::$unitTime * $needUnitTime;
+        $unitTime = Plan::getUnitTime();
+        $sec = (int) ($unitTime * $needUnitTime);
         return (new Timezone())->addDate("{$sec} seconds")->getTime();
     }
 }

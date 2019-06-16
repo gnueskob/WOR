@@ -70,11 +70,15 @@ class WeaponServices extends Services
     /**
      * @param int $weaponId
      * @param int $currentLevel
-     * @param int $upgradeUnitTime
+     * @param float $upgradeUnitTime
      * @param bool $pending
      * @throws CtxException
      */
-    public static function upgradeWeapon(int $weaponId, int $currentLevel, int $upgradeUnitTime, bool $pending = false)
+    public static function upgradeWeapon(
+        int $weaponId,
+        int $currentLevel,
+        float $upgradeUnitTime,
+        bool $pending = false)
     {
         $dao = new WeaponDAO();
         $dao->weaponId = $weaponId;
@@ -124,17 +128,17 @@ class WeaponServices extends Services
      * @return float|int
      * @throws Exception
      */
-    public static function getAttack(int $userId)
+    public static function getAttackPower(int $userId)
     {
         Plan::getDataAll(PLAN_WEAPON);
 
         $attack = 0;
-        $weapons = self::getWeaponsByUser($userId);
+        $weapons = static::getWeaponsByUser($userId);
         foreach ($weapons as $weapon) {
             if (!$weapon->isCreated()) {
                 continue;
             }
-            $attack += Plan::getWeaponUpgradeAttack($weapon->weaponType, $weapon->currentLevel);
+            $attack += Plan::getWeaponAttack($weapon->weaponType, $weapon->currentLevel);
         }
         return $attack;
     }

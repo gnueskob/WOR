@@ -104,6 +104,8 @@ CREATE TABLE user_info (
   food_resource        BIGINT        NOT NULL    DEFAULT 0,
   luxury_resource      BIGINT        NOT NULL    DEFAULT 0,
 
+  friend_attack         BIGINT        NOT NULL    DEFAULT 0,
+
   PRIMARY KEY (user_id),
   UNIQUE INDEX uk_territory (territory_id),
   UNIQUE INDEX uk_name (name),
@@ -251,15 +253,16 @@ CREATE TABLE territory (
   * finish_time:    출전 완료 시간
 */
 CREATE TABLE war (
-  war_id        BIGINT        NOT NULL        AUTO_INCREMENT,
-  user_id       BIGINT        NOT NULL,
-  territory_id  BIGINT        NOT NULL,
-  attack        BIGINT        NOT NULL,
-  manpower      BIGINT        NOT NULL,
-  food_resource BIGINT        NOT NULL,
+  war_id          BIGINT        NOT NULL        AUTO_INCREMENT,
+  user_id         BIGINT        NOT NULL,
+  territory_id    BIGINT        NOT NULL,
+  attack          BIGINT        NOT NULL,
+  friend_attack   BIGINT        NOT NULL,
+  manpower        BIGINT        NOT NULL,
+  food_resource   BIGINT        NOT NULL,
   target_defense  BIGINT      NOT NULL,
-  prepare_time  DATETIME      NOT NULL,
-  finish_time   DATETIME      NOT NULL,
+  prepare_time    DATETIME      NOT NULL,
+  finish_time     DATETIME      NOT NULL,
   PRIMARY KEY (war_id),
   UNIQUE KEY (user_id),
   UNIQUE KEY (territory_id)
@@ -272,11 +275,26 @@ CREATE TABLE war (
   * finish_time:  해당 레이드 정보가 만료되는 시간 (특수지역 출전 만료시간 / 점령전 영토 만료 시간)
 */
 CREATE TABLE raid (
-  raid_id     BIGINT      NOT NULL        AUTO_INCREMENT,
-  user_id     BIGINT      NOT NULL,
-  finish_time DATETIME    NOT NULL,
+  raid_id         BIGINT        NOT NULL        AUTO_INCREMENT,
+  boss_id         BIGINT        NOT NULL,
+  user_id         BIGINT        NOT NULL,
+  territory_id    BIGINT        NOT NULL,
+  is_victory      TINYINT       NULL,
+  finish_time     DATETIME      NOT NULL,
   PRIMARY KEY (raid_id),
+  INDEX idx_user (user_id),
+  INDEX idx_territory (territory_id),
   INDEX idx_finish_time (finish_time)
+);
+
+CREATE TABLE raid_boss (
+  boss_id         BIGINT        NOT NULL      AUTO_INCREMENT,
+  user_id         BIGINT        NULL,
+  hit_point       BIGINT        NOT NULL,
+  territory_id    BIGINT        NOT NULL,
+  boss_type       BIGINT        NOT NULL,
+  finish_time     BIGINT        NOT NULL,
+  PRIMARY KEY (boss_id)
 );
 
 /** 점령 정보
@@ -314,19 +332,17 @@ CREATE TABLE alliance (
   user_id         BIGINT      NOT NULL,
   friend_id       BIGINT      NOT NULL,
   created_time    DATETIME    NOT NULL,
-  last_update     DATETIME    NOT NULL,
   PRIMARY KEY (alliance_id),
-  UNIQUE INDEX uk_idx (user_id, friend_id)
+  UNIQUE INDEX uk_friend (user_id, friend_id)
 );
 
 CREATE TABLE alliance_wait (
-  wait_id       BIGINT    NOT NULL    AUTO_INCREMENT,
-  user_id       BIGINT    NOT NULL,
-  friend_id     BIGINT    NOT NULL,
-  created_time  BIGINT    NOT NULL,
-  PRIMARY KEY (waid_id),
-  UNIQUE INDEX uk_id (user_id, friend_id),
-  INDEX idx_friend (friend_id)
+  alliance_id     BIGINT      NOT NULL      AUTO_INCREMENT,
+  user_id         BIGINT      NOT NULL,
+  friend_id       BIGINT      NOT NULL,
+  created_time    DATETIME    NOT NULL,
+  PRIMARY KEY (alliance_id),
+  UNIQUE INDEX uk_friend (friend_id, user_id)
 );
 
 /** 동맹 유저간 자원 공유용 우편 테이블
@@ -345,7 +361,9 @@ CREATE TABLE mail (
   to_user_id          BIGINT      NOT NULL,
   create_time         DATETIME    NOT NULL,
   text                TEXT        NULL,
-  item                TEXT        NULL,
+  tactical_resource   BIGINT      NOT NULL,
+  food_resource       BIGINT      NOT NULL,
+  luxury_resource     BIGINT      NOT NULL,
   last_update         DATETIME    NOT NULL,
   PRIMARY KEY (mail_id),
   INDEX idx_to_user (to_user_id)

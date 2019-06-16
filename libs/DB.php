@@ -13,7 +13,7 @@ define('DUPLICATE_ERRORCODE', '23000');
 class DB extends Singleton
 {
     private $db = null;
-    private $transactionMode = false;
+    private $transactionMode = 0;
 
     protected function __construct()
     {
@@ -146,17 +146,19 @@ class DB extends Singleton
     public static function beginTransaction()
     {
         self::getInstance()->getDBConnection()->beginTransaction();
-        self::getInstance()->transactionMode = true;
+        self::getInstance()->transactionMode++;
     }
 
     /* @throws CtxException */
     public static function endTransaction()
     {
-        $res = self::getInstance()->getDBConnection()->commit();
-        if ($res === false) {
-            (new CtxException())->transactionFail();
+        if (self::getInstance()->transactionMode === 1) {
+            $res = self::getInstance()->getDBConnection()->commit();
+            if ($res === false) {
+                (new CtxException())->transactionFail();
+            }
         }
-        self::getInstance()->transactionMode = false;
+        self::getInstance()->transactionMode--;
     }
 
     public static function getTransactionMode()

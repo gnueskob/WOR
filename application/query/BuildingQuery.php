@@ -19,14 +19,24 @@ class BuildingQuery extends Query
 
     /************************************************************/
 
-    public function whereUserId($userId)
+    public function whereUserId(int $userId)
     {
         return $this->whereEqual(['userId' => $userId]);
     }
 
-    public function whereBuildingId($buildingId)
+    public function whereBuildingId(int $buildingId)
     {
-        return $this->whereEqual(['BuildingId' => $buildingId]);
+        return $this->whereEqual(['buildingId' => $buildingId]);
+    }
+
+    public function whereDeployed(string $time)
+    {
+        return $this->whereLT(['deployTime' => $time]);
+    }
+
+    public function whereType(int $buildingType)
+    {
+        return $this->whereEqual(['buildingType' => $buildingType]);
     }
 
     /************************************************************/
@@ -47,6 +57,16 @@ class BuildingQuery extends Query
             ->selectQurey()
             ->selectAll()
             ->whereUserId($dao->userId);
+    }
+
+    public static function qSelectActiveBuildings(BuildingDAO $dao)
+    {
+        return static::building()
+            ->selectQurey()
+            ->selectAll()
+            ->whereUserId($dao->userId)
+            ->whereType($dao->buildingType)
+            ->whereDeployed($dao->deployTime);
     }
 
     /************************************************************/

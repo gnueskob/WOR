@@ -32,6 +32,7 @@ class Utils
         return $res;
     }
 
+    /*
     public static function makeSetClause(DAO $dao, $assign)
     {
         $dbColumnMap = $dao->getPropertyToDBColumnMap();
@@ -55,10 +56,11 @@ class Utils
             $p[$bind] = $dao->{$property};
         }
         return $p;
-    }
+    }*/
 
-    public static function getManhattanDistance(int $x1, int $y1, int $x2, int $y2)
+    public static function getDistance(int $x1, int $y1, int $x2, int $y2)
     {
+        // Manhatten Distance
         return abs($x1 - $x2) + abs($y1 - $y2);
     }
 }

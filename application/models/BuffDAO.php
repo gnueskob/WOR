@@ -14,6 +14,15 @@ class BuffDAO extends DAO
         'finish_time' => 'finishTime'
     ];
 
+    private static $propertyToDBColumnMap = [];
+    public static function getColumnMap()
+    {
+        if (empty(self::$propertyToDBColumnMap)) {
+            self::$propertyToDBColumnMap = array_flip(self::$dbColumToPropertyMap);
+        }
+        return self::$propertyToDBColumnMap;
+    }
+
     public $buffId;
     public $userId;
     public $buffType;

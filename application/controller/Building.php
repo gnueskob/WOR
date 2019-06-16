@@ -41,22 +41,19 @@ class Building extends Router implements ISubRouter
                 $tileId = $data['tile_id'];
                 $buildingType = $data['building_type'];
 
-                // TODO:
                 // 해당 위치가 탐사되었는지 검사
-                $tile = ExploratoinServices::getTileByUserAndTile($userId, $tileId);
-                CtxException::notExploredYet($tile->isEmpty());
-                CtxException::notExploredYet(!$tile->isExplored());
+                ExploratoinServices::checkUserExploredTile($userId, $tileId);
 
                 // 건물 기획 데이터
-                list($neededTactical, $neededFood, $neededLuxury) = Plan::getBuildingResource($buildingType);
+                list($neededTactical, $neededFood, $neededLuxury) = Plan::getBuildingCreateResources($buildingType);
                 list($createUnitTime) = Plan::getBuildingUnitTime($buildingType);
-                list($neededManpower) = Plan::getBuildingManpower($buildingType);
+                list($createManpower) = Plan::getBuildingManpower($buildingType);
 
                 // 현재 유저 정보
                 $user = UserServices::getUserInfoWithManpower($userId);
 
                 UserServices::checkResourceSufficient($user, $neededTactical, $neededFood, $neededLuxury);
-                UserServices::checkAvailableManpowerSufficient($user, $neededManpower);
+                UserServices::checkAvailableManpowerSufficient($user, $createManpower);
 
                 DB::beginTransaction();
                 UserServices::useResource($user->userId, $neededTactical, $neededFood, $neededLuxury);
@@ -98,8 +95,8 @@ class Building extends Router implements ISubRouter
                 BuildingServices::checkUpgradableType($building);
 
                 // 다음 레벨 업그레이드에 필요한 자원
-                list($neededTactical, $neededFood, $neededLuxury) = Plan::getBuildingUpgradeResource($building->buildingType, $building->currentLevel);
-                list(, $upgradeUnitTime,) = Plan::getBuildingUnitTime($building->buildingType);
+                list($neededTactical, $neededFood, $neededLuxury) = Plan::getBuildingUpgradeResources($building->buildingType, $building->currentLevel);
+                list(, $upgradeUnitTime,) = Plan::getBuildingUnitTime($building->buildingType, $building->currentLevel);
 
                 // 현재 유저 자원 정보
                 $user = UserServices::getUserInfo($userId);
@@ -148,13 +145,12 @@ class Building extends Router implements ISubRouter
                 BuildingServices::checkDeplpoyStatus($building);
 
                 // 건물 별 인력배치 기획 정보
-                list(, $manpowerLimit) = $building->buildingType === PLAN_BUILDING_ID_ARMY
-                    ? Plan::getArmyUpgrade($building->currentLevel)
-                    : Plan::getBuildingManpower($building->buildingType);
+                list(, $deployMinManpower, $deployMaxManpower) = Plan::getBuildingManpower($building->buildingType, $building->currentLevel);
                 list(, , $deployUnitTime) = Plan::getBuildingUnitTime($building->buildingType);
 
-                // 투입 인력이 건물 배치 인력 최대값을 초과하는지
-                BuildingServices::checkBuildingManpowerOver($building, $deployManpower, $manpowerLimit);
+                // 투입 인력이 건물 배치 최소 인력보다 많은지, 최대 인력을 초과하는지 검사
+                BuildingServices::checkBuildingManpowerMin($building, $deployManpower, $deployMinManpower);
+                BuildingServices::checkBuildingManpowerOver($building, $deployManpower, $deployMaxManpower);
 
                 // 현재 유저 정보
                 $user = UserServices::getUserInfoWithManpower($userId);

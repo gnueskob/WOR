@@ -10,6 +10,8 @@ define('MANPOWER', 'manpower');
 
 class SpinLock
 {
+    private static $lockList = [];
+
     /**
      * @param $key
      * @param $expire
@@ -17,6 +19,8 @@ class SpinLock
      */
     public static function spinLock($key, $expire)
     {
+        static::$lockList[$key] = $expire + microtime(true);
+
         $db = DB::getInstance()->getDBConnection();
         $db->setAttribute(PDO::ATTR_TIMEOUT, $expire);
 
@@ -24,7 +28,6 @@ class SpinLock
         $maxTry = 5;
         $try = 1;
         $delay = 100; //ms
-
 
         while (true) {
             if ($try >= $maxTry) {
@@ -46,11 +49,21 @@ class SpinLock
         $memcache = Memcached::getInstance()->getMemcached();
         $memcache->delete($key);
         $db = DB::getInstance()->getDBConnection();
-        $db->setAttribute(PDO::ATTR_TIMEOUT, 10);
+
+        if (count(static::$lockList) === 1) {
+            $db->setAttribute(PDO::ATTR_TIMEOUT, 10);
+        }
+
+        unset(static::$lockList[$key]);
     }
 
     public static function getKey(string $field, int $id)
     {
         return "{$field}::{$id}";
+    }
+
+    public static function getLockList()
+    {
+        return static::$lockList;
     }
 }

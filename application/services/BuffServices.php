@@ -5,13 +5,42 @@ namespace lsb\App\services;
 use lsb\App\models\BuffDAO;
 use lsb\App\query\BuffQuery;
 use lsb\Libs\CtxException;
-use lsb\Libs\Timezone;
 use lsb\Libs\DB;
 use Exception;
-use PDOException;
+use lsb\Libs\Timezone;
+use PDOStatement;
 
-class BuffServices
+class BuffServices extends Services
 {
+    /**
+     * @param PDOStatement $stmt
+     * @return BuffDAO
+     * @throws Exception
+     */
+    public static function getBuffDAO(PDOStatement $stmt)
+    {
+        $res = $stmt->fetch();
+        $res = $res === false ? [] : $res;
+        return new BuffDAO($res);
+    }
+
+    /**
+     * @param PDOStatement $stmt
+     * @return BuffDAO[]
+     * @throws Exception
+     */
+    public static function getBuffDAOs(PDOStatement $stmt)
+    {
+        $res = [];
+        $rows = $stmt->fetchAll();
+        foreach ($rows as $row) {
+            $res[] = new BuffDAO($row);
+        }
+        return $res;
+    }
+
+    /************************************************************/
+
     /**
      * @param int $buffId
      * @return BuffDAO
@@ -19,13 +48,13 @@ class BuffServices
      */
     public static function getBuff(int $buffId)
     {
-        $container = new BuffDAO();
-        $container->buffId = $buffId;
+        $dao = new BuffDAO();
+        $dao->buffId = $buffId;
 
-        $stmt = BuffQuery::selectBuffByUser($container);
-        $res = $stmt->fetch();
-        $res = $res === false ? [] : $res;
-        return new BuffDAO($res);
+        $stmt = BuffQuery::qSelectBuff($dao)->run();
+        $buff = static::getBuffDAO($stmt);
+        CtxException::invalidBuff($buff->isEmpty());
+        return $buff;
     }
 
     /**
@@ -35,51 +64,45 @@ class BuffServices
      */
     public static function getBuffsByUser(int $userId)
     {
-        $container = new BuffDAO();
-        $container->userId = $userId;
+        $dao = new BuffDAO();
+        $dao->userId = $userId;
 
-        $stmt = BuffQuery::selectBuffByUser($container);
-        $res = $stmt->fetchAll();
-        $res = $res === false ? [] : $res;
-        foreach ($res as $key => $value) {
-            $res[$key] = new BuffDAO($value);
-        }
-        return $res;
-    }
-
-    /**
-     * @param BuffDAO $container
-     * @return int
-     * @throws CtxException
-     */
-    public static function createBuff(BuffDAO $container)
-    {
-        try {
-            $stmt = BuffQuery::insertBuff($container);
-            CtxException::insertFail($stmt->rowCount() === 0);
-            return DB::getLastInsertId();
-        } catch (PDOException $e) {
-            // Unique key 중복 제한으로 걸릴 경우 따로 처리
-            if ($e->getCode() === DUPLICATE_ERRORCODE) {
-                return -1;
-            } else {
-                throw $e;
-            }
-        }
+        $stmt = BuffQuery::qSelectBuffByUser($dao)->run();
+        return static::getBuffDAOs($stmt);
     }
 
     /**
      * @param int $userId
-     * @return bool
+     * @param int $buffType
+     * @param int $finishUnitTime
+     * @return int
+     * @throws CtxException
+     */
+    public static function createBuff(int $userId, int $buffType, int $finishUnitTime)
+    {
+        $dao = new BuffDAO();
+        $dao->buffId = null;
+        $dao->userId = $userId;
+        $dao->buffType = $buffType;
+        $dao->finishTime = Timezone::getCompleteTime($finishUnitTime);
+
+        $stmt = BuffQuery::qInsertBuff($dao)
+            ->checkError([DUPLICATE_ERRORCODE])
+            ->run();
+        $err = static::validateInsert($stmt);
+        CtxException::alreadyExistsBuff($err === DUPLICATE_ERRORCODE);
+        return DB::getLastInsertId();
+    }
+
+    /**
+     * @param int $userId
      * @throws Exception
      */
     public static function refreshBuff(int $userId)
     {
-        $container = new BuffDAO();
-        $container->userId = $userId;
+        $dao = new BuffDAO();
+        $dao->userId = $userId;
 
-        BuffQuery::deleteBuffByUser($container);
-
-        return true;
+        BuffQuery::qDeleteExpiredBuff($dao)->run();
     }
 }

@@ -21,7 +21,7 @@ abstract class Services
      * @param Query $query
      * @param bool $pending
      * @param array $exceoptions
-     * @return int|mixed|PDOStatement
+     * @return int|mixed|PDOStatement|null
      * @throws CtxException
      */
     protected static function validateUpdate(Query $query, bool $pending, array $exceoptions = [])
@@ -32,6 +32,7 @@ abstract class Services
             } else {
                 static::$queryContainer->mergeQuery($query);
             }
+            return null;
         } else {
             $stmt = $query
                 ->checkError($exceoptions)
@@ -40,18 +41,34 @@ abstract class Services
 
             if ($stmt instanceof PDOStatement) {
                 CtxException::updateFail($stmt->rowCount() === 0);
+                return null;
             }
             return $stmt;
         }
     }
 
     /**
-     * @param PDOStatement $stmt
+     * @param PDOStatement|string $stmt
+     * @return PDOStatement|string $stmt
      * @throws CtxException
      */
-    protected static function validateInsert(PDOStatement $stmt)
+    protected static function validateInsert($stmt)
     {
-        CtxException::InsertFail($stmt->rowCount() === 0);
+        if ($stmt instanceof PDOStatement) {
+            CtxException::InsertFail($stmt->rowCount() === 0);
+            return null;
+        }
+        return $stmt;
+    }
+
+    /**
+     * @param PDOStatement|string $stmt
+     * @return PDOStatement|string $stmt
+     * @throws CtxException
+     */
+    protected static function validateDelete($stmt)
+    {
+        CtxException::deleteFail($stmt->rowCount() === 0);
     }
 
     /**

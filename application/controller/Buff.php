@@ -45,26 +45,20 @@ class Buff extends Router implements ISubRouter
                 // 버프 추가 전 만료 버프 삭제
                 BuffServices::refreshBuff($userId);
 
-                $plan = Plan::getData(PLAN_BUFF, $buffType);
-                $planBuffType = $plan['type'];
-                $finishUnitTime = $plan['default_finish_time'];
+                list($buffClass) = Plan::getBuffClass($buffType);
+                $finishUnitTime = Plan::getBuffFinishUnitTime($buffType);
 
-                if ($planBuffType === PLAN_BUFF_TYPE_TROPHY) {
+                if ($buffClass === PLAN_BUFF_TYPE_TROPHY) {
                     // 전리품 버프
-                    $buffContainer = new BuffDAO();
-                    $buffContainer->userId = $userId;
-                    $buffContainer->buffType = $buffType;
-                    $buffContainer->finishTime = Timezone::getCompleteTime($finishUnitTime);
+                    $buffId = BuffServices::createBuff($userId, $buffType, $finishUnitTime);
 
-                    $buffId = BuffServices::createBuff($buffContainer);
-                    CtxException::alreadyExistsBuff($buffId === -1);
                     $buffArr = BuffServices::getBuff($buffId)->toArray();
                     $ctx->addBody(['buff' => $buffArr]);
+                    $ctx->send();
                 } else {
                     // 자원 소모 버프
                     $ctx->next();
                 }
-                $ctx->send();
             },
             Lock::lockUser(RESOURCE),
             function (Context $ctx) {
@@ -73,47 +67,28 @@ class Buff extends Router implements ISubRouter
                 $userId = $data['user_id'];
                 $buffType = $data['buff_type'];
 
-                $plan = Plan::getData(PLAN_BUFF, $buffType);
-                $planBuffType = $plan['type'];
-                $finishUnitTime = $plan['default_finish_time'];
-                $neededTactical = $plan['need_tactical_resource'];
-                $neededFood = $plan['need_food_resource'];
-                $neededLuxury = $plan['need_luxury_resource'];
-
-                // TODO: 충성도 적용
-                // 버프 만료 시간
-                $finishTime = Timezone::getCompleteTime($finishUnitTime);
+                list($buffClass) = Plan::getBuffClass($buffType);
+                $finishUnitTime = Plan::getBuffFinishUnitTime($buffType);
+                list($neededTactical, $neededFood, $neededLuxury) = Plan::getBuffResources($buffType);
 
                 // 현재 유저 자원 정보
                 $user = UserServices::getUserInfo($userId);
-                CtxException::invalidId($user->isEmpty());
 
                 $resourceRatio = 1;
-                if ($planBuffType === PLAN_BUFF_TYPE_RESOURCE_MANPOWER) {
+                if ($buffClass === PLAN_BUFF_TYPE_RESOURCE_MANPOWER) {
                     // 자원 소모 인구 비례
                     $resourceRatio = $user->manpower;
                 }
-
                 $neededTactical *= $resourceRatio;
                 $neededFood *= $resourceRatio;
                 $neededLuxury *= $resourceRatio;
 
                 // 필요한 재료를 가지고 있는 지 검사
-                $hasResource = $user->hasSufficientResource($neededTactical, $neededFood, $neededLuxury);
-                CtxException::resourceInsufficient(!$hasResource);
-
-                $buffContainer = new BuffDAO();
-                $buffContainer->userId = $userId;
-                $buffContainer->buffType = $buffType;
-                $buffContainer->finishTime = $finishTime;
+                UserServices::checkResourceSufficient($user, $neededTactical, $neededFood, $neededLuxury);
 
                 DB::beginTransaction();
-                $buffId = BuffServices::createBuff($buffContainer);
-                CtxException::alreadyExistsBuff($buffId === -1);
-                UserServices
-                    ::watchUserId($userId)
-                    ::modifyUserResource(-$neededTactical, -$neededFood, -$neededLuxury)
-                    ::apply();
+                UserServices::useResource($userId, $neededTactical, $neededFood, $neededLuxury);
+                $buffId = BuffServices::createBuff($userId, $buffType, $finishUnitTime);
                 DB::endTransaction();
 
                 $buffArr = BuffServices::getBuff($buffId)->toArray();

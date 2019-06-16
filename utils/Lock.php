@@ -25,4 +25,21 @@ class Lock
             }
         };
     }
+
+    public static function lockHandler()
+    {
+        return function (Context $ctx) {
+            try {
+                $ctx->next();
+            } catch (Exception $e) {
+                $lockList = SpinLock::getLockList();
+                foreach ($lockList as $key => $expire) {
+                    if ($expire > microtime(true)) {
+                        SpinLock::spinUnlock($key);
+                    }
+                }
+                throw $e;
+            }
+        };
+    }
 }

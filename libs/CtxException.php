@@ -12,8 +12,8 @@ class CtxException extends Exception
     public function __construct(
         int $serverErrCode = 0,
         string $serverMsg = '',
-        string $message = '',
         int $code = 404,
+        string $message = '',
         Exception $previous = null
     ) {
         parent::__construct($message, $code, $previous);
@@ -114,8 +114,8 @@ class CtxException extends Exception
     public static function invalidUser(bool $flag = true): void
     {
         $serverErrCode = 1000;
-        $serverMsg = 'invalid user';
-        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+        $msg = 'invalid user';
+        self::throwLogicException($flag, $serverErrCode, $msg);
     }
 
     /**
@@ -376,6 +376,17 @@ class CtxException extends Exception
      * @param bool $flag
      * @throws CtxException
      */
+    public static function notGeneratedBoss(bool $flag = true): void
+    {
+        $serverErrCode = 1015;
+        $serverMsg = 'not generated boss';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
     public static function invalidType(bool $flag = true): void
     {
         $serverErrCode = 1016;
@@ -402,6 +413,17 @@ class CtxException extends Exception
     {
         $serverErrCode = 1017;
         $serverMsg = 'raid is already exists';
+        self::throwLogicException($flag, $serverErrCode, $serverMsg);
+    }
+
+    /**
+     * @param bool $flag
+     * @throws CtxException
+     */
+    public static function raidTooLate(bool $flag = true): void
+    {
+        $serverErrCode = 1017;
+        $serverMsg = 'can not prepare raid, too late';
         self::throwLogicException($flag, $serverErrCode, $serverMsg);
     }
 
@@ -530,18 +552,18 @@ class CtxException extends Exception
      ** Fatal Exceptions                 **
      **************************************/
     /**
-     * @param int $scode
-     * @param string $smsg
+     * @param int $serverCode
+     * @param string $clientMsg
      * @param bool $flag
      * @throws CtxException
      */
-    private static function throwLogicException(int $scode, string $smsg, bool $flag): void
+    private static function throwLogicException(bool $flag, int $serverCode, string $clientMsg): void
     {
         if (false === $flag) {
             return;
         }
         $function = debug_backtrace()[2]['function'];
-        throw new CtxException($scode, $smsg, "Logic Error at {$function}", 250);
+        throw new CtxException($serverCode, "Logic Error at {$function}", 250, $clientMsg);
     }
 
     /**

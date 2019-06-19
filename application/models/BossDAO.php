@@ -5,15 +5,14 @@ namespace lsb\App\models;
 use Exception;
 use lsb\Libs\Timezone;
 
-class RaidDAO extends DAO
+class BossDAO extends DAO
 {
     private static $dbColumToPropertyMap = [
-        'raid_id' => 'raidId',
         'boss_id' => 'bossId',
         'user_id' => 'userId',
         'territory_id' => 'territoryId',
+        'hit_point' => 'hitPoint',
         'boss_type' => 'bossType',
-        'is_victory' => 'isVictory',
         'finish_time' => 'finishTime',
     ];
 
@@ -26,12 +25,11 @@ class RaidDAO extends DAO
         return self::$propertyToDBColumnMap;
     }
 
-    public $raidId;
     public $bossId;
     public $userId;
     public $territoryId;
+    public $hitPoint;
     public $bossType;
-    public $isVictory;
     public $finishTime;
 
     public function __construct(array $data = [])

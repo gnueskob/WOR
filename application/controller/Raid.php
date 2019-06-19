@@ -15,6 +15,7 @@ use lsb\Libs\DB;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Plan;
 use lsb\Libs\Router;
+use lsb\Libs\SpinLock;
 use lsb\Utils\Lock;
 
 class Raid extends Router implements ISubRouter
@@ -47,8 +48,8 @@ class Raid extends Router implements ISubRouter
         // 레이드 출전
         $router->post(
             '/add/:user_id',
-            Lock::lockUser(MANPOWER, 2),
-            Lock::lockUser(RESOURCE),
+            Lock::lockUser(MANPOWER, 3),
+            Lock::lockUser(RESOURCE, 2),
             function (Context $ctx) {
                 $data = $ctx->getBody();
                 $userId = $data['user_id'];
@@ -63,6 +64,14 @@ class Raid extends Router implements ISubRouter
                 // 유저가 먼저 해당 영토를 탐사 했는가?
                 ExploratoinServices::checkUserExploredTerritory($userId, $targetTerritoryId);
 
+                // 해당 위치에 보스가 존재 하는가?
+                $boss = RaidServices::checkBossGen($targetTerritoryId);
+
+                // 이미 전투가 시작된 보스라면 공격 가능한 보스인가?
+                if (isset($boss->userId)) {
+                    AllianceServices::checkAllianceWithFriend($userId, $boss->userId);
+                }
+
                 $user = UserServices::getUserInfo($userId);
 
                 // 타겟 영토까지의 거리
@@ -73,6 +82,8 @@ class Raid extends Router implements ISubRouter
 
                 // 출전 준비 시간 + 이동 시간
                 $finishUnitTime = $moveUnitTimeCoeff * $dist + $prepareUnitTime;
+
+                RaidServices::checkTooLate($boss, $finishUnitTime);
 
                 // 병영에 등록된 총 병력, 공격력
                 list($armyManpower, $armyAttack) = BuildingServices::getArmyManpowerAndAttack($userId);
@@ -85,45 +96,40 @@ class Raid extends Router implements ISubRouter
                 $neededFoodResource = $resourceCoeff * $armyManpower * $dist;
                 UserServices::checkResourceSufficient($user, 0, $neededFoodResource, 0);
 
-                // TODO: 레이드 보스 체력 계산ㅎ
+                SpinLock::spinLock(BOSS, 1);
+
                 DB::beginTransaction();
                 UserServices::useManpower($userId, $armyManpower, true);
                 UserServices::useResource($userId, 0, $neededFoodResource, 0);
-                $warId = WarServices::createWar(
-                    $userId,
-                    $targetTerritoryId,
-                    $totalAttackPower,
-                    $friend->friendAttack,
-                    $armyManpower,
-                    $neededFoodResource,
-                    $targetDefense,
-                    $prepareUnitTime,
-                    $finishUnitTime);
+                $raidId = RaidServices::createRaid($boss, $userId, $targetTerritoryId, $finishUnitTime);
+                RaidServices::attackBoss($boss, $userId, $totalAttackPower);
                 DB::endTransaction();
 
-                $warArr = WarServices::getWar($warId)->toArray();
+                SpinLock::spinUnlock(BOSS);
+
+                $warArr = RaidServices::getRaid($raidId)->toArray();
                 $ctx->addBody(['war' => $warArr]);
             }
         );
 
-        // 전쟁 완료 확인
+        // 레이드 완료 확인
         $router->put(
-            '/add/:war_id',
+            '/add/:raid_id',
             Lock::lockUser(MANPOWER, 2),
             Lock::lockUser(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getBody();
-                $warId = $data['war_id'];
+                $raidId = $data['raid_id'];
 
-                $war = WarServices::getWar($warId);
-                WarServices::checkFinished($war);
+                $raid = RaidServices::getRaid($raidId);
+                RaidServices::checkFinished($raid);
 
                 DB::beginTransaction();
-                WarServices::resolveWarResult($war);
-                WarServices::removeWar($war->warId);
+                RaidServices::resolveRaidResult($raid);
+                RaidServices::removeRaid($raid->raidId);
                 DB::endTransaction();
 
-                $userArr = UserServices::getUser($war->warId)->toArray();
+                $userArr = UserServices::getUser($raid->userId)->toArray();
                 $ctx->addBody(['user' => $userArr]);
                 $ctx->send();
             }

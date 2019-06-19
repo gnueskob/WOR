@@ -2,7 +2,6 @@
 
 namespace lsb\App\query;
 
-use lsb\App\models\Query;
 use lsb\App\models\TileDAO;
 
 class TileQuery extends Query

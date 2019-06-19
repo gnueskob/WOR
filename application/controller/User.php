@@ -2,7 +2,9 @@
 
 namespace lsb\App\controller;
 
+use lsb\App\services\BuildingServices;
 use lsb\Libs\DB;
+use lsb\Libs\SpinLock;
 use lsb\Utils\Lock;
 use lsb\App\services\UserServices;
 use lsb\Libs\ISubRouter;
@@ -58,7 +60,8 @@ class User extends Router implements ISubRouter
                 $country,
                 $lang,
                 $osVersion,
-                $appVersion);
+                $appVersion
+            );
             UserServices::createNewUserInfo($userId);
             UserServices::createNewUserStat($userId);
             DB::endTransaction();
@@ -114,7 +117,7 @@ class User extends Router implements ISubRouter
             '/upgrade/:user_id',
             // 여러 단말기로 API 여러번 날리는 경우 방지
             // 자원 확인, 소모 사이에 외부에서의 자원량 갱신이 없어야함
-            Lock::lockUser(RESOURCE),
+            Lock::lockUser(SpinLock::RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getBody();
                 $userId = $data['user_id'];
@@ -122,8 +125,11 @@ class User extends Router implements ISubRouter
                 $user = UserServices::getUserInfo($userId);
 
                 // 업그레이드에 필요한 자원
-                list($neededTactical, $neededFood, $neededLuxury) = Plan::getBuildingUpgradeResources(PLAN_BUILDING_ID_CASTLE, $user->currentCastleLevel);
-                list(, $upgradeUnitTime) = Plan::getBuildingUnitTime(PLAN_BUILDING_ID_CASTLE, $user->currentCastleLevel);
+                $level = $user->currentCastleLevel;
+                list($neededTactical,
+                    $neededFood,
+                    $neededLuxury) = Plan::getBuildingUpgradeResources(PLAN_BUILDING_ID_CASTLE, $level);
+                list(, $upgradeUnitTime) = Plan::getBuildingUnitTime(PLAN_BUILDING_ID_CASTLE, $level);
                 list(, $maxLevel) = Plan::getBuildingUpgradeStatus(PLAN_BUILDING_ID_CASTLE);
 
                 // 성 업그레이드 가능 여부 검사
@@ -165,5 +171,25 @@ class User extends Router implements ISubRouter
             $ctx->addBody(['user' => $user->toArray()]);
             $ctx->send();
         });
+
+        // 정산
+        $router->put(
+            '/calculation/:user_id',
+            Lock::lockUser(SpinLock::RESOURCE),
+            function (Context $ctx) {
+                $data = $ctx->getBody();
+                $userId = $data['user_id'];
+
+                $user = UserServices::getUserInfo($userId);
+
+                // 자원 획득
+                list($tactical, $food, $luxury) = BuildingServices::generateResources($userId, $user->lastVisit);
+                UserServices::obtainResource($userId, $tactical, $food, $luxury);
+
+                $user = UserServices::getUser($userId);
+                $ctx->addBody(['user' => $user->toArray()]);
+                $ctx->send();
+            }
+        );
     }
 }

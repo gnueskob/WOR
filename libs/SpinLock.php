@@ -7,9 +7,11 @@ use PDO;
 
 define('RESOURCE', 'resource');
 define('MANPOWER', 'manpower');
+define('BOSS', 'boss');
 
 class SpinLock
 {
+    const RESOURCE = 'resource';
     private static $lockList = [];
 
     /**

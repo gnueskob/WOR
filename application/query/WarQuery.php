@@ -2,7 +2,6 @@
 
 namespace lsb\App\query;
 
-use lsb\App\models\Query;
 use lsb\App\models\WarDAO;
 
 class WarQuery extends Query
@@ -41,7 +40,7 @@ class WarQuery extends Query
 
     /************************************************************/
 
-    // SELCET QUERY
+    // SELECT QUERY
 
     public static function qSelectWar(WarDAO $dao)
     {
@@ -106,7 +105,6 @@ class WarQuery extends Query
     {
         return static::war()
             ->deleteQurey()
-            ->whereUserId($dao->userId)
             ->whereWarId($dao->warId);
     }
 

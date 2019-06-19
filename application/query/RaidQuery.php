@@ -2,7 +2,7 @@
 
 namespace lsb\App\query;
 
-use lsb\App\models\Query;
+use lsb\App\models\BossDAO;
 use lsb\App\models\RaidDAO;
 
 class RaidQuery extends Query
@@ -15,6 +15,11 @@ class RaidQuery extends Query
     public static function raid()
     {
         return static::make()->setTable('raid');
+    }
+
+    public static function boss()
+    {
+        return static::make()->setTable('raid_boss');
     }
 
     /************************************************************/
@@ -39,9 +44,19 @@ class RaidQuery extends Query
         return $this->whereGTE(['finishTime' => $time]);
     }
 
+    private function whereTerritory(int $territoryId)
+    {
+        return $this->whereEqual(['territoryId' => $territoryId]);
+    }
+
+    private function whereBossId(int $bossId)
+    {
+        return $this->whereEqual(['bossId' => $bossId]);
+    }
+
     /************************************************************/
 
-    // SELCET QUERY
+    // SELECT QUERY
 
     public static function qSelectRaid(RaidDAO $dao)
     {
@@ -77,36 +92,79 @@ class RaidQuery extends Query
             ->whereFinished($dao->finishTime);
     }
 
+    public static function qSelectBossByTerritory(BossDAO $dao)
+    {
+        return static::boss()
+            ->selectQurey()
+            ->selectAll()
+            ->whereTerritory($dao->territoryId);
+    }
+
     /************************************************************/
 
     // INSERT QUERY
 
-    public static function qInsertWar(WarDAO $dao)
+    public static function qInsertRaid(RaidDAO $dao)
     {
-        return static::war()
+        return static::raid()
             ->insertQurey()
             ->value([
-                'warId' => $dao->warId,
+                'raidId' => $dao->raidId,
+                'bossId' => $dao->bossId,
                 'userId' => $dao->userId,
                 'territoryId' => $dao->territoryId,
-                'attack' => $dao->attack,
-                'manpower' => $dao->manpower,
-                'foodResource' => $dao->foodResource,
-                'targetDefense' => $dao->targetDefense,
-                'prepareTime' => $dao->prepareTime,
+                'bossType' => $dao->bossType,
+                'isVictory' => $dao->isVictory,
                 'finishTime' => $dao->finishTime
             ]);
     }
 
     /************************************************************/
 
+    // UPDATE QUERY
+
+    public static function qSubtractBossHP(BossDAO $dao)
+    {
+        return static::boss()
+            ->updateQurey()
+            ->setSub(['hitPoint' => $dao->hitPoint])
+            ->whereBossId($dao->bossId);
+    }
+
+    public static function qStartBossAttack(BossDAO $dao)
+    {
+        return static::boss()
+            ->updateQurey()
+            ->set([
+                'userId' => $dao->userId,
+                'finishTime' => $dao->finishTime,
+            ])
+            ->whereBossId($dao->bossId);
+    }
+
+    public static function qSetVictory(RaidDAO $dao)
+    {
+        return static::raid()
+            ->updateQurey()
+            ->set(['isVictory' => $dao->isVictory])
+            ->whereBossId($dao->bossId);
+    }
+
+    /************************************************************/
+
     // DELETE QUERY
 
-    public static function qDeleteWar(WarDAO $dao)
+    public static function qDeleteRaid(RaidDAO $dao)
     {
-        return static::war()
+        return static::raid()
             ->deleteQurey()
-            ->whereUserId($dao->userId)
-            ->whereWarId($dao->warId);
+            ->whereRaidId($dao->raidId);
+    }
+
+    public static function qDeleteBoss(BossDAO $dao)
+    {
+        return static::boss()
+            ->deleteQurey()
+            ->whereBossId($dao->bossId);
     }
 }

@@ -75,10 +75,25 @@ class Timezone extends DateTime
         return (new DateTime('now', new DateTimeZone('UTC')))->format(self::FORMAT);
     }
 
+    /**
+     * @return int
+     * @throws Exception
+     */
+    public static function getNowUTCTimestamp()
+    {
+        return (new DateTime('now', new DateTimeZone('UTC')))->getTimestamp();
+    }
+
     public static function getCompleteTime(float $needUnitTime)
     {
         $unitTime = Plan::getUnitTime();
         $sec = (int) ($unitTime * $needUnitTime);
         return (new Timezone())->addDate("{$sec} seconds")->getTime();
+    }
+
+    public static function getTimestampFromString(string $time)
+    {
+        $date = DateTime::createFromFormat(static::FORMAT, $time);
+        return $date->getTimestamp();
     }
 }

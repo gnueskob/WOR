@@ -13,6 +13,7 @@ class BuildingDAO extends DAO
         'territory_id' => 'territoryId',
         'tile_id' => 'tileId',
         'building_type' => 'buildingType',
+        'resource_type' => 'resourceType',
         'create_time' => 'createTime',
         'deploy_time' => 'deployTime',
         'upgrade_time' => 'upgradeTime',
@@ -36,6 +37,7 @@ class BuildingDAO extends DAO
     public $territoryId;
     public $tileId;
     public $buildingType;
+    public $resourceType;
 
     public $createTime;
     public $deployTime;

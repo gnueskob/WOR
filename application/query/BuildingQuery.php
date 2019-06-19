@@ -3,7 +3,6 @@
 namespace lsb\App\query;
 
 use lsb\App\models\BuildingDAO;
-use lsb\App\models\Query;
 
 class BuildingQuery extends Query
 {
@@ -65,7 +64,6 @@ class BuildingQuery extends Query
             ->selectQurey()
             ->selectAll()
             ->whereUserId($dao->userId)
-            ->whereType($dao->buildingType)
             ->whereDeployed($dao->deployTime);
     }
 
@@ -118,6 +116,17 @@ class BuildingQuery extends Query
                 'deployTime' => $dao->deployTime
             ])
             ->whereBuildingId($dao->buildingId);
+    }
+
+    public static function qSetDeployFromBuildingByUser(BuildingDAO $dao)
+    {
+        return static::building()
+            ->updateQurey()
+            ->set([
+                'manpower' => $dao->manpower,
+                'deployTime' => $dao->deployTime
+            ])
+            ->whereUserId($dao->userId);
     }
 
     /************************************************************/

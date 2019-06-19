@@ -3,8 +3,6 @@
 
 namespace lsb\App\query;
 
-
-use lsb\App\models\Query;
 use lsb\App\models\TerritoryDAO;
 
 class TerritoryQuery extends Query
@@ -33,12 +31,12 @@ class TerritoryQuery extends Query
 
     public function whereExploreId(int $explopreId)
     {
-        return $this->whereEqual(['explopreId' => $explopreId]);
+        return $this->whereEqual(['exploreId' => $explopreId]);
     }
 
     public function whereExploring(string $time)
     {
-        return $this->whereLT(['explopreTime' => $time]);
+        return $this->whereLT(['exploreTime' => $time]);
     }
 
     /**************************************************************/

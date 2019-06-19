@@ -99,8 +99,8 @@ class WarServices extends Services
         int $foodResource,
         int $targetDefense,
         int $prepareUnitTime,
-        int $finishUnitTime)
-    {
+        int $finishUnitTime
+    ) {
         $dao = new WarDAO();
         $dao->warId = null;
         $dao->userId = $userId;
@@ -122,13 +122,13 @@ class WarServices extends Services
     }
 
     /**
-     * @param int $userId
-     * @throws Exception
+     * @param int $warId
+     * @throws CtxException
      */
-    public static function removeWar(int $userId)
+    public static function removeWar(int $warId)
     {
         $dao = new WarDAO();
-        $dao->userId = $userId;
+        $dao->warId = $warId;
 
         $stmt = WarQuery::qDeleteWar($dao)->run();
         static::validateDelete($stmt);

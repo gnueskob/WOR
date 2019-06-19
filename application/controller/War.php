@@ -4,6 +4,7 @@ namespace lsb\App\controller;
 
 use lsb\App\models\UserDAO;
 use lsb\App\services\AllianceServices;
+use lsb\App\services\BuffServices;
 use lsb\App\services\MessageServices;
 use lsb\Libs\DB;
 use lsb\Utils\Lock;
@@ -75,8 +76,8 @@ class War extends Router implements ISubRouter
                 }
 
                 $friend = UserServices::getUserInfo($friendId);
-
                 $user = UserServices::getUserInfo($userId);
+                $targetUser = UserServices::getUserInfoByTerritory($targetTerritoryId);
 
                 // 타겟 영토까지의 거리
                 $dist = ExploratoinServices::getDistanceToTargetTerritory($user->territoryId, $targetTerritoryId);
@@ -87,33 +88,30 @@ class War extends Router implements ISubRouter
                 // 출전 준비 시간 + 이동 시간
                 $finishUnitTime = $moveUnitTimeCoeff * $dist + $prepareUnitTime;
 
-                // 병영에 등록된 총 병력, 공격력
-                list($armyManpower, $armyAttack) = BuildingServices::getArmyManpowerAndAttack($userId);
-
-                // 유저가 가지고 있는 무기 별 총 공격력
-                $weaponAttack = WeaponServices::getAttackPower($userId);
-                $totalAttackPower = $armyAttack + $weaponAttack;
+                list($totalAttackPower, $totalManpower) = UserServices::getTotalAttackAndManpower($user);
 
                 // 총 필요한 군량
-                $neededFoodResource = $resourceCoeff * $armyManpower * $dist;
+                $neededFoodResource = $resourceCoeff * $totalManpower * $dist;
                 UserServices::checkResourceSufficient($user, 0, $neededFoodResource, 0);
 
                 // 전쟁 출전 준비 시작시의 타겟 영토 건물 기준으로 계산
-                $targetDefense = UserServices::getTotalDefense($targetTerritoryId);
+                $targetDefense = UserServices::getTotalDefense($targetUser);
 
                 DB::beginTransaction();
-                UserServices::useManpower($userId, $armyManpower, true);
+                UserServices::useManpower($userId, $totalManpower, true);
                 UserServices::useResource($userId, 0, $neededFoodResource, 0);
+                BuildingServices::resetBuildingsManpower($userId);
                 $warId = WarServices::createWar(
                     $userId,
                     $targetTerritoryId,
                     $totalAttackPower,
                     $friend->friendAttack,
-                    $armyManpower,
+                    $totalManpower,
                     $neededFoodResource,
                     $targetDefense,
                     $prepareUnitTime,
-                    $finishUnitTime);
+                    $finishUnitTime
+                );
                 DB::endTransaction();
 
                 $warArr = WarServices::getWar($warId)->toArray();
@@ -166,7 +164,7 @@ class War extends Router implements ISubRouter
                 WarServices::removeWar($war->warId);
                 DB::endTransaction();
 
-                $userArr = UserServices::getUser($war->warId)->toArray();
+                $userArr = UserServices::getUser($war->userId)->toArray();
                 $ctx->addBody(['user' => $userArr]);
                 $ctx->send();
             }

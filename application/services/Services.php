@@ -4,7 +4,7 @@ namespace lsb\App\services;
 
 use Exception;
 use lsb\App\models\BuildingDAO;
-use lsb\App\models\Query;
+use lsb\App\query\Query;
 use lsb\App\models\UserDAO;
 use lsb\App\models\WeaponDAO;
 use lsb\Libs\CtxException;

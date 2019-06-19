@@ -32,6 +32,11 @@ class Utils
         return $res;
     }
 
+    public static function getObjectVars(object $obj)
+    {
+        return get_object_vars($obj);
+    }
+
     /*
     public static function makeSetClause(DAO $dao, $assign)
     {

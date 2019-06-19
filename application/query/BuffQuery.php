@@ -3,11 +3,6 @@
 namespace lsb\App\query;
 
 use lsb\App\models\BuffDAO;
-use lsb\App\models\Query;
-use lsb\Libs\DB;
-use lsb\Libs\Timezone;
-use PDOStatement;
-use Exception;
 
 class BuffQuery extends Query
 {

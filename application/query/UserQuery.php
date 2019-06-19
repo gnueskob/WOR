@@ -2,13 +2,7 @@
 
 namespace lsb\App\query;
 
-use lsb\App\models\Query;
 use lsb\App\models\UserDAO;
-use lsb\Libs\DB;
-use lsb\Libs\Timezone;
-use Exception;
-use lsb\Utils\Utils;
-use PDOStatement;
 
 class UserQuery extends Query
 {

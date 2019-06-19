@@ -63,7 +63,7 @@ abstract class DAO
     {
         CtxException::selectFail($this->isEmpty());
 
-        $properties = get_object_vars($this);
+        $properties = Utils::getObjectVars($this);
         $res = [];
         foreach ($properties as $key => $value) {
             $resKey = Utils::makeSnakeCase($key);

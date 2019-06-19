@@ -3,7 +3,6 @@
 namespace lsb\App\query;
 
 use lsb\App\models\AllianceDAO;
-use lsb\App\models\Query;
 
 class AllianceQuery extends Query
 {

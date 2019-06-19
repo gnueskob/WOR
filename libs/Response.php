@@ -12,7 +12,7 @@ class Response
     public $status = 200;
     public $msg = 'OK';
 
-    public $body;
+    public $body = [];
     public $httpContentType;
 
     public function __construct()

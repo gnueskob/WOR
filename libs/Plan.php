@@ -13,17 +13,21 @@ define('PLAN_TERRITORY', 'territory');
 define('PLAN_TILE', 'tile');
 define('PLAN_RESOURCE', 'resource');
 define('PLAN_BUILDING', 'building');
-define('PLAN_BUILDING_NEED_RESOURCE', 'index_building_resource');
 define('PLAN_BOSS', 'boss');
 define('PLAN_BUFF', 'buff');
+define('PLAN_TROPHY', 'trophy');
+define('PLAN_WEAPON', 'weapon');
+define('PLAN_UNIT', 'unit');
+define('PLAN_ETC', 'etc');
+
+// deprecated
+define('PLAN_BUILDING_NEED_RESOURCE', 'index_building_resource');
 define('PLAN_BOSS_BUF', 'index_boss_buff');
 define('PLAN_UPG_CASTLE', 'upgrade_castle');
 define('PLAN_UPG_DEF_TOWER', 'upgrade_defense_tower');
 define('PLAN_UPG_ARMY', 'upgrade_army');
-define('PLAN_WEAPON', 'weapon');
 define('PLAN_UPG_WEAPON', 'upgrade_weapon');
-define('PLAN_UNIT', 'unit');
-define('PLAN_ETC', 'etc');
+
 
 // Map
 define('PLAN_TILE_TYPE_NOT_USED', 0);
@@ -35,6 +39,10 @@ define('PLAN_TERRITORY_TYPE_NORMAL', 1);
 define('PLAN_TERRITORY_TYPE_BOSS', 2);
 
 // Resource
+define('PLAN_RESOURCE_CLASS_FOOD', 1);
+define('PLAN_RESOURCE_CLASS_TACTICAL', 2);
+define('PLAN_RESOURCE_CLASS_LUXURY', 3);
+
 define('PLAN_RESOURCE_ID_IRON', 1);
 define('PLAN_RESOURCE_ID_COPPER', 2);
 define('PLAN_RESOURCE_ID_COAL', 3);
@@ -276,69 +284,6 @@ class Plan
     }
 
     /************************************************************/
-    /*
-    // CASTLE UPGRADE PLAN DATA
-
-    public static function getCastleUpgrade(int $level)
-    {
-        $plan = Plan::getData(PLAN_UPG_CASTLE, $level);
-        return [
-            $plan['level'],
-            $plan['defense'],
-            $plan['max_manpower'],
-            $plan['production_per_unit_time'],
-
-            $plan['need_tactical_resource'],    // 4
-            $plan['need_food_resource'],
-            $plan['need_luxury_resource'],
-
-            $plan['loyality_bound']
-        ];
-    }
-
-    public static function getCastleUpgradeResource(int $level)
-    {
-        return array_slice(static::getCastleUpgrade($level), 4, 3);
-    }
-
-    public static function getTowerUpgrade(int $level)
-    {
-        $plan = Plan::getData(PLAN_UPG_CASTLE, $level);
-        return [
-            $plan['level'],
-            $plan['defense_power'],
-
-            $plan['need_tactical_resource'],    // 4
-            $plan['need_food_resource'],
-            $plan['need_luxury_resource']
-        ];
-    }
-
-    public static function getTowerUpgradeResource(int $level)
-    {
-        return array_slice(static::getCastleUpgrade($level), 4, 3);
-    }
-
-    public static function getArmyUpgrade(int $level)
-    {
-        $plan = Plan::getData(PLAN_UPG_ARMY, $level);
-        return [
-            $plan['level'],
-            $plan['max_manpower'],
-
-            $plan['need_tactical_resource'],    // 4
-            $plan['need_food_resource'],
-            $plan['need_luxury_resource']
-        ];
-    }
-
-    public static function getArmyUpgradeResource(int $level)
-    {
-        return array_slice(static::getCastleUpgrade($level), 4, 3);
-    }
-    */
-
-    /************************************************************/
 
     // BUILDING PLAN DATA
 
@@ -397,7 +342,9 @@ class Plan
 
     public static function getBuildingUnitTime(int $buildingType, int $level = 1)
     {
-        list($createUnitTime, $upgradeUnitTime, $deployUnitTime) = array_slice(static::getBuilding($buildingType), 10, 3);
+        list($createUnitTime,
+            $upgradeUnitTime,
+            $deployUnitTime) = array_slice(static::getBuilding($buildingType), 10, 3);
         $upgradeRatio = static::getBuilding($buildingType)[24];
         $upgradeUnitTime += $upgradeRatio * $upgradeUnitTime * ($level - 1);
         return [$createUnitTime, $upgradeUnitTime, $deployUnitTime];
@@ -405,7 +352,9 @@ class Plan
 
     public static function getBuildingManpower(int $buildingType, int $level = 1)
     {
-        list($createManpower, $deployMinManpower, $deployMaxManpower) = array_slice(static::getBuilding($buildingType), 7, 3);
+        list($createManpower,
+            $deployMinManpower,
+            $deployMaxManpower) = array_slice(static::getBuilding($buildingType), 7, 3);
         $upgradeRatio = static::getBuilding($buildingType)[25];
         $deployMaxManpower += $upgradeRatio * $deployMaxManpower * ($level - 1);
         return [$createManpower, $deployMinManpower, $deployMaxManpower];
@@ -529,7 +478,7 @@ class Plan
             $plan['class'],                  // 4
             $plan['class_name'],
 
-            $plan['resource_id'],           // 6
+            $plan['resource_type'],           // 6
             $plan['resource']
         ];
     }
@@ -579,6 +528,42 @@ class Plan
 
     /*****************************************************************/
 
+    // RESOURCE PLAN DATA
+
+    public static function getResource(int $resourceType)
+    {
+        $plan = Plan::getData(PLAN_RESOURCE, $resourceType);
+        return [
+            $plan['resource_type'],                   // 0
+            $plan['name'],
+
+            $plan['production_per_unit_time'],      // 2
+
+            $plan['class'],                         // 3
+            $plan['class_name'],
+
+            $plan['building_type'],                 // 5
+            $plan['building_name'],
+        ];
+    }
+
+    public static function getResourcePPU(int $resourceType)
+    {
+        return static::getResource($resourceType)[2];
+    }
+
+    public static function getResourceClass(int $resourceType)
+    {
+        return array_slice(static::getResource($resourceType), 3, 2);
+    }
+
+    public static function getResourceNeededBuilding(int $resourceType)
+    {
+        return array_slice(static::getResource($resourceType), 5, 2);
+    }
+
+    /*****************************************************************/
+
     // BUFF PLAN DATA
 
     public static function getBuff(int $buffType)
@@ -621,7 +606,74 @@ class Plan
 
     public static function getBuffPower(int $buffType)
     {
-        return array_slice(static::getBuff($buffType), 8, 3);
+        return array_slice(static::getBuff($buffType), 8, 4);
+    }
+
+    /*****************************************************************/
+
+    // BOSS PLAN DATA
+
+    public static function getBoss(int $bossType)
+    {
+        $plan = Plan::getData(PLAN_BOSS, $bossType);
+        return [
+            $plan['boss_type'],           // 0
+            $plan['name'],
+            $plan['description'],
+
+            $plan['hit_point'],           // 3
+
+            $plan['active_unit_time'],    // 4
+            $plan['gen_time'],
+
+            $plan['buf_type'],            // 6
+            $plan['buf_name'],
+
+            $plan['trophy_type'],         // 8
+            $plan['trophy_name']
+        ];
+    }
+
+    public static function getBossHP(int $bossType)
+    {
+        return static::getBoss($bossType)[3];
+    }
+
+    public static function getBossUnitTime(int $bossType)
+    {
+        return array_slice(static::getBoss($bossType), 4, 2);
+    }
+
+    public static function getBossBuff(int $bossType)
+    {
+        return array_slice(static::getBoss($bossType), 6, 2);
+    }
+
+    public static function getBossTrophy(int $bossType)
+    {
+        return array_slice(static::getBoss($bossType), 8, 2);
+    }
+
+    /*****************************************************************/
+
+    // TROPHY PLAN DATA
+
+    public static function getTrophy(int $trophyType)
+    {
+        $plan = Plan::getData(PLAN_TROPHY, $trophyType);
+        return [
+            $plan['$trophy_type'],        // 0
+            $plan['name'],
+
+            $plan['tactical_resource'],    // 2
+            $plan['food_resource'],
+            $plan['luxury_resource'],
+        ];
+    }
+
+    public static function getTrophyRewardResources(int $trophyType)
+    {
+        return array_slice(static::getTrophy($trophyType), 2, 3);
     }
 
     /*****************************************************************/
@@ -761,37 +813,6 @@ class Plan
             $warDefaultManpower
         ];
     }
-
-    /*****************************************************************/
-
-    /*
-    public static function getBuildingUpgrade(int $buildingType, int $level)
-    {
-        switch ($buildingType) {
-            default:
-                return null;
-            case PLAN_BUILDING_ID_TOWER:
-                return static::getTowerUpgrade($level);
-            case PLAN_BUILDING_ID_ARMY:
-                return static::getArmyUpgrade($level);
-            case PLAN_BUILDING_ID_CASTLE:
-                return static::getCastleUpgrade($level);
-        }
-    }
-
-    public static function getBuildingUpgradeResource(int $buildingType, int $level)
-    {
-        switch ($buildingType) {
-            default:
-                return null;
-            case PLAN_BUILDING_ID_TOWER:
-                return static::getTowerUpgradeResource($level);
-            case PLAN_BUILDING_ID_ARMY:
-                return static::getArmyUpgradeResource($level);
-            case PLAN_BUILDING_ID_CASTLE:
-                return static::getCastleUpgradeResource($level);
-        }
-    }*/
 
     /*****************************************************************/
 }

@@ -45,7 +45,7 @@ class Log extends Singleton implements ILog
         $this->driver->addLog($category, $msg);
     }
 
-    public function addExceptionLog(string $category, Exception $e)
+    public function addExceptionLog(Exception $e)
     {
         try {
             $time = Timezone::getNowUTC();
@@ -57,7 +57,24 @@ class Log extends Singleton implements ILog
             'code' => $e->getCode(),
             'error' => $e->getMessage()
         ];
-        $this->addLog($category, json_encode($logMsg));
+        $this->addLog(CATEGORY_EX, json_encode($logMsg));
+    }
+
+    public function addCtxExceptionLog(CtxException $e)
+    {
+        try {
+            $time = Timezone::getNowUTC();
+        } catch (Exception $e) {
+            $time = $e->getMessage();
+        }
+        $logMsg = [
+            'time' => $time,
+            'code' => $e->getCode(),
+            'error' => $e->getMessage(),
+            'scode' => $e->getServerErrCode(),
+            'smsg' => $e->getServerMsg()
+        ];
+        $this->addLog(CATEGORY_CTX_EX, json_encode($logMsg));
     }
 
     /**

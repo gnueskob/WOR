@@ -60,8 +60,8 @@ class BuildingServices extends Services
         int $territoryId,
         int $tileId,
         int $buildingType,
-        float $createUnitTime)
-    {
+        float $createUnitTime
+    ) {
         $dao = new BuildingDAO();
         $dao->buildingId = null;
         $dao->userId = $userId;
@@ -100,8 +100,8 @@ class BuildingServices extends Services
         int $buildingId,
         int $currentLevel,
         float $upgradeUnitTime,
-        bool $pending = false)
-    {
+        bool $pending = false
+    ) {
         $dao = new BuildingDAO();
         $dao->buildingId = $buildingId;
 
@@ -125,8 +125,8 @@ class BuildingServices extends Services
         int $buildingId,
         int $manpower,
         float $deployUnitTime,
-        bool $pending = false)
-    {
+        bool $pending = false
+    ) {
         $dao = new BuildingDAO();
         $dao->buildingId = $buildingId;
 
@@ -142,7 +142,8 @@ class BuildingServices extends Services
      * @param bool $pending
      * @throws CtxException
      */
-    public static function cancelDeploy(int $buildingId, bool $pending = false) {
+    public static function cancelDeploy(int $buildingId, bool $pending = false)
+    {
         $dao = new BuildingDAO();
         $dao->buildingId = $buildingId;
 
@@ -264,15 +265,57 @@ class BuildingServices extends Services
         return $usedManpower;
     }
 
-    public static function parseArmyManpower(array $armyManpower)
+    /**
+     * @param int $userId
+     * @param string $lastVisit
+     * @return array
+     * @throws Exception
+     */
+    public static function generateResources(int $userId, string $lastVisit)
     {
-        $manpowerList = [];
-        $buildingIds = [];
-        foreach ($armyManpower as $value) {
-            $manpowerList[$value['building_id']] = $value['manpower'];
-            $buildingIds[] = $value['building_id'];
+        $dao = new BuildingDAO();
+        $dao->userId = $userId;
+        $dao->deployTime = Timezone::getNowUTC();
+
+        $stmt = BuildingQuery::qSelectBuildings($dao)->run();
+        $buildings = static::getBuildingDAOs($stmt);
+
+        Plan::getDataAll(PLAN_RESOURCE);
+
+        $tactical = 0;
+        $food = 0;
+        $luxury = 0;
+        $lastTime = Timezone::getTimestampFromString($lastVisit);
+        $unitTime = Plan::getUnitTime();
+        $now = Timezone::getNowUTCTimestamp();
+
+        foreach ($buildings as $building) {
+            if ($building->resourceType === 0) {
+                continue;
+            }
+
+            $resourceClass = Plan::getResourceClass($building->resourceType);
+            $ppu = Plan::getResourcePPU($building->resourceType);
+
+            if ($building->isDeployed()) {
+                $elapsedUnitTime = (int) (($now - $lastTime) / $unitTime);
+            } elseif ($building->isDeploying()) {
+                $deployedTime = Timezone::getTimestampFromString($building->deployTime);
+                $elapsedUnitTime = (int) (($now - $deployedTime) / $unitTime);
+            } else {
+                continue;
+            }
+
+            if ($resourceClass === PLAN_RESOURCE_CLASS_FOOD) {
+                $food += $ppu * $elapsedUnitTime;
+            } elseif ($resourceClass === PLAN_RESOURCE_CLASS_TACTICAL) {
+                $tactical += $ppu * $elapsedUnitTime;
+            } elseif ($resourceClass === PLAN_RESOURCE_CLASS_LUXURY) {
+                $luxury += $ppu * $elapsedUnitTime;
+            }
         }
-        return [$manpowerList, $buildingIds];
+
+        return [$tactical, $food, $luxury];
     }
 
 
@@ -289,12 +332,15 @@ class BuildingServices extends Services
         $dao->deployTime = Timezone::getNowUTC();
 
         $stmt = BuildingQuery::qSelectActiveBuildings($dao)->run();
-        $armyBuildings = static::getBuildingDAOs($stmt);
+        $activeBuildings = static::getBuildingDAOs($stmt);
 
         $totalManpower = 0;
         $totalAttack = 0;
 
-        foreach ($armyBuildings as $building) {
+        foreach ($activeBuildings as $building) {
+            if ($building->buildingType !== PLAN_BUILDING_ID_ARMY) {
+                continue;
+            }
             $totalAttack += $building->manpower * $building->currentLevel;
             $totalManpower += $building->manpower;
         }
@@ -315,11 +361,14 @@ class BuildingServices extends Services
         $dao->deployTime = Timezone::getNowUTC();
 
         $stmt = BuildingQuery::qSelectActiveBuildings($dao)->run();
-        $towerBuildings = static::getBuildingDAOs($stmt);
+        $activeBuildings = static::getBuildingDAOs($stmt);
 
         $totalDefense = 0;
 
-        foreach ($towerBuildings as $building) {
+        foreach ($activeBuildings as $building) {
+            if ($building->buildingType !== PLAN_BUILDING_ID_TOWER) {
+                continue;
+            }
             $totalDefense += Plan::getBuildingDefense(PLAN_BUILDING_ID_TOWER, $building->currentLevel);
         }
 
@@ -332,9 +381,12 @@ class BuildingServices extends Services
      */
     public static function resetBuildingsManpower(int $userId)
     {
-        $container = new BuildingDAO();
-        $container->userId = $userId;
-        $container->deployTime = Timezone::getNowUTC();
+        $dao = new BuildingDAO();
+        $dao->userId = $userId;
+        $dao->manpower = 0;
+        $dao->deployTime = null;
 
+        $query = BuildingQuery::qSetDeployFromBuildingByUser($dao);
+        self::validateUpdate($query, false);
     }
 }

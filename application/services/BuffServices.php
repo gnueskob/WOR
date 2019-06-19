@@ -7,6 +7,7 @@ use lsb\App\query\BuffQuery;
 use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use Exception;
+use lsb\Libs\Plan;
 use lsb\Libs\Timezone;
 use PDOStatement;
 
@@ -59,7 +60,7 @@ class BuffServices extends Services
 
     /**
      * @param int $userId
-     * @return array
+     * @return BuffDAO[]
      * @throws Exception|Exception
      */
     public static function getBuffsByUser(int $userId)
@@ -104,5 +105,53 @@ class BuffServices extends Services
         $dao->userId = $userId;
 
         BuffQuery::qDeleteExpiredBuff($dao)->run();
+    }
+
+    /**
+     * @param int $userId
+     * @return int
+     * @throws Exception
+     */
+    public static function getBuffAttack(int $userId)
+    {
+        $dao = new BuffDAO();
+        $dao->userId = $userId;
+
+        $stmt = BuffQuery::qSelectBuffByUser($dao)->run();
+        $buffs = static::getBuffDAOs($stmt);
+
+        Plan::getDataAll(PLAN_BUFF);
+
+        $attackRatio = 0;
+        foreach ($buffs as $buff) {
+            list($attackIncrementRatio) = Plan::getBuffPower($buff->buffType);
+            $attackRatio += $attackIncrementRatio;
+        }
+
+        return $attackRatio;
+    }
+
+    /**
+     * @param int $userId
+     * @return int
+     * @throws Exception
+     */
+    public static function getBuffDefense(int $userId)
+    {
+        $dao = new BuffDAO();
+        $dao->userId = $userId;
+
+        $stmt = BuffQuery::qSelectBuffByUser($dao)->run();
+        $buffs = static::getBuffDAOs($stmt);
+
+        Plan::getDataAll(PLAN_BUFF);
+
+        $defenseRatio = 0;
+        foreach ($buffs as $buff) {
+            list(, $attackIncrementRatio) = Plan::getBuffPower($buff->buffType);
+            $defenseRatio += $attackIncrementRatio;
+        }
+
+        return $defenseRatio;
     }
 }

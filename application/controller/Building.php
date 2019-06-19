@@ -57,7 +57,13 @@ class Building extends Router implements ISubRouter
 
                 DB::beginTransaction();
                 UserServices::useResource($user->userId, $neededTactical, $neededFood, $neededLuxury);
-                $buildingId = BuildingServices::create($user->userId, $user->territoryId, $tileId, $buildingType, $createUnitTime);
+                $buildingId = BuildingServices::create(
+                    $user->userId,
+                    $user->territoryId,
+                    $tileId,
+                    $buildingType,
+                    $createUnitTime
+                );
                 DB::endTransaction();
 
                 $buildingArr = BuildingServices::getBuilding($buildingId)->toArray();

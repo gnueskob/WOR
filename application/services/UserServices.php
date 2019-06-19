@@ -494,20 +494,41 @@ class UserServices extends Services
     }
 
     /**
-     * @param int $territoryId
-     * @return int
+     * @param UserDAO $user
+     * @return float|int|mixed
      * @throws Exception
      */
-    public static function getTotalDefense(int $territoryId)
+    public static function getTotalDefense(UserDAO $user)
     {
-        $targetUser = UserServices::getUserInfoByTerritory($territoryId);
-
         // 성 방어력
-        $castleDefense = Plan::getBuildingDefense(PLAN_BUILDING_ID_CASTLE, $targetUser->currentCastleLevel);
-
+        $castleDefense = Plan::getBuildingDefense(PLAN_BUILDING_ID_CASTLE, $user->currentCastleLevel);
         // 방어탑 방어력
-        $towerDefense = BuildingServices::getDefensePower($targetUser->userId);
+        $towerDefense = BuildingServices::getDefensePower($user->userId);
+        $totalDefense = $castleDefense + $towerDefense;
 
-        return $castleDefense + $towerDefense;
+        $buffDefense = BuffServices::getBuffDefense($user->userId);
+        $totalDefense += $totalDefense * $buffDefense;
+
+        return $totalDefense;
+    }
+
+    /**
+     * @param UserDAO $user
+     * @return array
+     * @throws Exception
+     */
+    public static function getTotalAttackAndManpower(UserDAO $user)
+    {
+        // 병영에 등록된 총 병력, 공격력
+        list($armyManpower, $armyAttack) = BuildingServices::getArmyManpowerAndAttack($user->userId);
+
+        // 유저가 가지고 있는 무기 별 총 공격력
+        $weaponAttack = WeaponServices::getAttackPower($user->userId);
+        $totalAttackPower = $armyAttack + $weaponAttack;
+
+        $buffAttack = BuffServices::getBuffAttack($user->userId);
+        $totalAttackPower += $totalAttackPower * $buffAttack;
+
+        return [$totalAttackPower, $armyManpower];
     }
 }

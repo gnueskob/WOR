@@ -8,12 +8,12 @@ use PDOException;
 use PDOStatement;
 use lsb\Config\Config;
 
-define('DUPLICATE_ERRORCODE', '23000');
-
 class DB extends Singleton
 {
     private $db = null;
     private $transactionMode = 0;
+
+    public const DUPLICATE_ERRORCODE = '23000';
 
     protected function __construct()
     {

@@ -59,17 +59,6 @@ define('PLAN_RESOURCE_ID_PEARL', 13);
 define('PLAN_RESOURCE_ID_SPICE', 14);
 define('PLAN_RESOURCE_ID_TEA', 15);
 
-// Building
-define('PLAN_BUILDING_ID_CASTLE', 0);
-define('PLAN_BUILDING_ID_MINE', 1);
-define('PLAN_BUILDING_ID_FARM', 2);
-define('PLAN_BUILDING_ID_TOWER', 3);
-define('PLAN_BUILDING_ID_ARMY', 4);
-define('PLAN_BUILDING_ID_CRAFT_SHOP', 5);
-define('PLAN_BUILDING_ID_GRANARY', 6);
-define('PLAN_BUILDING_ID_FACTORY', 7);
-define('PLAN_BUILDING_ID_MUSEUM', 8);
-
 // Boss
 define('PLAN_BOSS_ID_SEOLMOON', 1);
 define('PLAN_BOSS_ID_SEORYEON', 2);
@@ -284,6 +273,17 @@ class Plan
     }
 
     /************************************************************/
+
+    // Building
+    public const BUILDING_ID_CASTLE = 0;
+    public const BUILDING_ID_MINE = 1;
+    public const BUILDING_ID_FARM = 2;
+    public const BUILDING_ID_TOWER = 3;
+    public const BUILDING_ID_ARMY = 4;
+    public const BUILDING_ID_CRAFT_SHOP = 5;
+    public const BUILDING_ID_GRANARY = 6;
+    public const BUILDING_ID_FACTORY = 7;
+    public const BUILDING_ID_MUSEUM = 8;
 
     // BUILDING PLAN DATA
 

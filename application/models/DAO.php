@@ -3,8 +3,12 @@
 namespace lsb\App\models;
 
 use Exception;
+use lsb\App\query\Query;
 use lsb\Libs\CtxException;
+use lsb\Libs\CtxException as CE;
+use lsb\Libs\ErrorCode;
 use lsb\Utils\Utils;
+use PDOStatement;
 
 abstract class DAO
 {
@@ -88,4 +92,65 @@ abstract class DAO
     {
         return $this->updatedProperty;
     }
+
+    /******************************************************/
+
+    /* @var Query */
+    private $query;
+
+    /**
+     * @param Query $query
+     * @param bool $pending
+     * @param array $exceoptions
+     * @return int|mixed|PDOStatement
+     * @throws CE
+     */
+    public function resolveUpdate(Query $query, bool $pending, array $exceoptions = [])
+    {
+        if ($pending) {
+            if (is_null($this->query)) {
+                $this->query = $query;
+            } else {
+                $this->query->mergeQuery($query);
+            }
+        } else {
+            $stmt = $query
+                ->checkError($exceoptions)
+                ->run($this->query);
+
+            if ($stmt instanceof PDOStatement) {
+                CE::check($stmt->rowCount() === 0, ErrorCode::NO_UPDATE);
+            } else {
+                $errorCode = $stmt;
+                return $errorCode;
+            }
+        }
+    }
+
+    /**
+     * @param $stmt
+     * @return null
+     * @throws CE
+     */
+    protected static function resolveInsert($stmt)
+    {
+        if ($stmt instanceof PDOStatement) {
+            CE::check($stmt->rowCount() === 0, ErrorCode::NO_INSERT);
+            return null;
+        } else {
+            $errorCode = $stmt;
+            return $errorCode;
+        }
+    }
+
+    /**
+     * @param PDOStatement|string $stmt
+     * @return PDOStatement|string $stmt
+     * @throws CtxException
+     */
+    protected static function validateDelete($stmt)
+    {
+        CtxException::deleteFail($stmt->rowCount() === 0);
+    }
+
 }

@@ -107,6 +107,10 @@ class Query
 
     public function mergeQuery(Query $pending)
     {
+        if (is_null($pending)) {
+            return;
+        }
+
         if ($this->selectQurey !== $pending->selectQurey ||
             $this->updateQurey !== $pending->updateQurey ||
             $this->deleteQurey !== $pending->deleteQurey ||

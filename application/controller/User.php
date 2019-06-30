@@ -8,6 +8,7 @@ use lsb\Libs\CtxException as CE;
 use lsb\Libs\DB;
 use lsb\Libs\ErrorCode;
 use lsb\Libs\SpinLock;
+use lsb\Utils\Auth;
 use lsb\Utils\Lock;
 use lsb\App\services\UserServices;
 use lsb\Libs\ISubRouter;
@@ -36,7 +37,7 @@ class User extends Router implements ISubRouter
 
             $user = UserServices::getAllProperty($user->userId);
             $ctx->addBody(['user' => $user->toArray()]);
-        });
+        }, Auth::sessionGenerator());
 
         /*************************************************************************************************************
          * hive 정보로 회원가입
@@ -64,7 +65,7 @@ class User extends Router implements ISubRouter
 
             $user = UserServices::getAllProperty($userId);
             $ctx->addBody(['user' => $user->toArray()]);
-        });
+        }, Auth::sessionGenerator());
 
         /*************************************************************************************************************
          * 이름 변경

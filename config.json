@@ -40,7 +40,8 @@
     },
     "encrypt": {
       "key": "my_secret_key",
-      "cipher": "AES-128-CBC"
+      "cipher": "AES-128-CBC",
+      "tokenKey": "my_secret_token_key"
     }
   }
 }

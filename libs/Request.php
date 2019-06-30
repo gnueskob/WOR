@@ -11,6 +11,7 @@ class Request
     public $requestUri;
     public $serverProtocol;
     public $httpContentType;
+    public $httpXAccessToken;
     public $body;
 
     public function __construct()

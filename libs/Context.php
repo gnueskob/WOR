@@ -2,7 +2,7 @@
 
 namespace lsb\Libs;
 
-use Exception;
+use lsb\Libs\CtxException AS CE;
 
 class Context extends Singleton implements IContext
 {
@@ -20,16 +20,13 @@ class Context extends Singleton implements IContext
     }
 
     /**
-     * Check current request method is allowed
-     * @param   array   $httpMethods    allowed methods
-     * @throws  CtxException
+     * @param array $httpMethods
+     * @throws CtxException
      */
     public function checkAllowedMethod(array $httpMethods): void
     {
         $method = $this->req->requestMethod;
-        if (!in_array(strtoupper($method), $httpMethods)) {
-            (new CtxException())->throwInvalidMethodException();
-        }
+        CE::invalidMethodException(!in_array(strtoupper($method), $httpMethods), ErrorCode::HTTP_ERROR);
     }
 
     /**
@@ -38,9 +35,7 @@ class Context extends Singleton implements IContext
     */
     public function runMiddlewares(): void
     {
-        if (count($this->middlewares) === 0) {
-            (new CtxException())->throwNotFoundException();
-        }
+        CE::notFoundException(count($this->middlewares) === 0, ErrorCode::HTTP_ERROR);
 
         // Use to reduce next() function using array_pop()
         $this->middlewares = array_reverse($this->middlewares);
@@ -89,23 +84,5 @@ class Context extends Singleton implements IContext
     public function addBody(array $data): void
     {
         $this->res->body = array_merge($this->res->body, $data);
-    }
-
-    /**
-     * Throw CtxException for some reason
-     * @param   int         $serverErrCode
-     * @param   string      $serverMsg
-     * @param   string      $message
-     * @param   int         $code
-     * @throws  CtxException
-     */
-    public function throw(
-        int $serverErrCode = 1,
-        string $serverMsg = '',
-        string $message = '',
-        $code = 404
-    ) {
-        $message = $message === '' ? 'Error occurred' : $message;
-        throw new CtxException($serverErrCode, $serverMsg, $message, $code, null);
     }
 }

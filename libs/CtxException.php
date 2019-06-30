@@ -18,18 +18,6 @@ class CtxException extends Exception
         $this->errorCode = $errorCode;
     }
 
-    /**
-     * @param int $errorCode
-     * @param string $msg
-     * @throws CtxException
-     */
-    private function throwException(int $errorCode, string $msg): void
-    {
-        $this->errorCode = $errorCode;
-        $this->message = $msg;
-        throw $this;
-    }
-
     /**************************************
      ** Only Logic Exceptions            **
      **************************************/
@@ -51,27 +39,55 @@ class CtxException extends Exception
      ** Fatal Exceptions                 **
      **************************************/
 
-    /* @throws CtxException */
-    public function throwUnauthenticatedException(): void
+    /**
+     * @param bool $flag
+     * @param int $errorCode
+     * @throws CtxException
+     */
+    public static function unauthenticatedException(bool $flag, int $errorCode): void
     {
-        $this->throwException(401, "Unauthenticated");
+        if (false === $flag) {
+            return;
+        }
+        throw new CtxException($errorCode, 401, "Unauthenticated");
     }
 
-    /* @throws CtxException */
-    public function throwNotFoundException(): void
+    /**
+     * @param bool $flag
+     * @param int $errorCode
+     * @throws CtxException
+     */
+    public static function notFoundException(bool $flag, int $errorCode): void
     {
-        $this->throwException(404, "Not Found");
+        if (false === $flag) {
+            return;
+        }
+        throw new CtxException($errorCode, 404, "Not Found");
     }
 
-    /* @throws CtxException */
-    public function throwInvalidMethodException(): void
+    /**
+     * @param bool $flag
+     * @param int $errorCode
+     * @throws CtxException
+     */
+    public static function invalidMethodException(bool $flag, int $errorCode): void
     {
-        $this->throwException(405, "Method Not Allowed");
+        if (false === $flag) {
+            return;
+        }
+        throw new CtxException($errorCode, 405, "Method Not Allowed");
     }
 
-    /* @throws CtxException */
-    public function throwInternalServerException(): void
+    /**
+     * @param bool $flag
+     * @param int $errorCode
+     * @throws CtxException
+     */
+    public static function internalServerException(bool $flag, int $errorCode): void
     {
-        $this->throwException(500, "Internal Server Error");
+        if (false === $flag) {
+            return;
+        }
+        throw new CtxException($errorCode, 500, "Internal Server Error");
     }
 }

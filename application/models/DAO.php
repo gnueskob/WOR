@@ -65,7 +65,7 @@ abstract class DAO
      */
     public function toArray()
     {
-        CtxException::selectFail($this->isEmpty());
+        CE::check($this->isEmpty(), ErrorCode::NO_FETCH);
 
         $properties = Utils::getObjectVars($this);
         $res = [];
@@ -148,9 +148,9 @@ abstract class DAO
      * @return PDOStatement|string $stmt
      * @throws CtxException
      */
-    protected static function validateDelete($stmt)
+    protected static function resolveDelete($stmt)
     {
-        CtxException::deleteFail($stmt->rowCount() === 0);
+        CE::check($stmt->rowCount() === 0, ErrorCode::NO_DELETE);
     }
 
 }

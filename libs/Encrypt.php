@@ -6,22 +6,10 @@ use lsb\Config\Config;
 
 class Encrypt
 {
-    private static $key = null;
-    private static $cipher = null;
-
-    private static function getKeyCipher()
+    public static function encrypt(string $plaintext, $key = null, $cipher = null)
     {
-        if (is_null(static::$key) || is_null(static::$cipher)) {
-            $conf = Config::getInstance()->getConfig('encrypt');
-            static::$key = $conf['key'];
-            static::$cipher = $conf['cipher'];
-        }
-        return [static::$key, static::$cipher];
-    }
-
-    public static function encrypt(string $plaintext)
-    {
-        list($key, $cipher) = static::getKeyCipher();
+        $key = is_null($key) ? Config::getInstance()->getConfig('encrypt')['key'] : $key;
+        $cipher = is_null($cipher) ? Config::getInstance()->getConfig('encrypt')['cipher'] : $cipher;
 
         $ivlen = openssl_cipher_iv_length($cipher);
         $iv = openssl_random_pseudo_bytes($ivlen);
@@ -31,9 +19,10 @@ class Encrypt
         return $ciphertext;
     }
 
-    public static function decrypt(string $ciphertext)
+    public static function decrypt(string $ciphertext, $key = null, $cipher = null)
     {
-        list($key, $cipher) = static::getKeyCipher();
+        $key = is_null($key) ? Config::getInstance()->getConfig('encrypt')['key'] : $key;
+        $cipher = is_null($cipher) ? Config::getInstance()->getConfig('encrypt')['cipher'] : $cipher;
 
         $c = base64_decode($ciphertext);
         $ivlen = openssl_cipher_iv_length($cipher);

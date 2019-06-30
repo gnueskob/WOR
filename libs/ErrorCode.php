@@ -5,9 +5,14 @@ namespace lsb\Libs;
 class ErrorCode
 {
     public const FATAL_ERROR = -1;
+    public const HTTP_ERROR = 0;
     public const DB_ERROR = 1;
     public const REDIS_ERROR = 2;
     public const MEMCACHED_ERROR = 3;
+
+    // session
+    public const SESSION_INVALID = 100;
+    public const SESSION_EXPIRED = 101;
 
     // query success but not affected
     public const NO_FETCH = 10000;

@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>api_docs.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: "Segoe WPC", "Segoe UI", "SFUIText-Light", "HelveticaNeue-Light", sans-serif, "Droid Sans Fallback";
+	font-size: 14px;
+	padding: 0 12px;
+	line-height: 22px;
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	color: #4080D0;
+	text-decoration: none;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+h1 code,
+h2 code,
+h3 code,
+h4 code,
+h5 code,
+h6 code {
+	font-size: inherit;
+	line-height: auto;
+}
+
+a:hover {
+	color: #4080D0;
+	text-decoration: underline;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left: 5px solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 14px;
+	line-height: 19px;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+.mac code {
+	font-size: 12px;
+	line-height: 18px;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+/** Theming */
+
+.vscode-light,
+.vscode-light pre code {
+	color: rgb(30, 30, 30);
+}
+
+.vscode-dark,
+.vscode-dark pre code {
+	color: #DDD;
+}
+
+.vscode-high-contrast,
+.vscode-high-contrast pre code {
+	color: white;
+}
+
+.vscode-light code {
+	color: #A31515;
+}
+
+.vscode-dark code {
+	color: #D7BA7D;
+}
+
+.vscode-light pre:not(.hljs),
+.vscode-light code > div {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre:not(.hljs),
+.vscode-dark code > div {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre:not(.hljs),
+.vscode-high-contrast code > div {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+.vscode-light blockquote,
+.vscode-dark blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.vscode-high-contrast blockquote {
+	background: transparent;
+	border-color: #fff;
+}
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family:  "Meiryo", "Segoe WPC", "Segoe UI", "SFUIText-Light", "HelveticaNeue-Light", sans-serif, "Droid Sans Fallback";
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+</head>
+<body>
+<h1 id="world-of-renaissance-api-document">World Of Renaissance API DOCUMENT</h1>
+<h2 id="api-%EA%B8%B0%EB%B3%B8-%EC%A0%95%EB%B3%B4">API 기본 정보</h2>
+<hr>
+<h2 id="api-%EC%83%81%EC%84%B8-%EC%A0%95%EB%B3%B4">API 상세 정보</h2>
+<ul>
+<li>URL prefix : <code>http://localhost/wor</code></li>
+<li>로그인 이후에 요청들은 <code>x-access-token</code>헤더를 통한 토큰 검증</li>
+</ul>
+<hr>
+<h2 id="%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EB%B0%8F-%ED%9A%8C%EC%9B%90-%EA%B0%80%EC%9E%85">로그인 및 회원 가입</h2>
+<hr>
+<ul>
+<li>TODO: 반환 포맷 정리</li>
+</ul>
+<h2 id="%EB%A1%9C%EA%B7%B8%EC%9D%B8">로그인</h2>
+<ul>
+<li><code>PUT /user/login</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">hive_id</td>
+<td style="text-align:left">STRING</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">하이브 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">hive_uid</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">하이브 UID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%ED%9A%8C%EC%9B%90%EA%B0%80%EC%9E%85">회원가입</h2>
+<ul>
+<li><code>POST /user/register</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">hive_id</td>
+<td style="text-align:left">STRING</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">하이브 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">hive_uid</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">하이브 UID</td>
+</tr>
+<tr>
+<td style="text-align:left">country</td>
+<td style="text-align:left">STRING</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">국가</td>
+</tr>
+<tr>
+<td style="text-align:left">lang</td>
+<td style="text-align:left">STRING</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">언어</td>
+</tr>
+<tr>
+<td style="text-align:left">os_version</td>
+<td style="text-align:left">string</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">OS 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">app_version</td>
+<td style="text-align:left">string</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">앱 버전</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%EA%B8%B0%ED%9A%8D-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EA%B4%80%EB%A0%A8">기획 데이터 관련</h2>
+<hr>
+<h2 id="%EA%B8%B0%ED%9A%8D%EB%8D%B0%EC%9D%B4%ED%84%B0-%EC%97%85%EB%A1%9C%EB%93%9C">기획데이터 업로드</h2>
+<ul>
+<li><code>POST /plan/upload</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">territory</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">영토 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">tile</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">영내 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">resources</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">자원 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">building</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">건물 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">weapon</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">무기 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">buff</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">버프 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">boss</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">보스 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">trophy</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">전리품 정보</td>
+</tr>
+<tr>
+<td style="text-align:left">unit</td>
+<td style="text-align:left">CSV File</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">월드 단위 데이터 정보</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="user">User</h2>
+<hr>
+<h2 id="%EC%98%81%EC%A3%BC-%EC%9D%B4%EB%A6%84-%EB%B3%80%EA%B2%BD">영주 이름 변경</h2>
+<ul>
+<li><code>PUT /user/name</code></li>
+<li>최초 로그인 시 영주 이름 설정</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">name</td>
+<td style="text-align:left">STRING</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">영주 이름</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%98%81%EC%A3%BC-%EC%98%81%ED%86%A0-%EC%84%A4%EC%A0%95">영주 영토 설정</h2>
+<ul>
+<li><code>PUT /user/territory</code></li>
+<li>최초 로그인 시 영주 영토 설정</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">territory</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">영토 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%98%81%EC%A3%BC-%EC%A0%95%EB%B3%B4">영주 정보</h2>
+<ul>
+<li><code>GET /user/info</code></li>
+<li>자신이 보유한 각각의 자원, 인구 정보 반환</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%84%B1-%EC%97%85%EA%B7%B8%EB%A0%88%EC%9D%B4%EB%93%9C-%EC%9A%94%EC%B2%AD">성 업그레이드 요청</h2>
+<ul>
+<li><code>PUT /user/upgrade</code></li>
+<li>영주의 성 업그레이드 작업 시작</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%84%B1-%EC%97%85%EA%B7%B8%EB%A0%88%EC%9D%B4%EB%93%9C-%ED%99%95%EC%9D%B8">성 업그레이드 확인</h2>
+<ul>
+<li><code>GET /user/upgrade</code></li>
+<li>영주의 성 업그레이드 작업 완료 확인</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%8F%99%EB%A7%B9%EC%9A%A9-%EB%8D%B1-%EB%93%B1%EB%A1%9D">동맹용 덱 등록</h2>
+<ul>
+<li><code>PUT /user/deck</code></li>
+<li>전쟁 시 동맹국에게 지원할 수 있는 병력 등록</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%A0%95%EC%82%B0">정산</h2>
+<ul>
+<li><code>PUT /calculation</code></li>
+<li>특정 주기 별로 자원 생산, 선전포고 확인 등의 정산 처리</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="building">Building</h2>
+<hr>
+<h2 id="%EA%B1%B4%EB%AC%BC-%EC%A0%95%EB%B3%B4">건물 정보</h2>
+<ul>
+<li><code>GET /building/info/:user_id</code></li>
+<li>유저 건물 정보</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EA%B1%B4%EB%AC%BC-%EC%83%9D%EC%84%B1">건물 생성</h2>
+<ul>
+<li><code>POST /building/add</code></li>
+<li>새로운 건물 생성</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">tile_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">타일 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">type</td>
+<td style="text-align:left">TINYINT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">건물 종류</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EA%B1%B4%EB%AC%BC-%EC%97%85%EA%B7%B8%EB%A0%88%EC%9D%B4%EB%93%9C">건물 업그레이드</h2>
+<ul>
+<li><code>PUT /building/upgrade</code></li>
+<li>해당 건물 업그레이드 or 삭제</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">building_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">해당 건물 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EA%B1%B4%EB%AC%BC-%EC%97%85%EA%B7%B8%EB%A0%88%EC%9D%B4%EB%93%9C-%EC%99%84%EB%A3%8C">건물 업그레이드 완료</h2>
+<ul>
+<li><code>GET /building/upgrade</code></li>
+<li>해당 건물 업그레이드 완료</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">building_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">해당 건물 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EA%B1%B4%EB%AC%BC-%EC%9D%B8%EA%B5%AC-%EB%B0%B0%EC%B9%98">건물 인구 배치</h2>
+<ul>
+<li><code>PUT /building/deploy</code></li>
+<li>해당 건물에 원하는 만큼의 인구 배치</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">building_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">해당 건물 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">manpower</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">배치할 인구 수</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EA%B1%B4%EB%AC%BC-%EC%9D%B8%EA%B5%AC-%EB%B0%B0%EC%B9%98-%ED%99%95%EC%9D%B8">건물 인구 배치 확인</h2>
+<ul>
+<li><code>GET /building/deploy</code></li>
+<li>해당 건물 업그레이드 완료</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">building_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">해당 건물 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EA%B1%B4%EB%AC%BC-%EC%9D%B8%EA%B5%AC-%EB%B0%B0%EC%B9%98-%EC%B7%A8%EC%86%8C">건물 인구 배치 취소</h2>
+<ul>
+<li><code>PUT /building/deploy/cancel</code></li>
+<li>해당 건물 인구 배치 취소</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">building_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">해당 건물 ID</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="weapon">Weapon</h2>
+<hr>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%AC%B4%EA%B8%B0-%EC%A0%95%EB%B3%B4">유저 무기 정보</h2>
+<ul>
+<li><code>GET /weapon/info/:user_id</code></li>
+<li>유저가 현재 영토에 가지고 있는 모든 무기 정보</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%AC%B4%EA%B8%B0-%EC%83%9D%EC%82%B0">무기 생산</h2>
+<ul>
+<li><code>POST /weapon/add</code></li>
+<li>새로운 무기 생산</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">weapon_type</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">무기 종류</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%AC%B4%EA%B8%B0-%EC%83%9D%EC%82%B0-%ED%99%95%EC%9D%B8">무기 생산 확인</h2>
+<ul>
+<li><code>GET /weapon/add</code></li>
+<li>새로운 무기 생산</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">weapon_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">무기 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%AC%B4%EA%B8%B0-%EC%97%85%EA%B7%B8%EB%A0%88%EC%9D%B4%EB%93%9C">무기 업그레이드</h2>
+<ul>
+<li><code>PUT /weapon/upgrade</code></li>
+<li>해당 무기 업그레이드 / 삭제</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">weapon_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">무기 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%AC%B4%EA%B8%B0-%EC%97%85%EA%B7%B8%EB%A0%88%EC%9D%B4%EB%93%9C-%EC%99%84%EB%A3%8C">무기 업그레이드 완료</h2>
+<ul>
+<li><code>GET /weapon/upgrade</code></li>
+<li>해당 무기 업그레이드 / 삭제</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">weapon_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">무기 ID</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="exploration">Exploration</h2>
+<hr>
+<h2 id="%EC%98%81%EB%82%B4-%EB%A7%B5-%EC%A0%95%EB%B3%B4">영내 맵 정보</h2>
+<ul>
+<li><code>GET /exploration/tile/info</code></li>
+<li>자신이 보유한 <code>영토</code>를 기준으로 탐사된 <code>영내 타일</code>정보 반환</li>
+<li>영내 탐사 시 탐사 가능, 불가능 타일을 알아보기 위함</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%98%81%ED%86%A0-%EB%A7%B5-%EC%A0%95%EB%B3%B4">영토 맵 정보</h2>
+<ul>
+<li><code>GET /exploration/territory/info</code></li>
+<li>탐사된 <code>영토</code>정보 반환</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%98%81%EB%82%B4-%ED%83%90%EC%82%AC">영내 탐사</h2>
+<ul>
+<li><code>POST /exploration/tile</code></li>
+<li>유저의 영토내에서 탐사되지 않은 영토 탐사</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">tile_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">타일 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%98%81%EB%82%B4-%ED%83%90%EC%82%AC-%EC%99%84%EB%A3%8C">영내 탐사 완료</h2>
+<ul>
+<li><code>GET /exploration/tile/:explore_id</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">explore_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">탐사 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%98%81%ED%86%A0-%ED%83%90%EC%82%AC">영토 탐사</h2>
+<ul>
+<li><code>POST /exploration/territory</code></li>
+<li>유저 영토 외의 다른 영토 탐사</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">territory_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">영토 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%98%81%ED%86%A0-%ED%83%90%EC%82%AC-%EC%99%84%EB%A3%8C">영토 탐사 완료</h2>
+<ul>
+<li><code>GET /exploration/territory/:explore_id</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">explore_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">탐사 ID</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="buff">Buff</h2>
+<hr>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%B2%84%ED%94%84-%EC%A0%95%EB%B3%B4">유저 버프 정보</h2>
+<ul>
+<li><code>GET /buff/info</code></li>
+<li>유저에게 현재 적용중인 버프 확인</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%B2%84%ED%94%84">버프</h2>
+<ul>
+<li><code>POST /buff/add</code></li>
+<li>사치자원을 이용한 버프 활성화</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">buff_type</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">버프 타입</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="alliance">Alliance</h2>
+<hr>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%8F%99%EB%A7%B9-%EC%A0%95%EB%B3%B4">유저 동맹 정보</h2>
+<ul>
+<li><code>GET /alliance/info/:user_id</code></li>
+<li>유저와 동맹 중인 유저 정보</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%8F%99%EB%A7%B9-%EC%9A%94%EC%B2%AD%EB%A6%AC%EC%8A%A4%ED%8A%B8">유저 동맹 요청리스트</h2>
+<ul>
+<li><code>GET /alliance/waiting/:user_id</code></li>
+<li>자신에게 동맹 요청 중인 유저 정보</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%8F%99%EB%A7%B9-%EC%9A%94%EC%B2%AD">유저 동맹 요청</h2>
+<ul>
+<li><code>POST /alliance/add/:friend_id</code></li>
+<li>유저에게 동맹 요청</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">friend_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%8F%99%EB%A7%B9-%EC%88%98%EB%9D%BD">유저 동맹 수락</h2>
+<ul>
+<li><code>PUT /alliance/accept</code></li>
+<li>동맹 요청 수락</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">alliance_wait_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">대기중인 동맹 요청 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%8F%99%EB%A7%B9-%EC%B7%A8%EC%86%8C">유저 동맹 취소</h2>
+<ul>
+<li><code>PUT /alliance/cancel</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">alliance_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">동맹 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%8F%99%EB%A7%B9-%EC%9A%94%EC%B2%AD-%EA%B1%B0%EC%A0%88">동맹 요청 거절</h2>
+<ul>
+<li><code>PUT /alliance/reject</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">alliance_wait_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">대기중인 동맹 요청 ID</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="war">War</h2>
+<hr>
+<h2 id="%EC%9C%A0%EC%A0%80-%EC%A0%84%EC%9F%81-%EC%A0%95%EB%B3%B4">유저 전쟁 정보</h2>
+<ul>
+<li><code>GET /war/info/:user_id</code></li>
+<li>유저가 현재 영토에 가지고 있는 모든 출전 정보</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%81%9D%EB%82%9C-%EC%A0%84%EC%9F%81-%ED%99%95%EC%9D%B8">끝난 전쟁 확인</h2>
+<ul>
+<li><code>GET /war/check/:user_id</code></li>
+<li>유저 만료된 전쟁 확인</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%B6%9C%EC%A0%84">출전</h2>
+<ul>
+<li><code>POST /war/add</code></li>
+<li>다른 유저에게 선전포고(출전)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">freiend_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">동맹 지원 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">territory_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">영토 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%B6%9C%EC%A0%84-%EC%99%84%EB%A3%8C">출전 완료</h2>
+<ul>
+<li><code>PUT /war/add</code></li>
+<li>전쟁 준비 완료</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">war_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">출전 정보 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EC%B6%9C%EC%A0%84-%EC%B7%A8%EC%86%8C">출전 취소</h2>
+<ul>
+<li><code>PUT /war/cancel</code></li>
+<li>전쟁 준비 취소</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">war_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">출전 정보 ID</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="raid">Raid</h2>
+<hr>
+<h2 id="%EC%9C%A0%EC%A0%80-%EB%A0%88%EC%9D%B4%EB%93%9C-%EC%A0%95%EB%B3%B4">유저 레이드 정보</h2>
+<ul>
+<li><code>GET /raid/info/:user_id</code></li>
+<li>현재 출전중인 레이드 정보</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%A0%88%EC%9D%B4%EB%93%9C-%EC%8B%A0%EC%B2%AD">레이드 신청</h2>
+<ul>
+<li><code>POST /raid</code></li>
+<li>특수 지역 보스 몬스터 레이드 신청</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">territory_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">보스 영토 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%81%9D%EB%82%9C-%EB%A0%88%EC%9D%B4%EB%93%9C-%ED%99%95%EC%9D%B8">끝난 레이드 확인</h2>
+<ul>
+<li><code>GET /war/check/:user_id</code></li>
+<li>유저 만료된 전쟁 확인</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">user_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">유저 ID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%EB%A0%88%EC%9D%B4%EB%93%9C-%EC%8B%A0%EC%B2%AD-%EC%99%84%EB%A3%8C">레이드 신청 완료</h2>
+<ul>
+<li><code>PUT /raid/add</code></li>
+<li>특수 지역 보스 몬스터 레이드 요청</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">요청변수</th>
+<th style="text-align:left">타입</th>
+<th style="text-align:left">필수 여부</th>
+<th style="text-align:left">설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">raid_id</td>
+<td style="text-align:left">INT</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">레이드 출전 ID</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+</body>
+</html>

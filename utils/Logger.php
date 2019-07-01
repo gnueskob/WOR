@@ -2,7 +2,10 @@
 
 namespace lsb\Utils;
 
+use lsb\Libs\ErrorCode;
 use PDOException;
+use Exception;
+use Throwable;
 use lsb\Libs\Context;
 use lsb\Libs\CtxException;
 use lsb\Libs\Log;
@@ -13,11 +16,10 @@ class Logger
     public static function APILogger(string $category = null): callable
     {
         return function (Context $ctx) use ($category) {
-            // TODO: redis 실시간 API 성능 지표 갱신
             $log = Log::getInstance();
-            $logCategory = CATEGORY_API_PERF;
+            $logCategory = Log::CATEGORY_API_PERF;
             if (isset($category) && $category !== '') {
-                $logCategory = CATEGORY_API_PERF . "_{$category}";
+                $logCategory = Log::CATEGORY_API_PERF . "_{$category}";
             }
 
             $logMsg = [];
@@ -26,29 +28,72 @@ class Logger
 
             $start = microtime(true);
             $logMsg['time'] = Timezone::getNowUTC();
-            $logMsg['start_time'] = $start;
+
+            $token = $ctx->req->httpXAccessToken;
+            $logMsg['session'] = is_null($token) ? '' : $token;
+
+            try {
+                $ctx->next();
+                $end = microtime(true);
+                $logMsg['elapsed_time'] = $end - $start;
+                $logMsg['code'] = ErrorCode::FINE;
+                $log->addLog($logCategory, json_encode($logMsg));
+            } catch (Exception $e) {
+                $logMsg['code'] = $e->getCode();
+                $log->addLog($logCategory, json_encode($logMsg));
+                throw $e;
+            } finally {
+                $log->flushLog();
+            }
+        };
+    }
+
+    public static function errorLogger(): callable
+    {
+        return function (Context $ctx) {
+            $log = Log::getInstance();
+
+            $logMsg = [];
+            $logMsg['method'] = $ctx->req->requestMethod;
+            $logMsg['uri'] = $ctx->req->requestUri;
+            $logMsg['time'] = Timezone::getNowUTC();
+
+            $token = $ctx->req->httpXAccessToken;
+            $logMsg['session'] = is_null($token) ? '' : $token;
 
             try {
                 $ctx->next();
             } catch (CtxException $e) {
-                $logMsg['code'] = $e->getCode();
+                $logMsg['code'] = $e->errorCode;
                 $logMsg['msg'] = $e->getMessage();
-                $logMsg['error_code'] = $e->getServerErrCode();
-                $logMsg['error_msg'] = $e->getServerMsg();
-                $log->addLog($logCategory, json_encode($logMsg));
+                $logMsg['class'] = $e->getTrace()[0]['class'];
+                $logMsg['args'] = $ctx->req->body;
+                $log->addLog(Log::CATEGORY_CTX_EX, json_encode($logMsg));
                 throw $e;
             } catch (PDOException $e) {
                 $logMsg['code'] = $e->getCode();
                 $logMsg['msg'] = $e->getMessage();
-                $log->addLog($logCategory, json_encode($logMsg));
+                $logMsg['class'] = $e->getTrace()[0]['class'];
+                $logMsg['args'] = $ctx->req->body;
+                $log->addLog(Log::CATEGORY_PDO_EX, json_encode($logMsg));
                 throw $e;
+            } catch (Exception $e) {
+                $logMsg['code'] = $e->getCode();
+                $logMsg['msg'] = $e->getMessage();
+                $logMsg['class'] = $e->getTrace()[0]['class'];
+                $logMsg['args'] = $ctx->req->body;
+                $log->addLog(Log::CATEGORY_EX, json_encode($logMsg));
+                throw $e;
+            } catch (Throwable $e) {
+                $logMsg['code'] = $e->getCode();
+                $logMsg['msg'] = $e->getMessage();
+                $logMsg['class'] = $e->getTrace()[0]['class'];
+                $logMsg['args'] = $ctx->req->body;
+                $log->addLog(Log::CATEGORY_FATAL, json_encode($logMsg));
+                throw $e;
+            } finally {
+                $log->flushLog();
             }
-
-            $end = microtime(true);
-            $logMsg['end_time'] = $end;
-            $logMsg['elapsed_time'] = $end - $start;
-            $logMsg['code'] = 200;
-            $log->addLog($logCategory, json_encode($logMsg));
         };
     }
 }

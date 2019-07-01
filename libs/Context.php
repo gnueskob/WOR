@@ -2,8 +2,6 @@
 
 namespace lsb\Libs;
 
-use lsb\Libs\CtxException AS CE;
-
 class Context extends Singleton implements IContext
 {
     public $req;
@@ -19,23 +17,22 @@ class Context extends Singleton implements IContext
         $this->middlewares = [];
     }
 
-    /**
-     * @param array $httpMethods
-     * @throws CtxException
-     */
     public function checkAllowedMethod(array $httpMethods): void
     {
         $method = $this->req->requestMethod;
-        CE::invalidMethodException(!in_array(strtoupper($method), $httpMethods), ErrorCode::HTTP_ERROR);
+        if (!in_array(strtoupper($method), $httpMethods)) {
+            $this->res->error($this->req->serverProtocol, 405, "Method Not Allowed");
+        }
     }
 
     /**
      * Run all of middleware appended to this context
-     * @throws  CtxException
     */
     public function runMiddlewares(): void
     {
-        CE::notFoundException(count($this->middlewares) === 0, ErrorCode::HTTP_ERROR);
+        if (count($this->middlewares) === 0) {
+            $this->res->error($this->req->serverProtocol, 404, "Not Found");
+        }
 
         // Use to reduce next() function using array_pop()
         $this->middlewares = array_reverse($this->middlewares);
@@ -73,7 +70,7 @@ class Context extends Singleton implements IContext
         $this->res->send();
     }
 
-    public function getBody()
+    public function getReqBody()
     {
         if (is_null($this->data)) {
             $this->data = array_merge($this->req->getParams(), $this->req->body);
@@ -81,8 +78,11 @@ class Context extends Singleton implements IContext
         return $this->data;
     }
 
-    public function addBody(array $data): void
+    public function addResBody(array $data): void
     {
+        if (is_null($this->res->body)) {
+            $this->res->body = [];
+        }
         $this->res->body = array_merge($this->res->body, $data);
     }
 }

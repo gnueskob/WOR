@@ -2,34 +2,30 @@
 
 namespace lsb\Config\utils;
 
+use Exception;
 use lsb\Libs\Context;
 use lsb\Libs\CtxException;
-use lsb\Libs\Log;
+use lsb\Libs\ErrorCode;
+use PDOException;
+use Throwable;
 
 class Error
 {
     public static function errorHandler(): callable
     {
-        return function (Context $ctx) {
+        return function (Context $ctx): void {
             try {
+                $ctx->res->setHeader('Access-Control-Allow-Origin', '*');
                 $ctx->next();
-                return;
+                $ctx->res->body = ['success' => true, 'res' => $ctx->res->body];
             } catch (CtxException $e) {
-                $log = Log::getInstance();
-                $category = $e->getServerErrCode();
-                $msg = $e->getServerMsg();
-                $log->addLog($category, $msg);
-
-                $errRes = [
-                    'result' => 1,
-                    'error' => $msg
-                ];
-
-                $ctx->res->body = $errRes;
-                $ctx->res->send();
-
-                // Don't throw Exception more
-                // throw $e;
+                $ctx->res->body = ['success' => false, 'res' => ['code' => $e->errorCode]];
+            } catch (PDOException $e) {
+                $ctx->res->body = ['success' => false, 'res' => ['code' => ErrorCode::DB_ERROR]];
+            } catch (Exception $e) {
+                $ctx->res->body = ['success' => false, 'res' => ['code' => ErrorCode::UNKNOWN_EXCEPTION]];
+            } catch (Throwable $e) {
+                $ctx->res->body = ['success' => false, 'res' => ['code' => ErrorCode::FATAL_ERROR]];
             }
         };
     }

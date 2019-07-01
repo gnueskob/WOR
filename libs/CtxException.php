@@ -53,41 +53,11 @@ class CtxException extends Exception
     }
 
     /**
-     * @param bool $flag
      * @param int $errorCode
      * @throws CtxException
      */
-    public static function notFoundException(bool $flag, int $errorCode): void
+    public static function dbException(int $errorCode): void
     {
-        if (false === $flag) {
-            return;
-        }
-        throw new CtxException($errorCode, 404, "Not Found");
-    }
-
-    /**
-     * @param bool $flag
-     * @param int $errorCode
-     * @throws CtxException
-     */
-    public static function invalidMethodException(bool $flag, int $errorCode): void
-    {
-        if (false === $flag) {
-            return;
-        }
-        throw new CtxException($errorCode, 405, "Method Not Allowed");
-    }
-
-    /**
-     * @param bool $flag
-     * @param int $errorCode
-     * @throws CtxException
-     */
-    public static function internalServerException(bool $flag, int $errorCode): void
-    {
-        if (false === $flag) {
-            return;
-        }
-        throw new CtxException($errorCode, 500, "Internal Server Error");
+        throw new CtxException($errorCode, 250, "Internal Server Error");
     }
 }

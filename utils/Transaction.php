@@ -5,6 +5,7 @@ namespace lsb\Config\utils;
 use lsb\Libs\Context;
 use lsb\Libs\DB;
 use Exception;
+use Error;
 
 class Transaction
 {
@@ -13,7 +14,7 @@ class Transaction
         return function (Context $ctx) {
             try {
                 $ctx->next();
-            } catch (Exception $e) {
+            } catch (Exception | Error $e) {
                 if (DB::getTransactionMode() >= 1) {
                     DB::getInstance()->getDBConnection()->rollBack();
                 }

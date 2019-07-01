@@ -5,10 +5,11 @@ namespace lsb\Libs;
 class ErrorCode
 {
     public const FATAL_ERROR = -1;
-    public const HTTP_ERROR = 0;
-    public const DB_ERROR = 1;
-    public const REDIS_ERROR = 2;
-    public const MEMCACHED_ERROR = 3;
+    public const FINE = 0;
+    public const UNKNOWN_EXCEPTION = 1;
+    public const DB_ERROR = 2;
+    public const REDIS_ERROR = 3;
+    public const MEMCACHED_ERROR = 4;
 
     // session
     public const SESSION_INVALID = 100;

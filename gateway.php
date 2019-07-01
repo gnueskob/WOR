@@ -7,13 +7,11 @@ require(__DIR__ . '/libs/log/thrift/autoload.php');
 use lsb\Config\Config;
 use lsb\App\App;
 use lsb\App\WOR;
-use lsb\Config\utils\Error;
 
 $config = Config::getInstance();
-$config->setMode(DEV);
+//$config->setMode(DEV);
 
 $app = new App();
-$app->use('', Error::errorHandler());
 $app->use('/wor', new WOR());
 $app->get('/server_info', function () {
     print_r($_SERVER);
@@ -31,9 +29,7 @@ $app->get('/phpinfo', function () {
 $app->get('/test', function (\lsb\Libs\Context $ctx) {
 
     $mcd = \lsb\Libs\Memcached::getInstance()->getMemcached();
-    $dao = new \lsb\App\models\UserDAO();
-//    $mcd->add('test', $dao, 10);
-    $c = $mcd->get('test');
+    $c = $mcd->get("session::user::100322");
     var_dump($c);
 });
 $app->run();

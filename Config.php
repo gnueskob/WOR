@@ -4,15 +4,13 @@ namespace lsb\Config;
 
 use lsb\Libs\Singleton;
 
-define('URL', 'http://127.0.0.1');
-define('WOR', 'wor');
-define('DEV', 'dev');
-
-// TODO: DB connection conf
-
 class Config extends Singleton
 {
-    private $mode = null;
+    public const URL = 'http://127.0.0.1';
+    public const WOR = 'wor';
+    public const DEV = 'dev';
+
+    private $mode = Config::WOR;
 
     // DB connection config.
     private $conf;
@@ -25,7 +23,7 @@ class Config extends Singleton
         $conf = json_decode(file_get_contents('config.json'), true);
 
         // TODO: DEV 모드 아닐 시 설정 불러오기
-        $conf = $this->mode === DEV ? $conf[DEV] : $conf[DEV];
+        $conf = $this->mode === Config::DEV ? $conf[Config::DEV] : $conf[Config::DEV];
 
         $this->conf = $conf;
     }

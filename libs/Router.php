@@ -2,8 +2,7 @@
 
 namespace lsb\Libs;
 
-use Exception;
-use PDOException;
+use Throwable;
 
 class Router
 {
@@ -72,8 +71,8 @@ class Router
 
     /**
      * Removes trailing forward slashes from the right of the route.
-     * @param   string  $route
-     * @param   bool    $setRoot
+     * @param string $route
+     * @param bool $setRoot
      * @return  string  $result
      */
     private function formatRoute(string $route, bool $setRoot = false): string
@@ -149,19 +148,13 @@ class Router
      */
     public function run(): void
     {
+        $this->ctx->checkAllowedMethod($this->httpMethods);
         try {
-            $this->ctx->checkAllowedMethod($this->httpMethods);
             $this->ctx->runMiddlewares();
-        } catch (CtxException $e) {
-            $res = $this->ctx->res;
-            $req = $this->ctx->req;
-            $res->error($req->serverProtocol, $e->getCode(), $e->getMessage());
-            Log::getInstance()->addCtxExceptionLog($e);
-        } catch (Exception $e) {
-            // Internal Server Error
-            Log::getInstance()->addExceptionLog($e);
-        } finally {
-            Log::getInstance()->flushLog();
+            $this->ctx->send();
+//            $this->ctx->res->error($this->ctx->req->serverProtocol, 200, "OK");
+        } catch (Throwable $e) {
+            $this->ctx->res->error($this->ctx->req->serverProtocol, 500, "Internal Server Error");
         }
     }
 }

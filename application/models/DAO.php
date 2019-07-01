@@ -152,5 +152,4 @@ abstract class DAO
     {
         CE::check($stmt->rowCount() === 0, ErrorCode::NO_DELETE);
     }
-
 }

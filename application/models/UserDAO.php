@@ -365,6 +365,7 @@ class UserDAO extends DAO
         $dao->country = $param['country'];
         $dao->lang = $param['lang'];
         $dao->osVersion = $param['osVersion'];
+        $dao->deviceName = $param['deviceName'];
         $dao->appVersion = $param['appVersion'];
 
         // user_platform 테이블 레코드 추가
@@ -386,7 +387,7 @@ class UserDAO extends DAO
         $dao->name = null;
         $dao->castleLevel = 1;
         $dao->castleToLevel = 1;
-        $dao->upgradeTime = null;
+        $dao->upgradeTime = Timezone::getNowUTC();
         $dao->penaltyFinishTime = null;
         $dao->autoGenerateManpower = true;
         $dao->manpower = 10;

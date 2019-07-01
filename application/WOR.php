@@ -3,10 +3,14 @@
 namespace lsb\App;
 
 use lsb\App\controller\Plan;
+use lsb\Config\utils\BodyParser;
+use lsb\Config\utils\Error;
 use lsb\Libs\Context;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\App\controller\User;
+use lsb\Utils\Auth;
+use lsb\Utils\Logger;
 
 class WOR extends Router implements ISubRouter
 {
@@ -16,11 +20,11 @@ class WOR extends Router implements ISubRouter
 
         // common middleware
         $router
-            ->use('', function (Context $ctx) {
-                $ctx->res->setHeader('Access-Control-Allow-Origin', '*');
-                $ctx->res->setHeader('Content-Type', 'application/json', 'charset=UTF-8');
-                $ctx->next();
-            });
+            // ->use('/', BodyParser::encryptParser())
+            ->use('/', BodyParser::jsonParser())
+            ->use('/', Error::errorHandler())
+            ->use('/', Logger::errorLogger())
+            ->use('/', Logger::APILogger());
 
         $router
             ->use('/user', new User())

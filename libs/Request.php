@@ -20,7 +20,11 @@ class Request
         foreach ($_SERVER as $key => $value) {
             $this->{$this->toCamelCase($key)} = $value;
         }
-        $this->body = $this->getBody();
+
+        $jsonReturnMethods = ["GET", "POST", "PUT"];
+        if (in_array($this->requestMethod, $jsonReturnMethods)) {
+            $this->body = file_get_contents('php://input');
+        }
     }
 
     private function toCamelCase(string $str): string
@@ -39,19 +43,10 @@ class Request
     private function getBody(): array
     {
         $body = file_get_contents('php://input');
-        if ($body === "") {
-            return [];
-        }
 
         if ($this->httpContentType === 'application/json') {
             $body = json_decode($body, true);
         }
-
-        $jsonReturnMethods = ["GET", "POST", "PUT"];
-        if (in_array($this->requestMethod, $jsonReturnMethods)) {
-            return $body;
-        }
-        return [];
     }
 
     public function getFiles(): array

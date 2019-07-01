@@ -14,17 +14,17 @@ class Auth
     public static function sessionHandler(): callable
     {
         return function (Context $ctx): void {
-            if (Config::getInstance()->getMode() === DEV) {
+            if (Config::getInstance()->getMode() === Config::DEV) {
                 $ctx->next();
                 return;
             }
 
-            $hasToken = property_exists($ctx->req, 'httpXAccessToken');
+            $hasToken = isset($ctx->req->httpXAccessToken);
             CE::unauthenticatedException(false === $hasToken, ErrorCode::SESSION_INVALID);
 
             $key = Config::getInstance()->getConfig('encrypt')['tokenKey'];
             $cipherToken = $ctx->req->httpXAccessToken;
-            $token = json_decode(Encrypt::decrypt($cipherToken, $key));
+            $token = json_decode(Encrypt::decrypt($cipherToken, $key), true);
 
             $mcd = Memcached::getInstance()->getMemcached();
 
@@ -32,7 +32,7 @@ class Auth
             $storedToken = $mcd->get($sessionKey);
 
             CE::unauthenticatedException($storedToken === false, ErrorCode::SESSION_EXPIRED);
-            CE::unauthenticatedException($token === $storedToken, ErrorCode::SESSION_INVALID);
+            CE::unauthenticatedException(!($token === $storedToken), ErrorCode::SESSION_INVALID);
 
             $mcd->set($sessionKey, $token, 30 * 60);
 
@@ -51,7 +51,11 @@ class Auth
             $key = Config::getInstance()->getConfig('encrypt')['tokenKey'];
             $cipherToken = Encrypt::encrypt(json_encode($token), $key);
 
-            $ctx->res->setHeader('httpXAccessToken', $cipherToken);
+            $sessionKey = "session::user::{$token['hiveUid']}";
+            $mcd = Memcached::getInstance()->getMemcached();
+            $mcd->set($sessionKey, $token, 30 * 60);
+
+            $ctx->res->setHeader('x-access-token', $cipherToken);
         };
     }
 }

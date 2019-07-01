@@ -4,7 +4,6 @@ namespace lsb\Libs;
 
 use Exception;
 use PDO;
-use PDOException;
 use PDOStatement;
 use lsb\Config\Config;
 
@@ -31,16 +30,11 @@ class DB extends Singleton
             $dsn = $dsn . "{$key}={$value};";
         }
 
-        try {
-            $db = new PDO($dsn, $conf['user'], $conf['password']);
-            $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
-            $db->setAttribute(PDO::MYSQL_ATTR_FOUND_ROWS, true);
-            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->db = $db;
-        } catch (PDOException $e) {
-            $log = Log::getInstance();
-            $log->addExceptionLog(CATEGORY_PDO_EX, $e);
-        }
+        $db = new PDO($dsn, $conf['user'], $conf['password']);
+        $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+        $db->setAttribute(PDO::MYSQL_ATTR_FOUND_ROWS, true);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->db = $db;
     }
 
     public function getDBConnection()
@@ -72,32 +66,17 @@ class DB extends Singleton
 
         $start = microtime(true);
 
-        try {
-            $stmt = $this->db->prepare($query);
-            $stmt->execute($param);
-        } catch (PDOException $e) {
-            $logMsg = [
-                'query' => $this->queryTrim($query, $param),
-                'time' => $time,
-                'code' => $e->getCode(),
-                'error' => $e->getMessage()
-            ];
-            $log->addLog(CATEGORY_QRY_PERF, json_encode($logMsg));
-            $log->addExceptionLog(CATEGORY_PDO_EX, $e);
-
-            throw $e;
-        }
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($param);
 
         $end = microtime(true);
         $elapsed = $end - $start;
         $logMsg = [
             'query' => $this->queryTrim($query, $param),
             'time' => $time,
-            'start' => $start,
-            'end' => $end,
             'elapsed' => $elapsed
         ];
-        $log->addLog(CATEGORY_QRY_PERF, json_encode($logMsg));
+        $log->addLog(Log::CATEGORY_QRY_PERF, json_encode($logMsg));
 
         return $stmt;
     }
@@ -106,17 +85,6 @@ class DB extends Singleton
     {
         return self::getInstance()->query($q, $p);
     }
-
-    /*
-    public static function trimColumn(array $data)
-    {
-        foreach ($data as $key => $value) {
-            if (is_int($key)) {
-                unset($data[$key]);
-            }
-        }
-        return $data;
-    }*/
 
     public static function getSelectResult(string $query, array $param, bool $all = false)
     {
@@ -129,19 +97,6 @@ class DB extends Singleton
         }
     }
 
-    /*
-    public static function getResultRowCount(string $query, array $param)
-    {
-        $dbMngr = self::getInstance();
-        $stmt = $dbMngr->query($query, $param);
-        return $stmt->rowCount();
-    }
-
-    public static function getInsertResult(string $query, array $param)
-    {
-        $dbMngr = self::getInstance();
-        return $dbMngr->query($query, $param);
-    }*/
 
     public static function beginTransaction()
     {
@@ -154,9 +109,7 @@ class DB extends Singleton
     {
         if (self::getInstance()->transactionMode === 1) {
             $res = self::getInstance()->getDBConnection()->commit();
-            if ($res === false) {
-                (new CtxException())->transactionFail();
-            }
+            CtxException::check($res === false, ErrorCode::TRANSACTION_FAIL);
         }
         self::getInstance()->transactionMode--;
     }
@@ -168,6 +121,6 @@ class DB extends Singleton
 
     public static function getLastInsertId()
     {
-        return (int) self::getInstance()->getDBConnection()->lastInsertId();
+        return (int) (self::getInstance()->getDBConnection()->lastInsertId());
     }
 }

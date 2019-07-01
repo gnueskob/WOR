@@ -7,16 +7,17 @@ use lsb\Log\Scribe;
 use lsb\Log\LocalLog;
 use Exception;
 
-define('SCRIBE', 'scribe');
-define('LOCAL', 'localLog');
-define('CATEGORY_EX', 'Exception');
-define('CATEGORY_CTX_EX', 'CtxException');
-define('CATEGORY_PDO_EX', 'PDOException');
-define('CATEGORY_QRY_PERF', 'QueryPerformance');
-define('CATEGORY_API_PERF', 'APIPerformance');
-
 class Log extends Singleton implements ILog
 {
+    public const SCRIBE = 'scribe';
+    public const LOCAL = 'localLog';
+    public const CATEGORY_EX = 'Exception';
+    public const CATEGORY_FATAL = 'FatalError';
+    public const CATEGORY_CTX_EX = 'CtxException';
+    public const CATEGORY_PDO_EX = 'PDOException';
+    public const CATEGORY_QRY_PERF = 'QueryPerformance';
+    public const CATEGORY_API_PERF = 'APIPerformance';
+
     private $driver;
 
     protected function __construct()
@@ -26,10 +27,10 @@ class Log extends Singleton implements ILog
         $dirverConf = $conf['driver'];
         switch ($dirverConf) {
             default:
-            case SCRIBE:
+            case Log::SCRIBE:
                 $this->driver = new Scribe($conf['scribe']);
                 break;
-            case LOCAL:
+            case Log::LOCAL:
                 $this->driver = new LocalLog($conf['localLog']);
                 break;
         }
@@ -42,39 +43,9 @@ class Log extends Singleton implements ILog
      */
     public function addLog(string $category, string $msg)
     {
+        $date = date('Y-m-d');
+        $category = "{$category}_{$date}";
         $this->driver->addLog($category, $msg);
-    }
-
-    public function addExceptionLog(Exception $e)
-    {
-        try {
-            $time = Timezone::getNowUTC();
-        } catch (Exception $e) {
-            $time = $e->getMessage();
-        }
-        $logMsg = [
-            'time' => $time,
-            'code' => $e->getCode(),
-            'error' => $e->getMessage()
-        ];
-        $this->addLog(CATEGORY_EX, json_encode($logMsg));
-    }
-
-    public function addCtxExceptionLog(CtxException $e)
-    {
-        try {
-            $time = Timezone::getNowUTC();
-        } catch (Exception $e) {
-            $time = $e->getMessage();
-        }
-        $logMsg = [
-            'time' => $time,
-            'code' => $e->getCode(),
-            'error' => $e->getMessage(),
-            'scode' => $e->getServerErrCode(),
-            'smsg' => $e->getServerMsg()
-        ];
-        $this->addLog(CATEGORY_CTX_EX, json_encode($logMsg));
     }
 
     /**

@@ -104,6 +104,7 @@ class UserQuery extends Query
     public static function qSelectUserInfo(UserDAO $dao)
     {
         return static::userInfo()
+            ->selectQurey()
             ->selectAll()
             ->whereUserId($dao->userId);
     }
@@ -112,6 +113,7 @@ class UserQuery extends Query
     public static function qSelectUserInfoByTerritory(UserDAO $dao)
     {
         return static::userInfo()
+            ->selectQurey()
             ->selectAll()
             ->whereUserId($dao->userId);
     }
@@ -220,6 +222,7 @@ class UserQuery extends Query
                 'country' => $dao->country,
                 'lang' => $dao->lang,
                 'osVersion' => $dao->osVersion,
+                'deviceName' => $dao->deviceName,
                 'appVersion' => $dao->appVersion
             ]);
     }

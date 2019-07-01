@@ -12,7 +12,7 @@ class Response
     public $status = 200;
     public $msg = 'OK';
 
-    public $body = [];
+    public $body;
     public $httpContentType;
 
     public function __construct()
@@ -35,10 +35,8 @@ class Response
 
     public function send(): void
     {
-        $body = ['success' => true, 'res' => $this->body];
-        if ($this->httpContentType === 'json') {
-            $body = json_encode($body);
+        if (isset($this->body)) {
+            echo $this->body;
         }
-        echo $body;
     }
 }

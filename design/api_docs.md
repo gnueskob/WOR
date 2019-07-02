@@ -148,7 +148,7 @@
 
 ## 기획데이터 업로드
 
-- `POST /planData`
+- `POST /plan/upload`
 
 | 요청변수      | 타입       | 필수 여부 | 설명       |
 | :-------- | :------- | :---- | :------- |
@@ -160,7 +160,49 @@
 | weapon    | CSV File | N     | 무기 정보    |
 | action    | CSV File | N     | 게임 기능 정보 |
 
-- TODO: 반환 포맷 정리
+```json
+{
+    "success": true,
+    "res": {
+        "territory": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "tile": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "resource": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "building": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "weapon": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "buff": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "trophy": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "unit": {
+            "result": 0,
+            "msg": "file is uploaded"
+        },
+        "boss": {
+            "result": 0,
+            "msg": "file is uploaded"
+        }
+    }
+}
+```
 
 ***
 

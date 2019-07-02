@@ -10,6 +10,7 @@ class ErrorCode
     public const DB_ERROR = 2;
     public const REDIS_ERROR = 3;
     public const MEMCACHED_ERROR = 4;
+    public const NOT_ALLOWED = 5;
 
     // session
     public const SESSION_INVALID = 100;

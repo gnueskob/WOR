@@ -8,6 +8,7 @@ class Context extends Singleton implements IContext
     public $res;
     private $data = null;
     private $middlewares;
+    private $middlewareConunt = 0;
 
     protected function __construct()
     {
@@ -30,8 +31,9 @@ class Context extends Singleton implements IContext
     */
     public function runMiddlewares(): void
     {
-        if (count($this->middlewares) === 0) {
+        if ($this->middlewareConunt === 0) {
             $this->res->error($this->req->serverProtocol, 404, "Not Found");
+            return;
         }
 
         // Use to reduce next() function using array_pop()
@@ -59,9 +61,13 @@ class Context extends Singleton implements IContext
     /**
      * Add each middleware to this context
      * @param   callable    $middleware
+     * @param   bool        $isAllMethod
     */
-    public function addMiddleware(callable $middleware): void
+    public function addMiddleware(callable $middleware, bool $isAllMethod = false): void
     {
+        if (false === $isAllMethod) {
+            $this->middlewareConunt++;
+        }
         array_push($this->middlewares, $middleware);
     }
 

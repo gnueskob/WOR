@@ -6,7 +6,7 @@
 <html lang="ko">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <title>sample page</title>
+        <title>Plan data upload page</title>
     </head>
     <body>
         <form action="./upload.php" method="post" enctype="multipart/form-data">
@@ -16,9 +16,11 @@
                 자원 <input type="file" name="resource" id="resource" /> <br/>
                 건물 <input type="file" name="building" id="building" /> <br/>
                 무기 <input type="file" name="weapon" id="weapon" /> <br/>
+                보스 <input type="file" name="boss" id="boss" /> <br/>
                 버프 <input type="file" name="buff" id="buff" /> <br/>
                 전리품 <input type="file" name="trophy" id="trophy" /> <br/>
                 단위 <input type="file" name="unit" id="unit" /> <br/>
+                <br/>
                 <input type="submit" name="upload" value="Upload" />
             </fieldset>
         </form>

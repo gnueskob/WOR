@@ -35,7 +35,7 @@ class Router
             return;
         }
 
-        $this->appendMiddleware($fullPath, $middlewares);
+        $this->appendMiddleware($fullPath, $middlewares, $isAllMethod);
         $this->ctx->req->setParams($this->findRouteParams($fullPath, $reqUri));
     }
 
@@ -124,9 +124,10 @@ class Router
      * Append middleware to current context $ctx
      * @param string $path
      * @param array $middlewares
+     * @param bool $isAllMethod
      * @return  void
      */
-    private function appendMiddleware(string $path, array $middlewares): void
+    private function appendMiddleware(string $path, array $middlewares, bool $isAllMethod): void
     {
         foreach ($middlewares as $middleware) {
             if ($middleware instanceof ISubRouter) {
@@ -135,7 +136,7 @@ class Router
                 $middleware->make();
                 // $middleware->resolve();
             } else {
-                $this->ctx->addMiddleware($middleware);
+                $this->ctx->addMiddleware($middleware, $isAllMethod);
             }
         }
     }

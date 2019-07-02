@@ -313,7 +313,7 @@ class Plan
 
             $plan['feature_tactical_resource'], // 14
             $plan['feature_food_resource'],
-            $plan['feature_loyality'],
+            $plan['feature_loyalty'],
 
             $plan['manpower_unit_time'],        // 17
             $plan['loyalty_bound'],

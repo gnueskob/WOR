@@ -24,6 +24,9 @@ class BodyParser
     {
         return function (Context $ctx): void {
             $ctx->req->body = json_decode($ctx->req->body, true);
+            if (is_null($ctx->req->body)) {
+                $ctx->req->body = [];
+            }
             try {
                 $ctx->next();
             } finally {

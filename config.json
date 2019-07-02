@@ -41,7 +41,10 @@
     "encrypt": {
       "key": "my_secret_key",
       "cipher": "AES-128-CBC",
-      "tokenKey": "my_secret_token_key"
-    }
+      "tokenKey": "my_secret_token_key",
+    },
+    "allowAddr": [
+      "10.0.2.2"
+    ]
   }
 }

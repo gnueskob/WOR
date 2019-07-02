@@ -1,18 +1,14 @@
 <?php
 
-print_r($_FILES);
+$data = [];
+foreach ($_FILES as $key => $FILE) {
+    if ($FILE['error'] === 0) {
+        $data[$key] = new CURLFile($FILE['tmp_name'], $FILE['type'], $FILE['name']);
+    }
+}
 
-$localFile = $_FILES['building']['tmp_name'];
-$type = $_FILES['building']['type'];
-$name = $_FILES['building']['name'];
-$data = [
-    'building' => '@' . $localFile .
-        ';type=' . $type .
-        ';filename=' . $name
-];
-
-$url = 'localhost/test';
-$headers[] = "Content-Type:multipart/form-data";
+$url = 'localhost/wor/plan/upload';
+$headers = ["Content-Type:multipart/form-data"];
 $options = [
     CURLOPT_HTTPHEADER => $headers,
     CURLOPT_URL => $url,

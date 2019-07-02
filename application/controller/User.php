@@ -99,7 +99,7 @@ class User extends Router implements ISubRouter
 
             // 영토가 설정 되지 않은 상태인지 검사
             $user = UserDAO::getUserInfo($data['user_id']);
-            CE::check(is_null($user->territoryId), ErrorCode::ALREADY_HAS_TERRITORY);
+            CE::check(isset($user->territoryId), ErrorCode::ALREADY_HAS_TERRITORY);
 
             // 최초 로그인 시 영토 지정
             $user->setTerritoryId($data['territory_id']);

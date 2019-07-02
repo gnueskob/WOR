@@ -7,12 +7,15 @@ use lsb\Libs\Plan as CSVParser;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\Libs\Context;
+use lsb\Utils\Auth;
 
 class Plan extends Router implements ISubRouter
 {
     public function make()
     {
         $router = $this;
+
+//        $router->use('/', Auth::addressChecker());
 
         $router->post('/upload', function (Context $ctx) {
             $conf = Config::getInstance()->getConfig('plan');
@@ -47,8 +50,7 @@ class Plan extends Router implements ISubRouter
                 ];
             }
 
-            $ctx->res->body = $res;
-            $ctx->res->send();
+            $ctx->addResBody($res);
         });
     }
 }

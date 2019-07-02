@@ -12,6 +12,7 @@ class Request
     public $serverProtocol;
     public $httpContentType;
     public $httpXAccessToken;
+    public $remoteAddr;
     public $body;
 
     public function __construct()
@@ -38,15 +39,6 @@ class Request
         }
 
         return $res;
-    }
-
-    private function getBody(): array
-    {
-        $body = file_get_contents('php://input');
-
-        if ($this->httpContentType === 'application/json') {
-            $body = json_decode($body, true);
-        }
     }
 
     public function getFiles(): array

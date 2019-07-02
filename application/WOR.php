@@ -27,7 +27,7 @@ class WOR extends Router implements ISubRouter
             ->use('/', Logger::APILogger());
 
         $router
-            ->use('/user', new User())
-            ->use('/plan', new Plan());
+            ->use('/plan', new Plan())
+            ->use('/user', new User());
     }
 }

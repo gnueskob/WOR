@@ -9,6 +9,18 @@
 - URL prefix : `http://localhost/wor`
 - 로그인 이후에 요청들은 `x-access-token` 헤더를 통한 토큰 검증
 
+## 예외 발생 시
+
+```json
+// response
+{
+    "success": false,
+    "res": {
+        "code": 1008
+    }
+}
+```
+
 ***
 
 ## 로그인 및 회원 가입
@@ -30,9 +42,7 @@
   "hive_id":"gnues",
   "hive_uid":100321
 }
-```
 
-```json
 // response
 // x-access-token : M8lVQ4Zn424a1rCUMAQP8gm6B+9KSoj3G4tjhAzG0aMwm/GyY1VZwxlYN9B23p3sBubpK10Nh78yTiVR72srVYgywMBQMXFuZO3uJbawu/w=
 {
@@ -82,15 +92,15 @@
 
 - `POST /user/register`
 
-| 요청변수        | 타입       | 필수 여부 | 설명      |
-| :---------- | :------- | :---- | :------ |
-| hive_id     | STRING   | Y     | 하이브 ID  |
-| hive_uid    | INT      | Y     | 하이브 UID |
-| country     | CHAR(30) | Y     | 국가      |
-| lang        | CHAR(2)  | Y     | 언어      |
-| os_version  | CHAR(20) | Y     | 운영체제    |
-| device_name | CHAR(20) | Y     | 단말기 정보  |
-| app_version | CHAR(10) | Y     | 앱 버전    |
+| 요청변수        | 타입     | 필수 여부 | 설명      |
+| :---------- | :----- | :---- | :------ |
+| hive_id     | STRING | Y     | 하이브 ID  |
+| hive_uid    | INT    | Y     | 하이브 UID |
+| country     | STRING | Y     | 국가      |
+| lang        | STRING | Y     | 언어      |
+| os_version  | STRING | Y     | 운영체제    |
+| device_name | STRING | Y     | 단말기 정보  |
+| app_version | STRING | Y     | 앱 버전    |
 
 ```json
 // request
@@ -103,9 +113,7 @@
   "device_name": "SM-G930S",
   "app_version": "1.3.23"
 }
-```
 
-```json
 // response
 // x-access-token UJtUuovvlswCLqx75b9L6CZLU/0yNiagKObSZ6H08ADyr7l+TZnVrA/xytpgm9lpSYYPhFkwrEWCBl8eKEZtohPEW3VYDSaHPr+rLKwNE84=
 {
@@ -124,26 +132,7 @@
             "last_visit": "2019-06-23 21:31:01",
             "territory_id": null,
             "name": null,
-            "castle_level": 1,
-            "castle_to_level": 1,
-            "upgrade_time": "2019-06-23 21:31:01",
-            "penalty_finish_time": null,
-            "auto_generate_manpower": 1,
-            "manpower": 10,
-            "appended_manpower": 0,
-            "tactical_resource": 0,
-            "food_resource": 0,
-            "luxury_resource": 0,
-            "friend_attack": 0,
-            "war_request": 0,
-            "war_victory": 0,
-            "war_defeated": 0,
-            "despoil_defense_success": 0,
-            "despoil_defense_fail": 0,
-            "boss1_kill_count": 0,
-            "boss2_kill_count": 0,
-            "boss3_kill_count": 0,
-            "current_castle_level": 1,
+            ...
             "available_manpower": 10,
             "used_manpower": 0
         }
@@ -176,6 +165,124 @@
 ***
 
 ## User
+
+***
+
+## 유저 이름 변경
+
+- `PUT /user/name`
+- 최초 로그인 시 영주 이름 변경
+
+| 요청변수    | 타입     | 필수 여부 | 설명        |
+| :------ | :----- | :---- | :-------- |
+| user_id | INT    | Y     | 유저 ID     |
+| name    | STRING | Y     | 변경할 유저 이름 |
+
+```json
+// requset
+{
+  "user_id": 3,
+  "name": "com2us_test2"
+}
+
+// response
+{
+    "success": true,
+    "res": {
+        "user": {
+            "user_id": 3,
+            "hive_id": "gnues2",
+            "hive_uid": 100322,
+            ...
+            "territory_id": null,
+            "name": "com2us_test2",
+            ...
+        }
+    }
+}
+```
+
+## 유저 영토 변경
+
+- `PUT /user/name`
+- 최초 로그인 시 영주 이름 변경
+
+| 요청변수    | 타입     | 필수 여부 | 설명        |
+| :------ | :----- | :---- | :-------- |
+| user_id | INT    | Y     | 유저 ID     |
+| territory_id    | INT | Y     | 변경할 영토 ID |
+
+```json
+// requset
+{
+  "user_id": 3,
+  "territory_id": 2
+}
+
+// response
+{
+    "success": true,
+    "res": {
+        "user": {
+            "user_id": 3,
+            "hive_id": "gnues2",
+            "hive_uid": 100322,
+            ...
+            "territory_id": 2,
+            "name": "com2us_test2",
+            ...
+        }
+    }
+}
+```
+
+## 유저 정보
+
+- `GET /user/info/:user_id`
+- 유저가 보유한 각각의 자원, 인구 정보 반환
+
+| 요청변수    | 타입     | 필수 여부 | 설명        |
+| :------ | :----- | :---- | :-------- |
+| user_id | INT    | Y     | 유저 ID     |
+
+```json
+// response
+{
+    "success": true,
+    "res": {
+        "user": {
+            "user_id": 1,
+            "hive_id": "gnues1",
+            "hive_uid": 100321,
+            ...
+            "territory_id": 1,
+            "name": "com2us_test",
+            "castle_level": 1,
+            "castle_to_level": 1,
+            "upgrade_time": "2019-06-15 13:19:17",
+            "penalty_finish_time": null,
+            "auto_generate_manpower": 1,
+            "manpower": 0,
+            "appended_manpower": 0,
+            "tactical_resource": 0,
+            "food_resource": 0,
+            "luxury_resource": 0,
+            "friend_attack": 0,
+            "war_request": 0,
+            "war_victory": 0,
+            "war_defeated": 0,
+            "despoil_defense_success": 0,
+            "despoil_defense_fail": 0,
+            "boss1_kill_count": 0,
+            "boss2_kill_count": 0,
+            "boss3_kill_count": 0,
+            "current_castle_level": 1,
+            "available_manpower": 0,
+            "used_manpower": 0
+        }
+    }
+}
+```
 
 ***
 

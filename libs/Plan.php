@@ -28,16 +28,6 @@ define('PLAN_UPG_DEF_TOWER', 'upgrade_defense_tower');
 define('PLAN_UPG_ARMY', 'upgrade_army');
 define('PLAN_UPG_WEAPON', 'upgrade_weapon');
 
-
-// Map
-define('PLAN_TILE_TYPE_NOT_USED', 0);
-define('PLAN_TILE_TYPE_NORMAL', 1);
-define('PLAN_TILE_TYPE_RESOURCE', 2);
-
-define('PLAN_TERRITORY_TYPE_NOT_USED', 0);
-define('PLAN_TERRITORY_TYPE_NORMAL', 1);
-define('PLAN_TERRITORY_TYPE_BOSS', 2);
-
 // Resource
 define('PLAN_RESOURCE_CLASS_FOOD', 1);
 define('PLAN_RESOURCE_CLASS_TACTICAL', 2);
@@ -68,15 +58,6 @@ define('PLAN_BOSS_ID_SAMSEUNG', 3);
 define('PLAN_TROPHY_ID_PORRIDGE', 1);
 define('PLAN_TROPHY_ID_SILK', 2);
 define('PLAN_TROPHY_ID_BOW', 3);
-
-// Buff
-define('PLAN_BUFF_ID_LOYALTY', 1);
-define('PLAN_BUFF_ID_TABOO', 2);
-define('PLAN_BUFF_ID_FLOWER', 3);
-
-define('PLAN_BUFF_TYPE_TROPHY', 0);
-define('PLAN_BUFF_TYPE_RESOURCE', 1);
-define('PLAN_BUFF_TYPE_RESOURCE_MANPOWER', 2);
 
 // Weapon
 define('PLAN_WEAPON_ID_BOW', 1);
@@ -391,8 +372,8 @@ class Plan
 
     public static function getCastleFeature(int $level = 1)
     {
-        list($manpowerUnitTime, $loyaltyBound) = array_slice(static::getBuilding(PLAN_BUILDING_ID_CASTLE), 17, 2);
-        list($mutRatio, $lbRatio) = array_slice(static::getBuilding(PLAN_BUILDING_ID_CASTLE), 25, 2);
+        list($manpowerUnitTime, $loyaltyBound) = array_slice(static::getBuilding(Plan::BUILDING_ID_CASTLE), 17, 2);
+        list($mutRatio, $lbRatio) = array_slice(static::getBuilding(Plan::BUILDING_ID_CASTLE), 25, 2);
         $manpowerUnitTime -= $mutRatio * $manpowerUnitTime * ($level - 1);
         $loyaltyBound += $lbRatio * $loyaltyBound * ($level - 1);
         return [$manpowerUnitTime, $loyaltyBound];
@@ -465,6 +446,10 @@ class Plan
 
     // TILE PLAN DATA
 
+    public const TILE_TYPE_NOT_USED = 0;
+    public const TILE_TYPE_NORMAL = 1;
+    public const TILE_TYPE_RESOURCE = 2;
+
     public static function getTile(int $tileId)
     {
         $plan = Plan::getData(PLAN_TILE, $tileId);
@@ -501,6 +486,10 @@ class Plan
     /*****************************************************************/
 
     // TERRITORY PLAN DATA
+
+    public const TERRITORY_TYPE_NOT_USED = 0;
+    public const TERRITORY_TYPE_NORMAL = 1;
+    public const TERRITORY_TYPE_BOSS = 2;
 
     public static function getTerritory(int $territoryId)
     {
@@ -565,6 +554,14 @@ class Plan
     /*****************************************************************/
 
     // BUFF PLAN DATA
+
+    public const BUFF_ID_LOYALTY = 1;
+    public const BUFF_ID_TABOO = 2;
+    public const BUFF_ID_FLOWER = 3;
+
+    public const BUFF_TYPE_TROPHY = 0;
+    public const BUFF_TYPE_RESOURCE = 1;
+    public const BUFF_TYPE_RESOURCE_MANPOWER = 2;
 
     public static function getBuff(int $buffType)
     {

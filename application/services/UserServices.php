@@ -2,12 +2,9 @@
 
 namespace lsb\App\services;
 
+use lsb\App\models\TerritoryDAO;
 use lsb\App\models\UserDAO;
-use lsb\Libs\CtxException AS CE;
-use lsb\Libs\ErrorCode;
-use lsb\App\query\UserQuery;
 use Exception;
-use lsb\Libs\Timezone;
 use lsb\Libs\Plan;
 
 class UserServices extends Services
@@ -20,9 +17,7 @@ class UserServices extends Services
     public static function getAllProperty(int $userId)
     {
         $user = UserDAO::getUser($userId);
-        CE::check($user->isEmpty(), ErrorCode::INVALID_USER);
 
-        // TODO: 인구 조율
         $usedManpower = UserServices::getUsedManpower($userId);
         $user->usedManpower = $usedManpower;
         $user->availableManpower = $user->manpower - $user->usedManpower;
@@ -32,86 +27,18 @@ class UserServices extends Services
 
     /**
      * @param int $userId
-     * @return mixed
+     * @return UserDAO
      * @throws Exception
      */
     public static function getUserInfoWithManpower(int $userId)
     {
         $user = UserDAO::getUserInfo($userId);
-        CE::check($user->isEmpty(), ErrorCode::INVALID_USER);
 
         $usedManpower = UserServices::getUsedManpower($userId);
         $user->usedManpower = $usedManpower;
         $user->availableManpower = $user->manpower - $user->usedManpower;
 
         return $user;
-    }
-
-    /**
-     * @param int $territoryId
-     * @return UserDAO
-     * @throws Exception
-     */
-    public static function getUserInfoByTerritory(int $territoryId)
-    {
-        $dao = new UserDAO();
-        $dao->territoryId = $territoryId;
-
-        $stmt = UserQuery::qSelectUserInfoByTerritory($dao)->run();
-        $user = static::getUserDAO($stmt);
-        CtxException::invalidUser($user->isEmpty());
-        return $user;
-    }
-
-    /*************************************************************************/
-
-    // Change user data
-
-    /**
-     * @param int $userId
-     * @param int $manpower
-     * @param bool $pending
-     * @throws CtxException
-     */
-    public static function useManpower(int $userId, int $manpower, bool $pending = false)
-    {
-        $dao = new UserDAO();
-        $dao->userId = $userId;
-        $dao->manpower = $manpower;
-
-        $query = UserQuery::qSubtractManpowerFromUserInfo($dao);
-        static::validateUpdate($query, $pending);
-    }
-
-    /**
-     * @param int $userId
-     * @param int $manpower
-     * @param bool $pending
-     * @throws CtxException
-     */
-    public static function obtainManpower(int $userId, int $manpower, bool $pending = false)
-    {
-        $dao = new UserDAO();
-        $dao->userId = $userId;
-        $dao->manpower = $manpower;
-
-        $query = UserQuery::qAddManpowerFromUserInfo($dao);
-        static::validateUpdate($query, $pending);
-    }
-
-    /**************************************************************************/
-
-    // CHECK
-    /**
-     * @param UserDAO $user
-     * @param int $neededManpower
-     * @throws CtxException
-     */
-    public static function checkAvailableManpowerSufficient(UserDAO $user, int $neededManpower)
-    {
-        // 인력이 충분한지 검사
-        $hasManpower = $user->hasSufficientAvailableManpower($neededManpower);
-        CtxException::manpowerInsufficient(!$hasManpower);
     }
 
     /**************************************************************************/
@@ -124,7 +51,10 @@ class UserServices extends Services
     public static function getUsedManpower(int $userId)
     {
         $buildingUsedManpower = BuildingServices::getUsedManpower($userId);
-        $exploreUsedManpower = ExploratoinServices::getTerritoryUsedManpower($userId);
+
+        $countExploringTerritory = TerritoryDAO::getCurrentExploringTerritoryNumber($userId);
+        list(, , $territoryExploreManpower) = Plan::getUnitExplore();
+        $exploreUsedManpower = $countExploringTerritory * $territoryExploreManpower;
 
         return $buildingUsedManpower + $exploreUsedManpower;
     }
@@ -148,7 +78,7 @@ class UserServices extends Services
     public static function getTotalDefense(UserDAO $user)
     {
         // 성 방어력
-        $castleDefense = Plan::getBuildingDefense(PLAN_BUILDING_ID_CASTLE, $user->currentCastleLevel);
+        $castleDefense = Plan::getBuildingDefense(Plan::BUILDING_ID_CASTLE, $user->currentCastleLevel);
         // 방어탑 방어력
         $towerDefense = BuildingServices::getDefensePower($user->userId);
         $totalDefense = $castleDefense + $towerDefense;

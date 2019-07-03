@@ -115,8 +115,7 @@ class UserDAO extends DAO
         }
     }
 
-    /******************************************************************/
-
+    /*****************************************************************************************************************/
     // check function
 
     /**
@@ -144,18 +143,12 @@ class UserDAO extends DAO
                 $this->luxuryResource >= $luxury;
     }
 
-    public function hasSUfficientFood(int $food)
-    {
-        return $this->foodResource >= $food;
-    }
-
-    public function hasSufficientAvailableManpower(int $manpower)
+    public function hasAvailableManpower(int $manpower)
     {
         return $this->availableManpower > $manpower;
     }
 
-    /******************************************************************/
-
+    /*****************************************************************************************************************/
     // set user
 
     public static function container(int $userId)
@@ -228,6 +221,21 @@ class UserDAO extends DAO
     }
 
     /**
+     * @param int $manpower
+     * @param bool $pending
+     * @return $this
+     * @throws CE
+     */
+    public function useManpower(int $manpower, bool $pending = false)
+    {
+        $this->manpower = $manpower;
+
+        $query = UserQuery::qSubtractManpowerFromUserInfo($this);
+        $this->resolveUpdate($query, $pending);
+        return $this;
+    }
+
+    /**
      * @param int $upgradeUnitTime
      * @param bool $pending
      * @return $this
@@ -251,7 +259,6 @@ class UserDAO extends DAO
      */
     public function setFriendArmyDeck(bool $pending = false)
     {
-        // TODO: 공격력 조율
         list(, $buildingAttack) = BuildingServices::getArmyManpowerAndAttack($this->userId);
         $weaponAttack = WeaponServices::getAttackPower($this->userId);
 
@@ -281,8 +288,22 @@ class UserDAO extends DAO
         return $this;
     }
 
-    /****************************************************************/
+    /**
+     * @param int $manpower
+     * @param bool $pending
+     * @return $this
+     * @throws CE
+     */
+    public function takeManpower(int $manpower, bool $pending = false)
+    {
+        $this->manpower = $manpower;
 
+        $query = UserQuery::qAddManpowerFromUserInfo($this);
+        $this->resolveUpdate($query, $pending);
+        return $this;
+    }
+
+    /*****************************************************************************************************************/
     // get user record
 
     /**
@@ -344,6 +365,23 @@ class UserDAO extends DAO
 
         $stmt = UserQuery::qSelectHiveUser($dao)->run();
         return static::getUserDAO($stmt);
+    }
+
+    /**
+     * @param int $territoryId
+     * @return UserDAO
+     * @throws Exception
+     */
+    public static function getTargetUserInfo(int $territoryId)
+    {
+        $dao = new UserDAO();
+        $dao->territoryId = $territoryId;
+
+        $stmt = UserQuery::qSelectUserInfoByTerritory($dao)->run();
+        $user = static::getUserDAO($stmt);
+        CE::check($user->isEmpty(), ErrorCode::INVALID_USER);
+
+        return $user;
     }
 
     /***************************************************************/

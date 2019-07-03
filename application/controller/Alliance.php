@@ -2,12 +2,14 @@
 
 namespace lsb\App\controller;
 
-use lsb\App\services\AllianceServices;
+use lsb\App\models\AllianceDAO;
+use lsb\App\models\TerritoryDAO;
+use lsb\App\models\UserDAO;
 use lsb\App\services\ExploratoinServices;
-use lsb\App\services\UserServices;
 use lsb\Libs\Context;
-use lsb\Libs\CtxException;
+use lsb\Libs\CtxException as CE;
 use lsb\Libs\DB;
+use lsb\Libs\ErrorCode;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Router;
 use lsb\Utils\Utils;
@@ -18,80 +20,99 @@ class Alliance extends Router implements ISubRouter
     {
         $router = $this;
 
-        // 동맹 정보
+        /*************************************************************************************************************
+         * 유저 동맹 정보
+         *************************************************************************************************************/
         $router->get('/info/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+            $data = $ctx->getReqBody();
             $userId = $data['user_id'];
-            $alliances = AllianceServices::getAcceptedAlliance($userId);
-            $ctx->addBody(['alliances' => Utils::toArrayAll($alliances)]);
-            $ctx->send();
+
+            $alliances = AllianceDAO::getAcceptedAlliance($userId);
+            $ctx->addResBody(['alliances' => Utils::toArrayAll($alliances)]);
         });
 
-        // 동맹 대기 정보
-        $router->get('/wating/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+        /*************************************************************************************************************
+         * 동맹 대기 정보
+         *************************************************************************************************************/
+        $router->get('/waiting/:user_id', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $userId = $data['user_id'];
-            $alliances = AllianceServices::getWatingAllianceByUser($userId);
-            $ctx->addBody(['alliances' => Utils::toArrayAll($alliances)]);
-            $ctx->send();
+
+            $alliances = AllianceDAO::getWatingAlliance($userId);
+            $ctx->addResBody(['alliances' => Utils::toArrayAll($alliances)]);
         });
 
-        // 동맹 요청
-        $router->post('/add/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+        /*************************************************************************************************************
+         * 동맹 요청
+         *************************************************************************************************************/
+        $router->post('/add', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $userId = $data['user_id'];
             $friendId = $data['friend_id'];
 
-            $friend = UserServices::getUserInfo($friendId);
+            $friend = UserDAO::getUserInfo($friendId);
 
             ExploratoinServices::checkUserExploredTerritory($userId, $friend->territoryId);
 
-            $allianceWaitId = AllianceServices::requesetAlliance($userId, $friendId);
+            $allianceWaitId = AllianceDAO::requestAlliance($userId, $friendId);
 
-            $alliancArr = AllianceServices::getAllianceWait($allianceWaitId)->toArray();
-            $ctx->addBody(['alliances' => $alliancArr]);
-            $ctx->send();
+            $allianc = AllianceDAO::getAllianceWait($allianceWaitId);
+            $ctx->addResBody(['alliances' => $allianc->toArray()]);
         });
 
-        // 동맹 수락
-        $router->put('/accept/:alliance_wait_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+        /*************************************************************************************************************
+         * 동맹 수락
+         *************************************************************************************************************/
+        $router->put('/accept', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $allianceWaitId = $data['alliance_wait_id'];
 
-            $alliance = AllianceServices::getAllianceWait($allianceWaitId);
-            $user = UserServices::getUserInfo($alliance->userId);
+            $allianceWait = AllianceDAO::getAllianceWait($allianceWaitId);
+            $user = UserDAO::getUserInfo($allianceWait->userId);
+
+            $territory = TerritoryDAO::getSpecificTerritory($allianceWait->friendId, $user->territoryId);
 
             DB::beginTransaction();
-            $allianceId = AllianceServices::acceptAlliance($alliance->userId, $alliance->friendId);
-            AllianceServices::acceptAlliance($alliance->userId, $alliance->friendId);
-            ExploratoinServices::exploreTerritory($alliance->friendId, $user->territoryId, 0, true);
+            $allianceId = AllianceDAO::acceptAlliance($allianceWait->userId, $allianceWait->friendId);
+            AllianceDAO::acceptAlliance($allianceWait->friendId, $allianceWait->userId);
+            if ($territory->isEmpty()) {
+                TerritoryDAO::exploreTerritory($allianceWait->friendId, $user->territoryId, 0);
+            } elseif (false === $territory->isExplored()) {
+                $territory->finishExplore();
+            }
+            $allianceWait->resolveAccept();
             DB::endTransaction();
 
-            $allianceArr = AllianceServices::getAlliance($allianceId)->toArray();
-            $ctx->addBody(['alliances' => $allianceArr]);
-            $ctx->send();
+            $alliance = AllianceDAO::getAlliance($allianceId);
+            $ctx->addResBody(['alliances' => $alliance->toArray()]);
         });
 
-        // 동맹 취소
-        $router->put('/cancel/:alliance_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+        /*************************************************************************************************************
+         * 동맹 취소
+         *************************************************************************************************************/
+        $router->put('/cancel', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $allianceId = $data['alliance_id'];
 
-            $alliance = AllianceServices::getAlliance($allianceId);
+            $alliance = AllianceDAO::getAlliance($allianceId);
+            $rAlliance = AllianceDAO::container();
+            $rAlliance->userId = $alliance->friendId;
+            $rAlliance->friendId = $alliance->userId;
 
             DB::beginTransaction();
-            AllianceServices::cancelAlliance($alliance->userId, $alliance->friendId);
-            AllianceServices::cancelAlliance($alliance->friendId, $alliance->userId);
+            $alliance->cancel();
+            $rAlliance->cancel();
             DB::endTransaction();
-            $ctx->send();
         });
 
-        // 동맹 요청 거절
-        $router->put('/reject/:alliance_wait_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+        /*************************************************************************************************************
+         * 동맹 요청 거절
+         *************************************************************************************************************/
+        $router->put('/reject', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $allianceWaitId = $data['alliance_wait_id'];
-            AllianceServices::rejectAllianceWait($allianceWaitId);
-            $ctx->send();
+
+            AllianceDAO::container($allianceWaitId)->reject();
         });
     }
 }

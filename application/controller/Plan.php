@@ -15,7 +15,7 @@ class Plan extends Router implements ISubRouter
     {
         $router = $this;
 
-//        $router->use('/', Auth::addressChecker());
+        $router->use('/', Auth::addressChecker());
 
         $router->post('/upload', function (Context $ctx) {
             $conf = Config::getInstance()->getConfig('plan');

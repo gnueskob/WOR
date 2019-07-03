@@ -2,25 +2,21 @@
 
 namespace lsb\App\controller;
 
+use lsb\App\models\AllianceDAO;
+use lsb\App\models\BuildingDAO;
 use lsb\App\models\UserDAO;
 use lsb\App\services\AllianceServices;
-use lsb\App\services\BuffServices;
-use lsb\App\services\MessageServices;
 use lsb\Libs\DB;
+use lsb\Libs\ErrorCode;
 use lsb\Utils\Lock;
-use lsb\Utils\Utils;
 use lsb\App\models\WarDAO;
-use lsb\App\services\BuildingServices;
 use lsb\App\services\ExploratoinServices;
 use lsb\App\services\UserServices;
-use lsb\App\services\WarServices;
-use lsb\App\services\WeaponServices;
 use lsb\Libs\Context;
-use lsb\Libs\CtxException;
+use lsb\Libs\CtxException as CE;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Plan;
 use lsb\Libs\Router;
-use lsb\Libs\Timezone;
 
 class War extends Router implements ISubRouter
 {
@@ -28,44 +24,45 @@ class War extends Router implements ISubRouter
     {
         $router = $this;
 
-        // 유저가 진행 중인 전쟁 정보
+        /*************************************************************************************************************
+         * 유저 전쟁 정보
+         *************************************************************************************************************/
         $router->get('/info/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+            $data = $ctx->getReqBody();
+            $userId = $data['user_id'];
+
+            $war = WarDAO::getWars($userId);
+            $ctx->addResBody(['war' => $war->toArray()]);
+        });
+
+        /*************************************************************************************************************
+         * 끝난 전쟁 확인
+         *************************************************************************************************************/
+        $router->get('/check', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $userId = $data['user_id'];
 
             // 만료된 전쟁
-            WarServices::refreshWar($userId);
-
-            $warArr = WarServices::getWarByUser($userId)->toArray();
-            $ctx->addBody(['war' => $warArr]);
-            $ctx->send();
+            $war = WarDAO::getFinishedWar($userId);
+            $ctx->addResBody(['war' => $war->toArray()]);
         });
 
-        // 끝난 전쟁 확인
-        $router->get('/check/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
-            $userId = $data['user_id'];
-
-            // 만료된 전쟁
-            $war = WarServices::refreshWar($userId);
-            $warArr = $war->isEmpty() ? [] : $war->toArray();
-
-            $ctx->addBody(['war' => $warArr]);
-            $ctx->send();
-        });
-
+        /*************************************************************************************************************
+         * 전쟁 선포
+         *************************************************************************************************************/
         $router->post(
-            '/add/:user_id',
+            '/add',
             Lock::lockUser(MANPOWER, 2),
             Lock::lockUser(RESOURCE),
             function (Context $ctx) {
-                $data = $ctx->getBody();
+                $data = $ctx->getReqBody();
                 $userId = $data['user_id'];
                 $targetTerritoryId = $data['territory_id'];
                 $friendId = $data['friend_id'];
 
                 // 이미 전쟁 중 인가?
-                WarServices::checkWarring($userId);
+                $war = WarDAO::getWars($userId);
+                CE::check(false === $war->isEmpty() && false === $war->isFinished(), ErrorCode::ALREADY_WARRING);
 
                 // 유저가 먼저 해당 영토를 탐사 했는가?
                 ExploratoinServices::checkUserExploredTerritory($userId, $targetTerritoryId);
@@ -75,9 +72,9 @@ class War extends Router implements ISubRouter
                     AllianceServices::checkAllianceWithFriend($userId, $friendId);
                 }
 
-                $friend = UserServices::getUserInfo($friendId);
-                $user = UserServices::getUserInfo($userId);
-                $targetUser = UserServices::getUserInfoByTerritory($targetTerritoryId);
+                $friend = UserDAO::getUserInfo($friendId);
+                $user = UserDAO::getUserInfo($userId);
+                $targetUser = UserDAO::getTargetUserInfo($targetTerritoryId);
 
                 // 타겟 영토까지의 거리
                 $dist = ExploratoinServices::getDistanceToTargetTerritory($user->territoryId, $targetTerritoryId);
@@ -91,82 +88,95 @@ class War extends Router implements ISubRouter
                 list($totalAttackPower, $totalManpower) = UserServices::getTotalAttackAndManpower($user);
 
                 // 총 필요한 군량
-                $neededFoodResource = $resourceCoeff * $totalManpower * $dist;
-                UserServices::checkResourceSufficient($user, 0, $neededFoodResource, 0);
+                $food = $resourceCoeff * $totalManpower * $dist;
+                CE::check(false === $user->hasResource(0, $food, 0), ErrorCode::RESOURCE_INSUFFICIENT);
 
                 // 전쟁 출전 준비 시작시의 타겟 영토 건물 기준으로 계산
                 $targetDefense = UserServices::getTotalDefense($targetUser);
 
                 DB::beginTransaction();
-                UserServices::useManpower($userId, $totalManpower, true);
-                UserServices::useResource($userId, 0, $neededFoodResource, 0);
-                BuildingServices::resetBuildingsManpower($userId);
-                $warId = WarServices::createWar(
-                    $userId,
-                    $targetTerritoryId,
-                    $totalAttackPower,
-                    $friend->friendAttack,
-                    $totalManpower,
-                    $neededFoodResource,
-                    $targetDefense,
-                    $prepareUnitTime,
-                    $finishUnitTime
-                );
+                $user
+                    ->useResources(0, $food, 0, true)
+                    ->useManpower($totalManpower);
+                BuildingDAO::container()->resetBuildingsManpower($userId);
+                $warId = WarDAO::createWar([
+                    'userId' => $userId,
+                    'territoryId' => $targetTerritoryId,
+                    'attack' => $totalAttackPower,
+                    'friendAttack' => $friend->friendAttack,
+                    'manpower' => $totalManpower,
+                    'foodResource' => $food,
+                    'targetDefense' => $targetDefense,
+                    'prepareUnitTime' => $prepareUnitTime,
+                    'finishUnitTime' => $finishUnitTime
+                ]);
                 DB::endTransaction();
 
-                $warArr = WarServices::getWar($warId)->toArray();
-                $ctx->addBody(['war' => $warArr]);
-                $ctx->send();
+                $war = WarDAO::getWar($warId);
+                $ctx->addResBody(['war' => $war->toArray()]);
             }
         );
 
-        // 전쟁 완료 확인
+        /*************************************************************************************************************
+         * 전쟁 완료 확인
+         *************************************************************************************************************/
         $router->put(
-            '/add/:war_id',
+            '/add',
             Lock::lockUser(MANPOWER, 2),
             Lock::lockUser(RESOURCE),
             function (Context $ctx) {
-                $data = $ctx->getBody();
+                $data = $ctx->getReqBody();
                 $warId = $data['war_id'];
 
-                $war = WarServices::getWar($warId);
-                WarServices::checkFinished($war);
+                $war = WarDAO::getWar($warId);
+                CE::check(false === $war->isFinished(), ErrorCode::IS_NOT_FINISHED);
 
+                $result = $war->resolveWarResult();
+                if (empty($result)) {
+                    return;
+                }
+
+                list($remainManpower, $remainFood) = $result;
+
+                // TODO: 패널티
                 DB::beginTransaction();
-                WarServices::resolveWarResult($war);
-                WarServices::removeWar($war->warId);
+                UserDAO::container($war->userId)
+                    ->takeManpower($remainManpower, true)
+                    ->takeResources(0, $remainFood, 0);
+                $war->removeWar();
                 DB::endTransaction();
 
-                $userArr = UserServices::getUser($war->warId)->toArray();
-                $ctx->addBody(['user' => $userArr]);
-                $ctx->send();
+                $user = UserServices::getAllProperty($war->userId);
+                $ctx->addResBody(['user' => $user->toArray()]);
             }
         );
 
-        // 전쟁 출전 취소
+        /*************************************************************************************************************
+         * 전쟁 출전 취소
+         *************************************************************************************************************/
         $router->put(
-            '/cancel/:war_id',
+            '/cancel',
             Lock::lockUser(MANPOWER, 2),
             Lock::lockUser(RESOURCE),
             function (Context $ctx) {
-                $data = $ctx->getBody();
+                $data = $ctx->getReqBody();
                 $warId = $data['war_id'];
 
-                $war = WarServices::getWar($warId);
-                WarServices::checkPrepared($war);
+                $war = WarDAO::getWar($warId);
+                CE::check($war->isPrepared(), ErrorCode::ALREADY_PREPARED);
 
                 $halfManpower = (int) ($war->manpower / 2);
                 $halfFood = (int) ($war->foodResource / 2);
 
                 DB::beginTransaction();
-                UserServices::obtainManpower($war->userId, $halfManpower, true);
-                UserServices::obtainResource($war->userId, 0, $halfFood, 0);
-                WarServices::removeWar($war->warId);
+                UserDAO::container($war->userId)
+                    ->takeManpower($halfManpower, true)
+                    ->takeResources(0, $halfFood, 0);
+                $war->removeWar();
                 DB::endTransaction();
 
-                $userArr = UserServices::getUser($war->userId)->toArray();
-                $ctx->addBody(['user' => $userArr]);
-                $ctx->send();
+                $user = UserServices::getAllProperty($war->userId);
+                $ctx->addResBody(['user' => $user->toArray()]);
             }
         );
     }

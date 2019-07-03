@@ -27,13 +27,12 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put('/login', function (Context $ctx) {
             $data = $ctx->getReqBody();
+            $hiveId = $data['hive_id'];
+            $hiveUid = $data['hive_uid'];
 
             // 하이브 정보에 해당하는 유저 검색
-            $user = UserDAO::getHiveUser($data['hive_id'], $data['hive_uid']);
+            $user = UserDAO::getHiveUser($hiveId, $hiveUid);
             CE::check($user->isEmpty(), ErrorCode::INVALID_USER);
-
-            // 방문 시각 갱신
-            $user->setLastVisit();
 
             $user = UserServices::getAllProperty($user->userId);
             $ctx->addResBody(['user' => $user->toArray()]);
@@ -46,21 +45,28 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->post('/register', function (Context $ctx) {
             $data = $ctx->getReqBody();
+            $hiveId = $data['hive_id'];
+            $hiveUid = $data['hive_uid'];
+            $country = $data['country'];
+            $lang = $data['lang'];
+            $osVersion = $data['os_version'];
+            $deviceName = $data['device_name'];
+            $appVersion = $data['app_version'];
 
             // 하이브 정보로 유저 검색 후 이미 존재하는지 검사
-            $user = UserDAO::getHiveUser($data['hive_id'], $data['hive_uid']);
+            $user = UserDAO::getHiveUser($hiveId, $hiveUid);
             CE::check(!$user->isEmpty(), ErrorCode::ALREADY_EXISTS);
 
             // 없는 정보일 시 새로운 계정 생성
             DB::beginTransaction();
             $userId = UserDAO::createUserPlatform([
-                'hiveId' => $data['hive_id'],
-                'hiveUid' => $data['hive_uid'],
-                'country' => $data['country'],
-                'lang' => $data['lang'],
-                'osVersion' => $data['os_version'],
-                'deviceName' => $data['device_name'],
-                'appVersion' => $data['app_version']
+                'hiveId' => $hiveId,
+                'hiveUid' => $hiveUid,
+                'country' => $country,
+                'lang' => $lang,
+                'osVersion' => $osVersion,
+                'deviceName' => $deviceName,
+                'appVersion' => $appVersion
             ]);
             UserDAO::createUserInfo($userId);
             UserDAO::createUserStat($userId);
@@ -79,13 +85,15 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put('/name', function (Context $ctx) {
             $data = $ctx->getReqBody();
+            $userId = $data['user_id'];
+            $name = $data['name'];
 
             // 이름이 설정 되지 않은 상태인지 검사
-            $user = UserDAO::getUserInfo($data['user_id']);
+            $user = UserDAO::getUserInfo($userId);
             CE::check(isset($user->name), ErrorCode::ALREADY_HAS_NAME);
 
             // 최초 로그인 후 영주 이름 설정
-            $user->setName($data['name']);
+            $user->setName($name);
 
             $user = UserServices::getAllProperty($user->userId);
             $ctx->addResBody(['user' => $user->toArray()]);
@@ -96,13 +104,15 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put('/territory', function (Context $ctx) {
             $data = $ctx->getReqBody();
+            $userId = $data['user_id'];
+            $territoryId = $data['territory_id'];
 
             // 영토가 설정 되지 않은 상태인지 검사
-            $user = UserDAO::getUserInfo($data['user_id']);
+            $user = UserDAO::getUserInfo($userId);
             CE::check(isset($user->territoryId), ErrorCode::ALREADY_HAS_TERRITORY);
 
             // 최초 로그인 시 영토 지정
-            $user->setTerritoryId($data['territory_id']);
+            $user->setTerritoryId($territoryId);
 
             $user = UserServices::getAllProperty($user->userId);
             $ctx->addResBody(['user' => $user->toArray()]);
@@ -113,7 +123,9 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->get('/info/:user_id', function (Context $ctx) {
             $data = $ctx->getReqBody();
-            $user = UserServices::getAllProperty($data['user_id']);
+            $userId = $data['user_id'];
+
+            $user = UserServices::getAllProperty($userId);
             $ctx->addResBody(['user' => $user->toArray()]);
         });
 
@@ -127,8 +139,9 @@ class User extends Router implements ISubRouter
             Lock::lockUser(SpinLock::RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
+                $userId = $data['user_id'];
 
-                $user = UserDAO::getUserInfo($data['user_id']);
+                $user = UserDAO::getUserInfo($userId);
 
                 // 업그레이드에 필요한 자원
                 $level = $user->currentCastleLevel;
@@ -140,7 +153,7 @@ class User extends Router implements ISubRouter
                 // 성 업그레이드 가능 여부 검사
                 CE::check($level >= $maxLevel, ErrorCode::MAX_LEVEL);
                 CE::check($user->isUpgrading(), ErrorCode::IS_UPGRADING);
-                CE::check($user->hasResource($tatical, $food, $luxury), ErrorCode::RESOURCE_INSUFFICIENT);
+                CE::check(false === $user->hasResource($tatical, $food, $luxury), ErrorCode::RESOURCE_INSUFFICIENT);
 
                 // 유저 자원 소모, 성 업그레이드
                 $user
@@ -157,10 +170,9 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->get('/upgrade', function (Context $ctx) {
             $data = $ctx->getReqBody();
+            $userId = $data['user_id'];
 
-            $user = UserDAO::getUserInfo($data['user_id']);
-
-            // 유저 성 업그레이드 완료 여부 검사
+            $user = UserDAO::getUserInfo($userId);
             CE::check(false === $user->isUpgraded(), ErrorCode::IS_NOT_UPGRADED);
 
             $ctx->addResBody(['user' => $user->toArray()]);
@@ -171,8 +183,9 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put('/deck', function (Context $ctx) {
             $data = $ctx->getReqBody();
+            $userId = $data['user_id'];
 
-            $user = UserDAO::container($data['user_id']);
+            $user = UserDAO::container($userId);
             $user->setFriendArmyDeck();
 
             $user = UserServices::getAllProperty($user->userId);
@@ -187,13 +200,16 @@ class User extends Router implements ISubRouter
             Lock::lockUser(SpinLock::RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
+                $userId = $data['user_id'];
 
-                $user = UserDAO::getUserInfo($data['user_id']);
+                $user = UserDAO::getUserInfo($userId);
 
                 // 자원 획득
-                // TODO: 정산 자원 계산
                 list($tactical, $food, $luxury) = BuildingServices::generateResources($user->userId, $user->lastVisit);
                 $user->takeResources($tactical, $food, $luxury);
+
+                // 방문 시각 갱신
+                $user->setLastVisit();
 
                 $user = UserServices::getAllProperty($user->userId);
                 $ctx->addResBody(['user' => $user->toArray()]);

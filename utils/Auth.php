@@ -70,7 +70,7 @@ class Auth
         return function (Context $ctx): void {
             $reqIP = $ctx->req->remoteAddr;
             $allowedIPs = Config::getInstance()->getConfig('allowAddr');
-            CtxException::check(in_array($reqIP, $allowedIPs), ErrorCode::NOT_ALLOWED);
+            CtxException::check(false === in_array($reqIP, $allowedIPs), ErrorCode::NOT_ALLOWED);
 
             $ctx->next();
         };

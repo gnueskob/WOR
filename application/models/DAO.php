@@ -129,14 +129,14 @@ abstract class DAO
 
     /**
      * @param $stmt
-     * @return null
+     * @return int
      * @throws CE
      */
     protected static function resolveInsert($stmt)
     {
         if ($stmt instanceof PDOStatement) {
             CE::check($stmt->rowCount() === 0, ErrorCode::NO_INSERT);
-            return null;
+            return 0;
         } else {
             $errorCode = $stmt;
             return $errorCode;
@@ -148,7 +148,7 @@ abstract class DAO
      * @return PDOStatement|string $stmt
      * @throws CtxException
      */
-    protected static function resolveDelete($stmt)
+    protected function resolveDelete($stmt)
     {
         CE::check($stmt->rowCount() === 0, ErrorCode::NO_DELETE);
     }

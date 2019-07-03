@@ -2,10 +2,13 @@
 
 namespace lsb\App\controller;
 
+use lsb\App\models\UserDAO;
+use lsb\App\models\WeaponDAO;
+use lsb\Libs\CtxException as CE;
+use lsb\Libs\ErrorCode;
 use lsb\Utils\Lock;
 use lsb\Utils\Utils;
 use lsb\App\services\WeaponServices;
-use lsb\App\services\UserServices;
 use lsb\Libs\Context;
 use lsb\Libs\DB;
 use lsb\Libs\ISubRouter;
@@ -18,102 +21,102 @@ class Weapon extends Router implements ISubRouter
     {
         $router = $this;
 
-        // 유저 보유 무기들 정보
+        /*************************************************************************************************************
+         * 유저 무기들 정보
+         *************************************************************************************************************/
         $router->get('/info/:user_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+            $data = $ctx->getReqBody();
             $userId = $data['user_id'];
-            $weapons = WeaponServices::getWeaponsByUser($userId);
-            $ctx->addBody(['weapons' => Utils::toArrayAll($weapons)]);
-            $ctx->send();
+
+            $weapons = WeaponDAO::getWeapons($userId);
+            $ctx->addResBody(['weapons' => Utils::toArrayAll($weapons)]);
         });
 
-        // 무기 제작 요청
+        /*************************************************************************************************************
+         * 무기 제작 요청
+         *************************************************************************************************************/
         $router->post(
-            '/add/:user_id',
+            '/add',
             Lock::lockUser(RESOURCE),
             function (Context $ctx) {
-                $data = $ctx->getBody();
+                $data = $ctx->getReqBody();
                 $userId = $data['user_id'];
                 $weaponType = $data['weapon_type'];
 
                 // 무기 생성에 필요한 자원
-                list($neededTactical, $neededFood, $neededLuxury) = Plan::getWeaponCreateResources($weaponType);
+                list($tatical, $food, $luxury) = Plan::getWeaponCreateResources($data['weapon_type']);
                 list($createUnitTime) = Plan::getWeaponUnitTime($weaponType);
 
-                // 현재 유저 자원 정보
-                $user = UserServices::getUserInfo($userId);
+                $user = UserDAO::getUserInfo($userId);
 
-                UserServices::checkResourceSufficient($user, $neededTactical, $neededFood, $neededLuxury);
+                CE::check(false === $user->hasResource($tatical, $food, $luxury), ErrorCode::RESOURCE_INSUFFICIENT);
 
                 DB::beginTransaction();
-                UserServices::useResource($userId, $neededTactical, $neededFood, $neededLuxury);
-                $weaponId = WeaponServices::createWeapon($userId, $weaponType, $createUnitTime);
+                $user->useResources($tatical, $food, $luxury);
+                $weaponId = WeaponDAO::createWeapon($user->userId, $weaponType, $createUnitTime);
                 DB::endTransaction();
 
-                $weaponArr = WeaponServices::getWeapon($weaponId)->toArray();
-                $ctx->addBody(['weapon' => $weaponArr]);
-                $ctx->send();
+                $weapon = WeaponDAO::getWeapon($weaponId);
+                $ctx->addResBody(['weapon' => $weapon->toArray()]);
             }
         );
 
-        // 무기 제작 완료 확인
-        $router->get('/add/:weapon_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+        /*************************************************************************************************************
+         * 무기 제작 완료 확인
+         *************************************************************************************************************/
+        $router->get('/add', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $weaponId = $data['weapon_id'];
 
-            $weapon = WeaponServices::getWeapon($weaponId);
-            WeaponServices::checkCreateFinished($weapon);
+            $weapon = WeaponDAO::getWeapon($weaponId);
+            CE::check(!$weapon->isCreated(), ErrorCode::IS_NOT_CREATED);
 
-            $ctx->addBody(['weapon' => $weapon->toArray()]);
-            $ctx->send();
+            $ctx->addResBody(['weapon' => $weapon->toArray()]);
         });
 
-        // 무기 업그레이드 요청
+        /*************************************************************************************************************
+         * 무기 업그레이드 요청
+         *************************************************************************************************************/
         $router->post(
-            '/upgrade/:weapon_id',
+            '/upgrade',
             Lock::lockUser(RESOURCE),
             function (Context $ctx) {
-                $data = $ctx->getBody();
-                $userId = $data['user_id'];
+                $data = $ctx->getReqBody();
                 $weaponId = $data['weapon_id'];
 
-                // 업그레이드 하려는 무기 정보
-                $weapon = WeaponServices::getWeapon($weaponId);
-
-                WeaponServices::checkCreateFinished($weapon);
-                WeaponServices::checkUpgradeStatus($weapon);
+                $weapon = WeaponDAO::getWeapon($weaponId);
+                $user = UserDAO::getUserInfo($weapon->userId);
 
                 // 다음 레벨 업그레이드에 필요한 자원
-                list($neededTactical, $neededFood, $neededLuxury) = Plan::getWeaponUpgradeResources($weapon->weaponType, $weapon->currentLevel);
+                list($tatical, $food, $luxury)
+                    = Plan::getWeaponUpgradeResources($weapon->weaponType, $weapon->currentLevel);
                 list(, $upgradeUnitTime) = Plan::getWeaponUnitTime($weapon->weaponType, $weapon->currentLevel);
 
-                // 현재 유저 자원 정보
-                $user = UserServices::getUserInfo($userId);
-
-                // 필요한 재료를 가지고 있는 지 검사
-                UserServices::checkResourceSufficient($user, $neededTactical, $neededFood, $neededLuxury);
+                CE::check(!$weapon->isCreated(), ErrorCode::IS_NOT_CREATED);
+                CE::check($weapon->isUpgrading(), ErrorCode::IS_UPGRADING);
+                CE::check(false === $user->hasResource($tatical, $food, $luxury), ErrorCode::RESOURCE_INSUFFICIENT);
 
                 DB::beginTransaction();
-                UserServices::useResource($userId, $neededTactical, $neededFood, $neededLuxury);
-                WeaponServices::upgradeWeapon($weaponId, $weapon->currentLevel, $upgradeUnitTime);
+                $user->useResources($tatical, $food, $luxury);
+                $weapon->upgrade($upgradeUnitTime);
                 DB::endTransaction();
 
-                $weaponArr = WeaponServices::getWeapon($weaponId)->toArray();
-                $ctx->addBody(['weapon' => $weaponArr]);
-                $ctx->send();
+                $weapon = WeaponDAO::getWeapon($weapon->weaponId);
+                $ctx->addResBody(['weapon' => $weapon->toArray()]);
             }
         );
 
-        // 무기 업그레이드 완료 확인
-        $router->get('/upgrade/:weapon_id', function (Context $ctx) {
-            $data = $ctx->getBody();
+        /*************************************************************************************************************
+         * 무기 업그레이드 확인 요청
+         *************************************************************************************************************/
+        $router->get('/upgrade', function (Context $ctx) {
+            $data = $ctx->getReqBody();
             $weaponId = $data['weapon_id'];
 
-            $weapon = WeaponServices::getWeapon($weaponId);
-            WeaponServices::checkUpgradeFinished($weapon);
+            $weapon = WeaponDAO::getWeapon($weaponId);
+            CE::check(!$weapon->isUpgraded(), ErrorCode::IS_NOT_UPGRADED);
 
-            $ctx->addBody(['weapon' => $weapon->toArray()]);
-            $ctx->send();
+            $ctx->addResBody(['weapon' => $weapon->toArray()]);
         });
     }
 }

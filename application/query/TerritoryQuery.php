@@ -79,6 +79,18 @@ class TerritoryQuery extends Query
 
     /**************************************************************/
 
+    // UPDATE QUERY
+
+    public static function qSetExploreTime(TerritoryDAO $dao)
+    {
+        return static::territory()
+            ->updateQurey()
+            ->set(['exploreTime' => $dao->exploreTime])
+            ->whereExploreId($dao->exploreId);
+    }
+
+    /**************************************************************/
+
     // INSERT QUERY
 
     public static function qInsertTerritory(TerritoryDAO $dao)

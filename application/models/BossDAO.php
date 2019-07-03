@@ -3,7 +3,10 @@
 namespace lsb\App\models;
 
 use Exception;
+use lsb\App\query\RaidQuery;
+use lsb\Libs\CtxException as CE;
 use lsb\Libs\Timezone;
+use PDOStatement;
 
 class BossDAO extends DAO
 {
@@ -47,5 +50,35 @@ class BossDAO extends DAO
     public function isFinished()
     {
         return isset($this->finishTime) && $this->finishTime < Timezone::getNowUTC();
+    }
+
+    /*****************************************************************************************************************/
+    // get boss record
+
+    /**
+     * @param PDOStatement $stmt
+     * @return BossDAO
+     * @throws Exception
+     */
+    private static function getBossDAO(PDOStatement $stmt)
+    {
+        $res = $stmt->fetch();
+        $res = $res === false ? [] : $res;
+        return new BossDAO($res);
+    }
+
+    /**
+     * @param int $territoryId
+     * @return BossDAO
+     * @throws Exception
+     */
+    public static function getBossInTerritory(int $territoryId)
+    {
+        $dao = new BossDAO();
+        $dao->territoryId = $territoryId;
+
+        $stmt = RaidQuery::qSelectBossByTerritory($dao)->run();
+        $boss = static::getBossDAO($stmt);
+        return $boss;
     }
 }

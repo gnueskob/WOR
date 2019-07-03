@@ -12,32 +12,8 @@ use lsb\Libs\Plan;
 use lsb\Libs\Timezone;
 use PDOStatement;
 
-class RaidServices extends Services
+class RaidServices
 {
-    /**
-     * @param PDOStatement $stmt
-     * @return RaidDAO
-     * @throws Exception
-     */
-    private static function getRaidDAO(PDOStatement $stmt)
-    {
-        $res = $stmt->fetch();
-        $res = $res === false ? [] : $res;
-        return new RaidDAO($res);
-    }
-
-    /**
-     * @param PDOStatement $stmt
-     * @return BossDAO
-     * @throws Exception
-     */
-    private static function getBossDAO(PDOStatement $stmt)
-    {
-        $res = $stmt->fetch();
-        $res = $res === false ? [] : $res;
-        return new BossDAO($res);
-    }
-
     /************************************************************/
 
     /**
@@ -181,21 +157,6 @@ class RaidServices extends Services
 
         $stmt = RaidQuery::qDeleteRaid($dao)->run();
         static::validateDelete($stmt);
-    }
-
-    /**
-     * @param int $userId
-     * @return RaidDAO
-     * @throws Exception
-     */
-    public static function refreshRaid(int $userId)
-    {
-        $dao = new RaidDAO();
-        $dao->userId = $userId;
-        $dao->finishTime = Timezone::getNowUTC();
-
-        $stmt = RaidQuery::qSelcetFinishedRaidByUser($dao)->run();
-        return static::getRaidDAO($stmt);
     }
 
     /**********************************************************/

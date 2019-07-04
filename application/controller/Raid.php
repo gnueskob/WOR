@@ -64,7 +64,7 @@ class Raid extends Router implements ISubRouter
                 $targetTerritoryId = $data['territory_id'];
 
                 // 이미 출전 중 인가?
-                $raid = RaidDAO::getRaids($userId);
+                $raid = RaidDAO::getRaidAboutUser($userId);
                 CE::check(false === $raid->isEmpty() && false === $raid->isFinished(), ErrorCode::ALREADY_RAID);
 
                 list($territoryClass) = Plan::getTerritoryClass($targetTerritoryId);

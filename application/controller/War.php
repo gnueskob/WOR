@@ -31,7 +31,7 @@ class War extends Router implements ISubRouter
             $data = $ctx->getReqBody();
             $userId = $data['user_id'];
 
-            $war = WarDAO::getWars($userId);
+            $war = WarDAO::getWarAboutUser($userId);
             $ctx->addResBody(['war' => $war->toArray()]);
         });
 
@@ -52,8 +52,8 @@ class War extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->post(
             '/add',
-            Lock::lockUser(MANPOWER, 2),
-            Lock::lockUser(RESOURCE),
+            Lock::lock(MANPOWER, 2),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $userId = $data['user_id'];
@@ -61,7 +61,7 @@ class War extends Router implements ISubRouter
                 $friendId = $data['friend_id'];
 
                 // 이미 전쟁 중 인가?
-                $war = WarDAO::getWars($userId);
+                $war = WarDAO::getWarAboutUser($userId);
                 CE::check(false === $war->isEmpty() && false === $war->isFinished(), ErrorCode::ALREADY_WARRING);
 
                 // 유저가 먼저 해당 영토를 탐사 했는가?
@@ -122,8 +122,8 @@ class War extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put(
             '/add',
-            Lock::lockUser(MANPOWER, 2),
-            Lock::lockUser(RESOURCE),
+            Lock::lock(MANPOWER, 2),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $warId = $data['war_id'];
@@ -156,8 +156,8 @@ class War extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put(
             '/cancel',
-            Lock::lockUser(MANPOWER, 2),
-            Lock::lockUser(RESOURCE),
+            Lock::lock(MANPOWER, 2),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $warId = $data['war_id'];

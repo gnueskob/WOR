@@ -38,8 +38,8 @@ class Building extends Router implements ISubRouter
         $router->post(
             '/add',
             // 자원을 확인하고 소모시키는 중간 부분에서 자원량이 갱신되면 안됨
-            Lock::lockUser(MANPOWER, 2),
-            Lock::lockUser(RESOURCE),
+            Lock::lock(MANPOWER, 2),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $userId = $data['user_id'];
@@ -97,7 +97,7 @@ class Building extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put(
             '/upgrade',
-            Lock::lockUser(RESOURCE),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $buildingId = $data['building_id'];
@@ -149,7 +149,7 @@ class Building extends Router implements ISubRouter
         $router->put(
             '/deploy',
             // 인력 확인, 소모 사이에 외부에서의 인력 갱신이 있으면 안됨
-            Lock::lockUser(MANPOWER),
+            Lock::lock(MANPOWER),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $buildingId = $data['building_id'];
@@ -199,7 +199,7 @@ class Building extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put(
             '/delete',
-            Lock::lockUser(MANPOWER),
+            Lock::lock(MANPOWER),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $buildingId = $data['building_id'];

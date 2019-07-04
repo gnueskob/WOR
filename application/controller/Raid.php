@@ -2,25 +2,22 @@
 
 namespace lsb\App\controller;
 
-use lsb\App\models\AllianceDAO;
 use lsb\App\models\BossDAO;
+use lsb\App\models\BuffDAO;
 use lsb\App\models\RaidDAO;
 use lsb\App\models\UserDAO;
 use lsb\App\services\AllianceServices;
 use lsb\App\services\BuildingServices;
 use lsb\App\services\ExploratoinServices;
-use lsb\App\services\RaidServices;
 use lsb\App\services\UserServices;
 use lsb\App\services\WeaponServices;
 use lsb\Libs\Context;
 use lsb\Libs\CtxException as CE;
-use lsb\Libs\CtxException;
 use lsb\Libs\DB;
 use lsb\Libs\ErrorCode;
 use lsb\Libs\ISubRouter;
 use lsb\Libs\Plan;
 use lsb\Libs\Router;
-use lsb\Libs\SpinLock;
 use lsb\Libs\Timezone;
 use lsb\Utils\Lock;
 
@@ -37,7 +34,7 @@ class Raid extends Router implements ISubRouter
             $data = $ctx->req->getParams();
             $userId = $data['user_id'];
 
-            $raid = RaidDAO::getRaidInUser($userId);
+            $raid = RaidDAO::getRaidAboutUser($userId);
             $ctx->addResBody(['raid' => $raid->toArray()]);
         });
 
@@ -58,8 +55,9 @@ class Raid extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->post(
             '/add',
-            Lock::lockUser(MANPOWER, 3),
-            Lock::lockUser(RESOURCE, 2),
+            Lock::lock(MANPOWER, 3),
+            Lock::lock(RESOURCE, 2),
+            Lock::lock(BOSS),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $userId = $data['user_id'];
@@ -78,6 +76,7 @@ class Raid extends Router implements ISubRouter
                 // 해당 위치에 보스가 존재 하는가?
                 $boss = BossDAO::getBossInTerritory($targetTerritoryId);
                 CE::check($boss->isEmpty(), ErrorCode::BOSS_NOT_GEN);
+                CE::check($boss->hitPoint <= 0, ErrorCode::ALEADY_DIED);
 
                 // 이미 전투가 시작된 보스라면 공격 가능한 보스인가?
                 if (isset($boss->userId)) {
@@ -109,42 +108,71 @@ class Raid extends Router implements ISubRouter
                 $food = $resourceCoeff * $armyManpower * $dist;
                 CE::check(false === $user->hasResource(0, $food, 0), ErrorCode::RESOURCE_INSUFFICIENT);
 
-                SpinLock::spinLock(BOSS, 1);
-
                 DB::beginTransaction();
-                UserServices::useManpower($userId, $armyManpower, true);
-                UserServices::useResource($userId, 0, $neededFoodResource, 0);
-                $raidId = RaidServices::createRaid($boss, $userId, $targetTerritoryId, $finishUnitTime);
-                RaidServices::attackBoss($boss, $userId, $totalAttackPower);
+                // 군량 소모
+                $user
+                    ->useManpower($armyManpower, true)
+                    ->useResources(0, $food, 0);
+                // 레이드 출전
+                $raidId = RaidDAO::createRaid($boss, $userId, $targetTerritoryId, $finishUnitTime);
+
+                // 보스 첫 전투 시 광폭화 시간 적용
+                if (is_null($boss->userId)) {
+                    $boss->startRaid($user->userId, true);
+                }
+
+                if ($boss->hitPoint - $totalAttackPower <= 0) {
+                    // 보스의 체력이 0 이하
+                    RaidDAO::container()->victory($boss->bossId);
+                    $boss->defeated();
+                } else {
+                    // 보스가 아직 살아있음
+                    $boss->beAttacked($totalAttackPower);
+                }
                 DB::endTransaction();
 
-                SpinLock::spinUnlock(BOSS);
-
-                $warArr = RaidServices::getRaid($raidId)->toArray();
-                $ctx->addBody(['war' => $warArr]);
+                $raid = RaidDAO::getRaid($raidId);
+                $ctx->addResBody(['raid' => $raid->toArray()]);
             }
         );
 
-        // 레이드 완료 확인
+        /*************************************************************************************************************
+         * 레이드 완료 확인
+         *************************************************************************************************************/
         $router->put(
-            '/add/:raid_id',
-            Lock::lockUser(MANPOWER, 2),
-            Lock::lockUser(RESOURCE),
+            '/add',
+            Lock::lock(MANPOWER, 2),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
-                $data = $ctx->getBody();
+                $data = $ctx->getReqBody();
                 $raidId = $data['raid_id'];
 
-                $raid = RaidServices::getRaid($raidId);
-                RaidServices::checkFinished($raid);
+                $raid = RaidDAO::getRaid($raidId);
+                CE::check(empty($raid->isVictory), ErrorCode::RAID_NOT_FINISHED);
+
+                if (false === $raid->isVictory) {
+                    // 레이드 실패
+                    $ctx->addResBody(['victory' => false]);
+                    return;
+                }
+
+                list($buffType) = Plan::getBossBuff($raid->bossType);
+                $finishUnitTime = Plan::getBuffFinishUnitTime($buffType);
+
+                list($trophyType) = Plan::getBossTrophy($raid->bossType);
+                list($tactical, $food, $luxury) = Plan::getTrophyRewardResources($trophyType);
 
                 DB::beginTransaction();
-                RaidServices::resolveRaidResult($raid);
-                RaidServices::removeRaid($raid->raidId);
+                BuffDAO::createBuff($raid->userId, $buffType, $finishUnitTime);
+                UserDAO::container($raid->userId)->takeResources($tactical, $food, $luxury);
+                $raid->remove();
                 DB::endTransaction();
 
-                $userArr = UserServices::getUser($raid->userId)->toArray();
-                $ctx->addBody(['user' => $userArr]);
-                $ctx->send();
+                $user = UserServices::getAllProperty($raid->userId);
+                $ctx->addResBody([
+                    'user' => $user->toArray(),
+                    'victory' => true
+                ]);
             }
         );
     }

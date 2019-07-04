@@ -8,10 +8,10 @@ use Exception;
 
 class Lock
 {
-    public static function lockUser(string $field, int $expire = 1)
+    public static function lock(string $field, int $expire = 1)
     {
         return function (Context $ctx) use ($field, $expire) {
-            $data = $ctx->getBody();
+            $data = $ctx->getReqBody();
             $userId = $data['user_id'];
 
             $spinlockKey = SpinLock::getKey($field, $userId);

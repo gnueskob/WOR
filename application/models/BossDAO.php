@@ -81,4 +81,49 @@ class BossDAO extends DAO
         $boss = static::getBossDAO($stmt);
         return $boss;
     }
+
+    /*****************************************************************************************************************/
+    // set boss
+
+    /**
+     * @param int $hp
+     * @param bool $pending
+     * @return $this
+     * @throws CE
+     */
+    public function beAttacked(int $hp, bool $pending = false)
+    {
+        $this->hitPoint = $hp;
+        $query = RaidQuery::qSubtractBossHP($this);
+        $this->resolveUpdate($query, $pending);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     * @throws CE
+     */
+    public function defeated()
+    {
+        $stmt = RaidQuery::qDeleteBoss($this)->run();
+        $this->resolveDelete($stmt);
+
+        return $this;
+    }
+
+    /**
+     * @param int $userId
+     * @param bool $pending
+     * @return $this
+     * @throws CE
+     */
+    public function startRaid(int $userId, bool $pending = false)
+    {
+        $this->userId = $userId;
+        $query = RaidQuery::qStartBossAttack($this);
+        $this->resolveUpdate($query, $pending);
+
+        return $this;
+    }
 }

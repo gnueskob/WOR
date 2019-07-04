@@ -150,7 +150,7 @@ class WarDAO extends DAO
      * @return WarDAO
      * @throws Exception
      */
-    public static function getWars(int $userId)
+    public static function getWarAboutUser(int $userId)
     {
         $dao = new WarDAO();
         $dao->userId = $userId;

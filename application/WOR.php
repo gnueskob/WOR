@@ -7,6 +7,7 @@ use lsb\App\controller\Buff;
 use lsb\App\controller\Building;
 use lsb\App\controller\Exploration;
 use lsb\App\controller\Plan;
+use lsb\App\controller\Raid;
 use lsb\App\controller\War;
 use lsb\App\controller\Weapon;
 use lsb\Config\utils\BodyParser;
@@ -38,6 +39,7 @@ class WOR extends Router implements ISubRouter
             ->use('/exploration', new Exploration())
             ->use('/buff', new Buff())
             ->use('/alliance', new Alliance())
-            ->use('/war', new War());
+            ->use('/war', new War())
+            ->use('/raid', new Raid());
     }
 }

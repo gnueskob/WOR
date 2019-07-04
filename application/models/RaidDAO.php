@@ -5,6 +5,7 @@ namespace lsb\App\models;
 use Exception;
 use lsb\App\query\RaidQuery;
 use lsb\Libs\CtxException as CE;
+use lsb\Libs\DB;
 use lsb\Libs\ErrorCode;
 use lsb\Libs\Timezone;
 use PDOStatement;
@@ -61,6 +62,40 @@ class RaidDAO extends DAO
     /*****************************************************************************************************************/
     // set raid
 
+    public static function container(int $raidId = 0)
+    {
+        $raid = new RaidDAO();
+        $raid->raidId = $raidId;
+        return $raid;
+    }
+
+    /**
+     * @param int $bossId
+     * @param bool $pending
+     * @return $this
+     * @throws CE
+     */
+    public function victory(int $bossId, bool $pending = false)
+    {
+        $this->bossId = $bossId;
+        $query = RaidQuery::qSetVictory($this);
+        $this->resolveUpdate($query, $pending);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     * @throws CE
+     */
+    public function remove()
+    {
+        $stmt = RaidQuery::qDeleteRaid($this)->run();
+        $this->resolveDelete($stmt);
+
+        return $this;
+    }
+
     /*****************************************************************************************************************/
     // get raid record
 
@@ -98,7 +133,7 @@ class RaidDAO extends DAO
      * @return RaidDAO
      * @throws Exception
      */
-    public static function getRaids(int $userId)
+    public static function getRaidAboutUser(int $userId)
     {
         $dao = new RaidDAO();
         $dao->userId = $userId;
@@ -125,4 +160,31 @@ class RaidDAO extends DAO
 
     /*****************************************************************************************************************/
     // create raid record
+
+    /**
+     * @param BossDAO $boss
+     * @param int $userId
+     * @param int $territoryId
+     * @param int $finishUnitTime
+     * @return int
+     * @throws CtxException
+     */
+    public static function createRaid(BossDAO $boss, int $userId, int $territoryId, int $finishUnitTime)
+    {
+        $dao = new RaidDAO();
+        $dao->raidId = null;
+        $dao->bossId = $boss->bossId;
+        $dao->userId = $userId;
+        $dao->territoryId = $territoryId;
+        $dao->bossType = $boss->bossType;
+        $dao->isVictory = null;
+        $dao->finishTime = Timezone::getCompleteTime($finishUnitTime);
+
+        $stmt = RaidQuery::qInsertRaid($dao)
+            ->checkError([DB::DUPLICATE_ERRORCODE])
+            ->run();
+        $errorCode = static::resolveInsert($stmt);
+        CE::check($errorCode === DB::DUPLICATE_ERRORCODE, ErrorCode::ALREADY_RAID);
+        return DB::getLastInsertId();
+    }
 }

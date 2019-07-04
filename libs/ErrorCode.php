@@ -74,6 +74,8 @@ class ErrorCode
     public const ALREADY_RAID = 8001;
     public const BOSS_NOT_GEN = 8002;
     public const TOO_LATE = 8003;
+    public const ALEADY_DIED = 8004;
+    public const RAID_NOT_FINISHED = 8005;
 
     // query success but not affected
     public const NO_FETCH = 10000;

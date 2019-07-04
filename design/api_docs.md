@@ -328,6 +328,26 @@
 
 ***
 
+## Building
+
+***
+
+## 건물 정보
+
+- `GET /building/info/:user_id`
+- 유저가 소유한 건물 정보
+
+| 요청변수    | 타입     | 필수 여부 | 설명        |
+| :------ | :----- | :---- | :-------- |
+| user_id | INT    | Y     | 유저 ID     |
+
+## 건물 생성
+
+- `POST /building/add`
+- 해당 위치에 원하는 건물 생성
+
+***
+
 ## 영내 맵 정보
 
 - `GET /user/tile/{userId}`

@@ -37,7 +37,7 @@ class Weapon extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->post(
             '/add',
-            Lock::lockUser(RESOURCE),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $userId = $data['user_id'];
@@ -79,7 +79,7 @@ class Weapon extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->post(
             '/upgrade',
-            Lock::lockUser(RESOURCE),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $weaponId = $data['weapon_id'];

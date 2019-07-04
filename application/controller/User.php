@@ -136,7 +136,7 @@ class User extends Router implements ISubRouter
             '/upgrade',
             // 여러 단말기로 API 여러번 날리는 경우 방지
             // 자원 확인, 소모 사이에 외부에서의 자원량 갱신이 없어야함
-            Lock::lockUser(SpinLock::RESOURCE),
+            Lock::lock(SpinLock::RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $userId = $data['user_id'];
@@ -197,7 +197,7 @@ class User extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->put(
             '/calculation',
-            Lock::lockUser(SpinLock::RESOURCE),
+            Lock::lock(SpinLock::RESOURCE),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $userId = $data['user_id'];

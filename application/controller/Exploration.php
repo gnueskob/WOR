@@ -85,7 +85,7 @@ class Exploration extends Router implements ISubRouter
          *************************************************************************************************************/
         $router->post(
             '/territory',
-            Lock::lockUser(MANPOWER),
+            Lock::lock(MANPOWER),
             function (Context $ctx) {
                 $data = $ctx->getReqBody();
                 $userId = $data['user_id'];

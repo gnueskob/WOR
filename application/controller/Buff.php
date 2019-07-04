@@ -62,7 +62,7 @@ class Buff extends Router implements ISubRouter
                 // 자원 소모 버프
                 $ctx->next();
             },
-            Lock::lockUser(RESOURCE),
+            Lock::lock(RESOURCE),
             function (Context $ctx) {
                 // 자원 소모 버프
                 $data = $ctx->getReqBody();

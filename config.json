@@ -10,9 +10,16 @@
       "password": "1234"
     },
     "redis": {
-      "host": "localhost",
-      "port": "6379",
-      "auth": ""
+      "plan": {
+        "host": "localhost",
+        "port": "6379",
+        "auth": ""
+      },
+      "rank": {
+        "host": "localhost",
+        "port": "6380",
+        "auth": ""
+      }
     },
     "memcached": {
       "host": "localhost",

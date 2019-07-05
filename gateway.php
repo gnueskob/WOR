@@ -24,6 +24,11 @@ $app->get('/phpinfo', function () {
     phpinfo();
 });
 $app->get('/test', function (\lsb\Libs\Context $ctx) {
-    print_r($GLOBALS);
+    $redis = \lsb\Libs\Redis::getInstance()->getRedis(\lsb\Libs\Redis::RANK);
+    $key = "test:key1"; //키분류는 :(콜론)을 찍는게 일반적
+
+    echo date('W');
+    $value = $redis->get($key);
+    echo "value : " . $value . "<br>";
 });
 $app->run();

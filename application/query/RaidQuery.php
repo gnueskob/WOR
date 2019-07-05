@@ -92,6 +92,14 @@ class RaidQuery extends Query
             ->whereFinished($dao->finishTime);
     }
 
+    public static function qSelectBoss(BossDAO $dao)
+    {
+        return static::boss()
+            ->selectQurey()
+            ->selectAll()
+            ->whereBossId($dao->bossId);
+    }
+
     public static function qSelectBossByTerritory(BossDAO $dao)
     {
         return static::boss()
@@ -115,6 +123,19 @@ class RaidQuery extends Query
                 'territoryId' => $dao->territoryId,
                 'bossType' => $dao->bossType,
                 'isVictory' => $dao->isVictory,
+                'finishTime' => $dao->finishTime
+            ]);
+    }
+
+    public static function qInsertBoss(BossDAO $dao)
+    {
+        return static::boss()
+            ->insertQurey()
+            ->value([
+                'bossId' => $dao->bossId,
+                'userId' => $dao->userId,
+                'territoryId' => $dao->territoryId,
+                'hitPoint' => $dao->hitPoint,
                 'finishTime' => $dao->finishTime
             ]);
     }

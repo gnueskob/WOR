@@ -72,10 +72,14 @@ class ErrorCode
     // raid error
     public const INVALID_RAID = 8000;
     public const ALREADY_RAID = 8001;
-    public const BOSS_NOT_GEN = 8002;
-    public const TOO_LATE = 8003;
-    public const ALEADY_DIED = 8004;
-    public const RAID_NOT_FINISHED = 8005;
+    public const TOO_LATE = 8002;
+    public const RAID_NOT_FINISHED = 8003;
+
+    // boss error
+    public const INVALID_BOSS = 9000;
+    public const BOSS_NOT_GEN = 9001;
+    public const ALEADY_DIED = 9002;
+    public const ALEADY_GEN = 9003;
 
     // query success but not affected
     public const NO_FETCH = 10000;

@@ -5,6 +5,9 @@ namespace lsb\App\models;
 use Exception;
 use lsb\App\query\RaidQuery;
 use lsb\Libs\CtxException as CE;
+use lsb\Libs\DB;
+use lsb\Libs\ErrorCode;
+use lsb\Libs\Plan;
 use lsb\Libs\Timezone;
 use PDOStatement;
 
@@ -68,6 +71,23 @@ class BossDAO extends DAO
     }
 
     /**
+     * @param int $bossId
+     * @return BossDAO
+     * @throws Exception
+     */
+    public static function getBoss(int $bossId)
+    {
+        $dao = new BossDAO();
+        $dao->bossId = $bossId;
+
+        $stmt = RaidQuery::qSelectBoss($dao)->run();
+        $boss = static::getBossDAO($stmt);
+        CE::check($boss->isEmpty(), ErrorCode::INVALID_BOSS);
+
+        return $boss;
+    }
+
+    /**
      * @param int $territoryId
      * @return BossDAO
      * @throws Exception
@@ -120,10 +140,42 @@ class BossDAO extends DAO
      */
     public function startRaid(int $userId, bool $pending = false)
     {
+        list($finishUnitTime) = Plan::getBossUnitTime($this->bossType);
+
         $this->userId = $userId;
+        $this->finishTime = Timezone::getCompleteTime($finishUnitTime);
         $query = RaidQuery::qStartBossAttack($this);
         $this->resolveUpdate($query, $pending);
 
         return $this;
+    }
+
+    /*****************************************************************************************************************/
+    // set boss
+
+    /**
+     * @param int $bossType
+     * @return int
+     * @throws CE
+     */
+    public static function create(int $bossType)
+    {
+        $bossHP = Plan::getBossHP($bossType);
+        $territoryId = Plan::getBossTerritory($bossType);
+
+        $boss = new BossDAO();
+        $boss->bossId = null;
+        $boss->userId = null;
+        $boss->territoryId = $territoryId;
+        $boss->hitPoint = $bossHP;
+        $boss->finishTime = null;
+
+        $stmt = RaidQuery::qInsertBoss($boss)
+            ->checkError([DB::DUPLICATE_ERRORCODE])
+            ->run();
+        $errorCode = static::resolveInsert($stmt);
+        CE::check($errorCode === DB::DUPLICATE_ERRORCODE, ErrorCode::ALEADY_GEN);
+
+        return DB::getLastInsertId();
     }
 }

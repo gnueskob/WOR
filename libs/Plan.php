@@ -146,7 +146,7 @@ class Plan
         switch ($this->driver) {
             default:
             case REDIS:
-                $redis = Redis::getInstance()->getRedis();
+                $redis = Redis::getInstance()->getRedis(Redis::PLAN);
                 $this->pipe = $redis->multi(Rds::PIPELINE);
                 break;
             case APCU:
@@ -201,7 +201,7 @@ class Plan
             default:
             case REDIS:
                 try {
-                    $redis = Redis::getInstance()->getRedis();
+                    $redis = Redis::getInstance()->getRedis(Redis::PLAN);
                     $res = $redis->hGet($keyTag, $key);
                     $res = json_decode($res);
                 } catch (Exception $e) {
@@ -226,7 +226,7 @@ class Plan
             default:
             case REDIS:
                 try {
-                    $redis = Redis::getInstance()->getRedis();
+                    $redis = Redis::getInstance()->getRedis(Redis::PLAN);
                     $res = $redis->hGetAll($keyTag);
                     $data = [];
                     $tempKey = null;
@@ -627,7 +627,10 @@ class Plan
             $plan['buf_name'],
 
             $plan['trophy_type'],         // 8
-            $plan['trophy_name']
+            $plan['trophy_name'],
+
+            $plan['territory_id'],        // 10
+            $plan['territory_type']
         ];
     }
 
@@ -649,6 +652,11 @@ class Plan
     public static function getBossTrophy(int $bossType)
     {
         return array_slice(static::getBoss($bossType), 8, 2);
+    }
+
+    public static function getBossTerritory(int $bossType)
+    {
+        return static::getBoss($bossType)[10];
     }
 
     /*****************************************************************/

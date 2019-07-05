@@ -185,7 +185,7 @@ CREATE TABLE raid_boss (
   finish_time     BIGINT        NULL,
   PRIMARY KEY (boss_id),
   INDEX idx_user (user_id),
-  INDEX idx_territory (territory_id)
+  UNIQUE KEY uk_territory (territory_id)
 );
 
 CREATE TABLE alliance (

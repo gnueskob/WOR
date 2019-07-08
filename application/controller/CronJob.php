@@ -3,9 +3,9 @@
 namespace lsb\App\controller;
 
 use lsb\App\models\BossDAO;
+use lsb\Config\libs\Rank;
 use lsb\Libs\Context;
 use lsb\Libs\ISubRouter;
-use lsb\Libs\Redis;
 use lsb\Libs\Router;
 
 class CronJob extends Router implements ISubRouter
@@ -27,11 +27,8 @@ class CronJob extends Router implements ISubRouter
         /*************************************************************************************************************
          * 랭킹 업데이트
          *************************************************************************************************************/
-        $router->post('/rank', function (Context $ctx) {
-            $date = new Date('')
-
-            $redis = Redis::getInstance()->getRedis(Redis::RANK);
-
+        $router->post('/rank', function () {
+            Rank::flushRank();
         });
     }
 }

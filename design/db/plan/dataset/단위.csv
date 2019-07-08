@@ -1,0 +1,14 @@
+﻿id,value,description
+unit_time,60,월드 단위 시간 (초)
+war_penalty_time,12,전쟁 패널티 시간
+tile_height_num,6,영내 타일 세로 수
+tile_width_num,6,영내 타일 가로 수
+territory_height_num,12,맵 영토 세로 수
+territory_width_num,12,맵 영토 가로 수
+tile_explore_time_coeff,0.5,영내 타일 탐사 시간 계수
+territory_explore_time_coeff,1,영토 탐사 시간 계수
+territory_explore_manpower,1,영토 탐사시 필요한 인력
+war_time,3,전쟁 출전 기본 준비 시간
+war_time_coeff,1,전쟁 이동거리당 시간 계수 (unit time/distance)
+war_resource_coeff,2,전쟁 군량 계수 (unit resource/(distance*manpower))
+war_default_manpower_ratio,0.05,전쟁시 기본 소모 인력 비율

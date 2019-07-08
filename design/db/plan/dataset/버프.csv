@@ -1,0 +1,5 @@
+﻿buff_type,name,class,class_name,default_finish_time,need_tactical_resource,need_luxury_resource,need_food_resource,inc_atk_ratio,inc_dfs_ratio,inc_manpower_ratio,inc_loyality_ratio
+0,None,,,,,,,,,,
+1,영민의 충성,2,자원 소모(인구비율) 버프,600,,3,,,,,0.05
+2,서련의 금기,0,전리품 버프,3600,,,,0.2,-0.15,,
+3,생불왕의 꽃,0,전리품 버프,3600,,,,,,0.3,

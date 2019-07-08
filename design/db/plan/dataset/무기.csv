@@ -1,0 +1,3 @@
+﻿weapon_id,name,attack,need_tactical_resource,need_luxury_resource,need_food_resource,create_unit_time,upgrade_unit_time,max_level,attack_upgrade_ratio,tactical_resource_upgrade_ratio,food_resource_upgrade_ratio,luxury_resource_upgrade_ratio,upgrade_unit_time_upgrade_ratio
+1,활,400,,,,,,20,1,0.1,0.1,0.1,0.1
+2,단검,200,,,,,,20,,0.1,0.1,0.1,0.1

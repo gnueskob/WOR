@@ -1,0 +1,10 @@
+﻿building_type,name,class,class_name,need_tactical_resource,need_food_resource,need_luxury_resource,create_manpower,deploy_min_manpower,deploy_max_manpower,create_unit_time,upgrade_unit_time,deploy_unit_time,defense,feature_tactical_resource,feature_food_resource,feature_loyalty,manpower_unit_time,loyalty_bound,upgradable,max_level,tactical_resource_upgrade_ratio,food_resource_upgrade_ratio,luxury_resource_upgrade_ratio,max_manpower_upgrade_ratio,upgrade_unit_time_upgrade_ratio,defense_upgrade_ratio,manpower_unit_time_upgrade_ratio,loyalty_bound_upgrade_ratio
+0,성,0,성,500,500,,,,100,,20,,500,,,,5,50,1,50,0.3,0.3,0.3,1,,0.5,0.01,0.2
+1,광산,2,자원 채취 건물,,10,,10,10,10,3,10,5,,,,,,,0,,,,,,,,,
+2,농장,2,자원 채취 건물,,5,,10,10,10,3,10,5,,,,,,,0,,,,,,,,,
+3,방어탑,1,병력 건물,500,400,,100,20,20,10,10,5,100,,,,,,1,30,0.1,0.1,0.1,0,,0.2,,
+4,병영,1,병력 건물,600,500,,200,50,50,10,10,5,,,,,,,1,30,0.1,0.1,0.1,0.5,,0,,
+5,공방,1,병력 건물,750,650,,100,50,50,15,10,5,,,,,,,0,,,,,,,,,
+6,곡창,3,특수 건물,1000,1000,100,100,20,20,20,10,5,,0,5000,0,,,0,,,,,,,,,
+7,공장,3,특수 건물,1000,1000,100,100,20,20,20,10,5,,5000,0,0,,,0,,,,,,,,,
+8,박물관,3,특수 건물,2000,2000,500,50,40,40,40,10,5,,0,0,1000,,,0,,,,,,,,,
